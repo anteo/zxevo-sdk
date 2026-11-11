@@ -37,6 +37,7 @@ test-appmake:
 	@$(MAKE) --no-print-directory -C tools/appmake test 2>tools/appmake/build/tests/make.log
 
 release: export SDK_RELEASE_VERSION := $(VERSION)
+release: export SDK_RELEASE_MAKE := $(MAKE)
 release:
 	@tools/versioning/release.sh "$$SDK_RELEASE_VERSION"
 

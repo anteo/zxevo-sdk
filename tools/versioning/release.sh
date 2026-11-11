@@ -11,6 +11,7 @@ CDPATH= cd -- "$(dirname -- "$0")/../.."
 bump_my_version=${BUMP_MY_VERSION:-bump-my-version}
 git_cliff=${GIT_CLIFF:-git-cliff}
 github_cli=${GH:-gh}
+make_command=${SDK_RELEASE_MAKE:-make}
 
 version_header=lib/common/include/zx/version.h
 bump_config=tools/versioning/bumpversion.toml
@@ -28,21 +29,23 @@ ref="refs/tags/$tag"
 
 commit=$(git rev-parse HEAD)
 if ! git show-ref --verify --quiet "$ref"; then
+    if [ -n "$(git status --porcelain)" ]; then
+        printf '%s\n' 'Commit local changes before preparing the release.' >&2
+        exit 1
+    fi
     git cat-file -e "$commit:$version_header"
     git cat-file -e "$commit:$bump_config"
 
-    # Generate outside the worktree so bump-my-version can check for local changes.
     release_log=$(mktemp "${TMPDIR:-/tmp}/zxevo-changelog.XXXXXX")
     trap 'rm -f -- "$release_log"' EXIT
     "$git_cliff" --config tools/versioning/cliff.toml --use-branch-tags --tag "$tag" --output "$release_log"
-    if [ -n "$(git status --porcelain -- "$changelog")" ] && ! cmp -s "$release_log" "$changelog"; then
-        printf '%s\n' "$changelog has local changes" >&2
-        exit 1
-    fi
 
     current=$("$bump_my_version" show --config-file "$bump_config" current_version)
+    "$make_command" --no-print-directory -j1 format
     if [ "$version" != "$current" ]; then
-        "$bump_my_version" bump --config-file "$bump_config" --no-commit --no-tag --new-version "$version"
+        # The worktree was clean before formatting.
+        "$bump_my_version" bump --config-file "$bump_config" --allow-dirty \
+            --no-commit --no-tag --new-version "$version"
     fi
     if [ "$(read_sdk_version < "$version_header")" != "$version" ]; then
         printf '%s\n' "$version_header must contain SDK version $version" >&2
@@ -50,9 +53,10 @@ if ! git show-ref --verify --quiet "$ref"; then
     fi
 
     cp "$release_log" "$changelog"
+    git add --update
     git add -- "$changelog"
-    if ! git diff --quiet HEAD -- "$version_header" "$bump_config" "$changelog"; then
-        git commit --only -m "chore(release): release $version" -- "$version_header" "$bump_config" "$changelog"
+    if ! git diff --cached --quiet; then
+        git commit -m "chore(release): release $version"
     fi
     commit=$(git rev-parse HEAD)
 fi
