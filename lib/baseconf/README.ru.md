@@ -108,8 +108,8 @@ make -C lib/baseconf \
 Для просмотра карты собранного приложения используйте утилиту:
 
 ```sh
-python3 tools/profiling/memory_map.py path/to/application.map
-python3 tools/profiling/memory_map.py path/to/application.map --sort size --name-width 36
+python3 tools/profiling/memory.py path/to/application.map
+python3 tools/profiling/memory.py path/to/application.map --sort size --name-width 36
 ```
 
 Она показывает диапазоны и размеры областей памяти, модулей и функций, а также исходные файлы и

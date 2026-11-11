@@ -109,8 +109,8 @@ stack.
 To inspect a linked application's memory map, use:
 
 ```sh
-python3 tools/profiling/memory_map.py path/to/application.map
-python3 tools/profiling/memory_map.py path/to/application.map --sort size --name-width 36
+python3 tools/profiling/memory.py path/to/application.map
+python3 tools/profiling/memory.py path/to/application.map --sort size --name-width 36
 ```
 
 The report shows address ranges and sizes for memory areas, modules, and functions, along with

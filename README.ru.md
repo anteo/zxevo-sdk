@@ -106,9 +106,9 @@ python3 lib/tsconf/tests/run.py check --case video/video
 
 ## Инструменты
 
-- `python3 tools/profiling/memory_map.py path/to/program.map --sort size` показывает области памяти,
+- `python3 tools/profiling/memory.py path/to/program.map --sort size` показывает области памяти,
   модули и диапазоны функций по карте линковки z88dk, созданной с флагом `-m`.
-- `python3 -m tools.profiling.tap_profile` измеряет время функции и выбранных вызовов из TAP в
+- `python3 -m tools.profiling.cpu` измеряет время функции и выбранных вызовов из TAP в
   отдельном процессе ZEsarUX. По умолчанию берёт `.map` рядом с TAP. Время вложенного вызова
   учитывается в стоимости внешнего. Флаг `--output` сохраняет замеры по вызовам в JSON. Измеряемые
   функции должны находиться в резидентном коде, а аргументы со стека снимает вызывающая сторона. Для
@@ -121,7 +121,7 @@ python3 lib/tsconf/tests/run.py check --case video/video
 Чтобы измерить отрисовку Night Train после `make examples-baseconf`, выполните из корня SDK:
 
 ```sh
-python3 -m tools.profiling.tap_profile \
+python3 -m tools.profiling.cpu \
   --tap lib/baseconf/build/examples/night_train.tap --entry draw_station \
   --functions zx_draw_fill_rect zx_console_draw_op zx_console_clear
 ```

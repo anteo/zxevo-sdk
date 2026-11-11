@@ -102,9 +102,9 @@ The suites keep binaries and manifests under `tests/build/` and reports and capt
 
 ## Host tools
 
-- `python3 tools/profiling/memory_map.py path/to/program.map --sort size` reports memory areas,
+- `python3 tools/profiling/memory.py path/to/program.map --sort size` reports memory areas,
   modules and function ranges from a z88dk map generated with `-m`.
-- `python3 -m tools.profiling.tap_profile` measures a TAP function and selected calls in an isolated
+- `python3 -m tools.profiling.cpu` measures a TAP function and selected calls in an isolated
   ZEsarUX process. It reads the sibling `.map` by default. Selected calls include their callees, and
   nested selected calls are counted only in the outer call. Use `--output` for per-call JSON.
   Profile caller-clean routines in resident code. Use `--keys` for a different BASIC startup
@@ -116,7 +116,7 @@ The suites keep binaries and manifests under `tests/build/` and reports and capt
 To measure Night Train's drawing routine after `make examples-baseconf`, run from the SDK root.
 
 ```sh
-python3 -m tools.profiling.tap_profile \
+python3 -m tools.profiling.cpu \
   --tap lib/baseconf/build/examples/night_train.tap --entry draw_station \
   --functions zx_draw_fill_rect zx_console_draw_op zx_console_clear
 ```
