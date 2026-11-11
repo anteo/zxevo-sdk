@@ -1,0 +1,14 @@
+[tool.bumpversion]
+current_version = "0.1.0"
+parse = '^(?P<major>0|[1-9][0-9]*)\.(?P<minor>0|[1-9][0-9]*)\.(?P<patch>0|[1-9][0-9]*)$'
+
+[[tool.bumpversion.files]]
+filename = "../../lib/common/include/zx/version.h"
+search = '''
+#define ZXEVO_SDK_VERSION_MAJOR {current_major}
+#define ZXEVO_SDK_VERSION_MINOR {current_minor}
+#define ZXEVO_SDK_VERSION_PATCH {current_patch}'''
+replace = '''
+#define ZXEVO_SDK_VERSION_MAJOR {new_major}
+#define ZXEVO_SDK_VERSION_MINOR {new_minor}
+#define ZXEVO_SDK_VERSION_PATCH {new_patch}'''

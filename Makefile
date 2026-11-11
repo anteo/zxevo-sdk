@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf test test-baseconf test-tsconf test-common test-appmake clean
+.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf test test-baseconf test-tsconf test-common test-appmake release clean
 
 all: baseconf-lib tsconf-lib
 
@@ -35,6 +35,10 @@ test-common:
 test-appmake:
 	@mkdir -p tools/appmake/build/tests
 	@$(MAKE) --no-print-directory -C tools/appmake test 2>tools/appmake/build/tests/make.log
+
+release: export SDK_RELEASE_VERSION := $(VERSION)
+release:
+	@tools/versioning/release.sh "$$SDK_RELEASE_VERSION"
 
 clean:
 	$(MAKE) -C lib clean
