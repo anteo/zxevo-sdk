@@ -3,6 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
+| Hello                                                       | Harbour                                                                     | Moon Run                                                                                         |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| ![Приветствие на ZX-экране](examples/screenshots/hello.png) | ![Парусник на закате в режиме 256 цветов](examples/screenshots/harbour.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](examples/screenshots/moon_run.png) |
+
 `tsconf.lib` — архив Z80 для ABI classic SDCC в z88dk. Функции управления регистрами, видео и DMA
 работают напрямую с TSConf. TS-FAT вызывает ROM TS-BIOS. Публичные функции доступны через
 `<tsconf.h>`. [Заголовок](include/tsconf.h)

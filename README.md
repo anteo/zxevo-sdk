@@ -3,6 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
+| [BaseConf · Night Train](lib/baseconf/README.en.md)                                  | [TSConf · Moon Run](lib/tsconf/README.en.md)                                                          |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| ![Night railway scene in ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![A hardware sprite flies over a tiled lunar landscape](lib/tsconf/examples/screenshots/moon_run.png) |
+
 C and Z80 assembly libraries for ZX Evolution applications targeting BaseConf or TSConf. The SDK
 includes z88dk target configurations, a BASIC 48 startup profile, emulator tests and host tools.
 

@@ -3,6 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
+| Hello                                                        | Harbour                                                                     | Moon Run                                                                                   |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ![Greeting on the ZX screen](examples/screenshots/hello.png) | ![A sailboat at sunset in 256-color mode](examples/screenshots/harbour.png) | ![A hardware sprite flies over a tiled lunar landscape](examples/screenshots/moon_run.png) |
+
 `tsconf.lib` is a Z80 archive for z88dk's classic SDCC ABI. The register, video and DMA APIs use the
 TSConf hardware directly. The TS-FAT API calls the stock TS-BIOS. Include `tsconf.h` for the public
 API. [Public header](include/tsconf.h)

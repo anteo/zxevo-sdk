@@ -3,6 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
+| [BaseConf · Night Train](lib/baseconf/README.ru.md)                                 | [TSConf · Moon Run](lib/tsconf/README.ru.md)                                                                |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| ![Ночной поезд в режиме ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](lib/tsconf/examples/screenshots/moon_run.png) |
+
 Библиотеки C и Z80 ASM для приложений ZX Evolution под BaseConf и TSConf. В SDK входят конфигурации
 z88dk, профиль запуска из BASIC 48, тесты в эмуляторе и инструменты для разработки.
 

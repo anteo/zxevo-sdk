@@ -3,6 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
+| Hello                                                       | Radar                                                              | Night Train                                                            |
+| ----------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| ![Приветствие на ZX-экране](examples/screenshots/hello.png) | ![Зелёный луч радара на ZX-экране](examples/screenshots/radar.png) | ![Ночной поезд в режиме ATM 320](examples/screenshots/night_train.png) |
+
 `lib/baseconf` — библиотека на C и Z80 assembler для приложений ZX Evolution, работающих с
 FPGA-профилем BaseConf. Она объединяет доступ к карте памяти и портам BaseConf с видеорежимами,
 графикой, текстом, вводом, RTC/AVR, звуком, накопителями и выбранными интерфейсами ERS/прерываний.

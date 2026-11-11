@@ -3,6 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
+| Hello                                                        | Radar                                                                 | Night Train                                                             |
+| ------------------------------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| ![Greeting on the ZX screen](examples/screenshots/hello.png) | ![Green radar sweep on the ZX screen](examples/screenshots/radar.png) | ![Night railway scene in ATM 320](examples/screenshots/night_train.png) |
+
 `lib/baseconf` is a C and Z80 assembly library for ZX Evolution applications running the BaseConf
 FPGA profile. It brings together BaseConf memory-map and port access with video modes, graphics,
 text, input, RTC/AVR, audio, storage, and selected ERS and interrupt interfaces. PT3 playback is
