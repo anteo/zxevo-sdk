@@ -13,7 +13,7 @@
 
 ```sh
 make tsconf-lib
-make example-tsconf
+make examples-tsconf
 make test-tsconf
 ```
 
@@ -27,12 +27,26 @@ TAP под BASIC 48 — `$(TSCONF_BASIC48_FLAGS) -create-app`. При прямо
 `lib/common/include` добавьте в пути поиска заголовков. Сгенерированный конфиг включает пути к CRT и
 поддерживает `-subtype=basic48`. [Настройки Make](tsconf.mk)
 
+Чтобы собрать TAP для BASIC 48 в другом проекте, сначала соберите архив командой
+`make -C /path/to/zxevo-sdk tsconf-lib`. Передайте `ZXEVO_SDK_PATH=/path/to/zxevo-sdk`
+в Makefile приложения.
+
+```makefile
+.DEFAULT_GOAL := demo.tap
+include $(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk
+
+demo.tap: main.c $(TSCONF_LIB)
+	$(ZCC) $(TSCONF_BASIC48_FLAGS) -m -create-app -o demo main.c
+```
+
 С другой целью zcc или своей точкой входа подключите архив через `-ltsconf` и используйте ABI
 `-clib=classic -compiler=sdcc --reserve-regs-iy`. Линковщик выбирает аппаратную реализацию общих
 символов `zx_`, например `zx_set_border_color()`, один раз на исполняемый файл, даже если приложение
 подключает архивы обеих конфигураций.
 
 <a id="selecting-video-backends"></a>
+
+[Банковые TAP](../../tools/appmake/README.ru.md#упаковка-tap)
 
 ### Выбор видеорежимов при сборке
 

@@ -53,76 +53,30 @@ include search path.
 
 For a program that returns to BASIC 48, build with `$(BASECONF_BASIC48_FLAGS) -create-app`. Run
 `make examples-baseconf` from the repository root to build the examples.
-[Shared BASIC 48 profile](../common/README.en.md)
+[Shared BASIC 48 profile](../common/README.en.md#basic-48-startup-profile) ·
+[Banked TAPs](../../tools/appmake/README.en.md#pack-a-tap)
 
-The main library build options are:
+### Selecting video backends
 
-- `BASECONF_VIDEO_TEXT_MODES` and `BASECONF_VIDEO_PRIMITIVE_MODES` accept `ALL`, `GRAPHICS`, `NONE`,
-  or a list of modes;
-- `BASECONF_CONSOLE_NO_DEFAULT_FONT=1` omits font8 when the application uses a different font.
+- `BASECONF_VIDEO_TEXT_MODES` selects console output backends. It accepts `ALL`, `GRAPHICS`,
+  `NONE`, or a list of modes such as `ZX_256 ATM_TEXT_80`.
+- `BASECONF_VIDEO_PRIMITIVE_MODES` selects drawing backends with the same syntax. `GRAPHICS`
+  selects all five bitmap and packed graphics modes. The 80×25 modes support text only.
+- `BASECONF_CONSOLE_NO_DEFAULT_FONT=1` drops the console's automatic reference to font8.
+  Select a font with `zx_console_set_font()` before output in graphics modes.
 
-Rebuild the archive and relink the application after changing its mode or font settings.
-
-## Application size
-
-`baseconf.lib` is an archive, not one object copied wholesale into the application. The linker pulls
-members referenced by the application and their dependencies. Unused APIs and mode-specific
-implementations are generally left out; one member may group several related functions, and a
-function may pull shared helper members. The final size depends on the application's call graph and
-link layout, so use its linker map for the exact result.
-
-- **`CRT_ENABLE_STDIO`** is an application compile-time setting, for example
-  `-pragma-define:CRT_ENABLE_STDIO=0`. With `1`, z88dk standard stdio remains available, including
-  familiar `printf` and stream support; this is convenient but can add substantial code. With `0`,
-  standard stdio is disabled, so do not call ordinary `printf`/`scanf`; the BaseConf CRT's generic
-  console hook is disabled as well. Direct BaseConf console functions remain available. For compact
-  formatted output use `zx_console_printf()` without CRT stdio. For direct output use
-  `zx_console_putc()` or `zx_console_puts()` in graphics and hardware text modes. In hardware text
-  modes, `zx_console_puts()` writes a whole string in one video operation.
-- **`BASECONF_VIDEO_TEXT_MODES`** selects which mode-specific text and console implementations are
-  built into the library. It accepts `ALL`, `GRAPHICS`, `NONE`, or a list of modes such as `ZX_256`,
-  `ATM_640`, and `ATM_TEXT_80`. Keep only the modes where the application outputs text.
-- **`BASECONF_VIDEO_PRIMITIVE_MODES`** similarly limits mode-specific graphics primitive
-  implementations. Here `GRAPHICS` means the five graphics modes; 80×25 text modes do not add a
-  graphics primitive backend. List only the modes the application needs.
-- **`BASECONF_CONSOLE_NO_DEFAULT_FONT=1`** removes the console's automatic reference to the built-in
-  font8. An application can still explicitly use font8, but the linker will not pull it in just for
-  the default selection. In graphics modes, select another font with `zx_console_set_font()` before
-  printing.
-- **Graphics primitives:** when the application needs only a few lines, circles, ellipses, or
-  horizontal/vertical spans, use the direct `bc_draw_*` entry points. SET/CLEAR/XOR shortcuts and
-  explicit-operation functions are separate entry points; call only those needed to avoid pulling
-  unrelated archive members. Several ASM functions may share one member, which is linked as a unit.
-  The portable z88dk classic interface (`plot`, `draw`, `circle`, etc.) is convenient, but its
-  wrappers and supporting routines can also increase the image size.
-
-Example: build the library with only the required modes:
+For example, build with console output in ZX 256 and ATM hardware text, and drawing in ZX 256.
 
 ```sh
 make -C lib/baseconf \
   BASECONF_VIDEO_TEXT_MODES="ZX_256 ATM_TEXT_80" \
-  BASECONF_VIDEO_PRIMITIVE_MODES="ZX_256" \
+  BASECONF_VIDEO_PRIMITIVE_MODES=ZX_256 \
   BASECONF_CONSOLE_NO_DEFAULT_FONT=1
 ```
 
-Mode and font options change the contents of `baseconf.lib`; set `CRT_ENABLE_STDIO` separately when
-compiling the application. Link an archive built with the modes the application needs. These options
-mainly reduce linked code and constant data; they do not replace RAM planning for DATA/BSS and
-stack.
-
-To inspect a linked application's memory map, use:
-
-```sh
-python3 tools/profiling/memory.py path/to/application.map
-python3 tools/profiling/memory.py path/to/application.map --sort size --name-width 36
-```
-
-The report shows address ranges and sizes for memory areas, modules, and functions, along with
-source files and lines. Range end addresses are exclusive; function boundaries are inferred from the
-next function symbol in the linker map. Names are truncated to the name-column width (48 characters
-by default; set it with `--name-width`). `--sort size` sorts areas, modules, and functions by
-descending size; address order is the default. Aliases may share a range, and anonymous bytes are
-included in the nearest range.
+Rebuild the archive and relink after changing these options. In hardware text modes,
+`zx_console_puts()` writes a whole string in one video operation.
+[Program size](../../README.md#program-size) · [Performance](../../README.md#performance)
 
 ## Initialization and setup
 

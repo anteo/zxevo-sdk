@@ -14,6 +14,27 @@ immediately.
 The [common suite](../common/tests/README.en.md) runs one case directory with both machine adapters
 and keeps build and result directories separate by machine.
 
+## Running the suites
+
+From the SDK root, run `make test` to run the BaseConf, TSConf, and common suites. The runner needs
+Python 3 and ZEsarUX with ZRCP. Set `ZESARUX` to select the executable, or let the runner find it
+on `PATH` or in a standard installation directory. Set `ZXEVO_TEST_ROM` to override the ROM used
+by the `ers-rom` and `ts-bios` profiles.
+
+```sh
+make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
+```
+
+Use `make test-baseconf`, `make test-tsconf`, or `make test-common` to run a single suite. Binaries
+and manifests go to `tests/build/`, and reports and captures go to `tests/out/` under the
+corresponding library. The common suite adds machine-specific subdirectories. Run `make clean`
+from the SDK root to remove build and test outputs and Python caches.
+[BaseConf tests](../baseconf/tests/README.en.md) ·
+[TSConf tests](../tsconf/README.en.md#emulator-tests) ·
+[Common tests](../common/tests/README.en.md)
+
+## Adding a suite
+
 To add a suite, put its C cases and optional matching JSON under its own `tests/cases/`. Put
 `profiles.json` and a short entry point in the suite's `tests/` directory. See the
 [BaseConf adapter](../baseconf/tests/run.py). Pass the suite's test directory and ZEsarUX machine

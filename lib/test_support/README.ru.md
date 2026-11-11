@@ -11,6 +11,27 @@
 Если C-компилятор завершится по `SIGSEGV`, раннер сохраняет диагностику в `build.sigsegv.log` или
 `library-build.sigsegv.log` и повторяет сборку один раз. Обычные ошибки компиляции выводятся сразу.
 
+## Запуск тестов
+
+Команда `make test` из корня SDK запускает наборы BaseConf, TSConf и общего кода. Раннеру нужны
+Python 3 и ZEsarUX с ZRCP. Переменная `ZESARUX` задаёт путь к эмулятору. По умолчанию раннер ищет
+его в `PATH` и стандартных каталогах установки. Переменная `ZXEVO_TEST_ROM` задаёт ROM для профилей
+`ers-rom` и `ts-bios`.
+
+```sh
+make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
+```
+
+Для одного набора используйте `make test-baseconf`, `make test-tsconf` или `make test-common`.
+Бинарники и манифесты попадают в `tests/build/`, отчёты и снимки — в `tests/out/` соответствующей
+библиотеки. Общий набор добавляет подкаталог для каждой конфигурации. Команда `make clean` из корня
+SDK удаляет результаты сборок, тестов и кэш Python.
+[Тесты BaseConf](../baseconf/tests/README.ru.md) ·
+[Тесты TSConf](../tsconf/README.ru.md#emulator-tests) ·
+[Общие тесты](../common/tests/README.ru.md)
+
+## Добавление набора
+
 Новый набор хранит C-кейсы и соответствующие JSON в `tests/cases/`, а `profiles.json` и точку входа
 раннера в `tests/`. Передайте `TestSuite` путь к тестам и имя машины ZEsarUX. Адаптер реализует
 следующие методы. [Адаптер BaseConf](../baseconf/tests/run.py)

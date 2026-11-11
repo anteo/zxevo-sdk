@@ -7,126 +7,117 @@
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | ![Ночной поезд в режиме ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](lib/tsconf/examples/screenshots/moon_run.png) |
 
-Библиотеки C и Z80 ASM для приложений ZX Evolution под BaseConf и TSConf. В SDK входят конфигурации
-z88dk, профиль запуска из BASIC 48, тесты в эмуляторе и инструменты для разработки.
+SDK на C и Z80 ASM для приложений ZX Evolution под BaseConf и TSConf. Включает общие API, примеры
+для BASIC 48 и тесты в ZEsarUX.
 
-- **BaseConf** поддерживает страничную память, видео, консоль, периферию, прямой доступ к
-  накопителям и сервисы ERS. Основной заголовок — `<baseconf.h>`.
-  [Документация](lib/baseconf/README.ru.md)
-- **TSConf** поддерживает страничную память, видео, консоль, тайлы, спрайты, DMA, периферию, прямой
-  доступ к SD и сервисы FAT из TS-BIOS. Основной заголовок — `<tsconf.h>`.
-  [Документация](lib/tsconf/README.ru.md)
-- **Общие API** в заголовках `zx/` покрывают графику, шрифты, форматированный вывод, страничную
-  память, звук и периферию. Общий код входит в оба архива. [Документация](lib/common/README.ru.md)
+## Аппаратные возможности и API
 
-## Сборка библиотек
+- **Общее для BaseConf и TSConf** — консоль и графика, выделение страниц RAM и банковая куча,
+  частота CPU и прерывания, проигрыватель PT3 и Covox, мышь Kempston, RTC и PS/2, UART и
+  низкоуровневый доступ к SD, Nemo IDE и Beta Disk.
+  [Общие модули](lib/common/README.ru.md)
+- **BaseConf** поддерживает графику ZX, ZX Multicolor, Pentagon 16 цветов, ATM 320 и ATM 640,
+  а также аппаратный текст ATM и Evo 80×25. Специфичные API управляют двумя картами памяти,
+  отображением RAM и Flash, палитрами, NewIRQ и оверлеем эмулятора дисковода, вызывают сервисы ROM ERS.
+  [Модули BaseConf](lib/baseconf/README.ru.md)
+- **TSConf** поддерживает графику ZX, 16- и 256-цветные режимы и аппаратный текст. API управляют
+  прокруткой, тайловыми слоями и спрайтами, DMA, страницами памяти и кэшем, растровыми прерываниями,
+  джойстиком Kempston и FDDVirt. Есть сервисы FAT из TS-BIOS и модули для расширений Copper,
+  FDR, FT812, ZiFi и ZiFi32 при наличии соответствующего оборудования.
+  [Модули TSConf](lib/tsconf/README.ru.md)
 
-Нужны GNU Make и z88dk с компилятором SDCC и библиотекой classic. Добавьте `zcc` и `z88dk-z80asm` в
-`PATH` и укажите каталог стандартных конфигураций z88dk в `ZCCCFG`. Переменные `ZCC` и `Z80ASM`
-позволяют переопределить имена исполняемых файлов.
+## Быстрый старт
+
+Для сборки обеих библиотек нужны GNU Make и z88dk с компилятором SDCC и библиотекой classic.
 
 ```sh
 export PATH="/path/to/z88dk/bin:$PATH"
-export ZCCCFG=/path/to/z88dk/lib/config
+export ZCCCFG="/path/to/z88dk/lib/config"
 make
 ```
 
-| Цель                | Результат по умолчанию                                                 |
-| ------------------- | ---------------------------------------------------------------------- |
-| `make baseconf-lib` | `lib/baseconf/build/default/baseconf.lib`                              |
-| `make tsconf-lib`   | `lib/tsconf/build/default/tsconf.lib` и `tsconf.cfg` в том же каталоге |
-
-`make` собирает оба архива. В BaseConf можно отдельно выбрать реализации текстового вывода и
-графических примитивов для нужных режимов. В TSConf набор режимов для консоли и рисования задаёт
-`TSCONF_VIDEO_MODES`. Например, `make tsconf-lib TSCONF_VIDEO_MODES=ZX` собирает эти функции только
-для ZX-режима. Остальные параметры описаны в документации библиотек.
-[Параметры BaseConf](lib/baseconf/README.ru.md#размер-приложения) ·
-[Параметры TSConf](lib/tsconf/README.ru.md#selecting-video-backends)
+Команда `make examples` собирает TAP для BASIC 48, а `make test` запускает тесты в эмуляторе.
+[Загрузка примеров](lib/common/README.ru.md#профиль-запуска-из-basic-48) ·
+[Настройка тестов](lib/test_support/README.ru.md#запуск-тестов)
 
 ## Подключение SDK к приложению
 
-Задайте `ZXEVO_SDK_PATH` абсолютным путём к SDK и подключите Make-фрагмент нужной конфигурации. Он
-задаёт пути к заголовкам и архиву и параметры ABI classic SDCC
-(`-clib=classic -compiler=sdcc --reserve-regs-iy`). Конфигурация z88dk уже указывает нужный архив.
+Задайте `ZXEVO_SDK_PATH` абсолютным путём к SDK. Подключите в Makefile приложения
+`$(ZXEVO_SDK_PATH)/lib/baseconf/baseconf.mk` или `$(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk`.
+Фрагмент задаёт конфигурацию z88dk, пути к заголовкам и библиотеке и флаги ABI.
 
-| Конфигурация | Make-фрагмент относительно `ZXEVO_SDK_PATH` | Флаги приложения        | Флаги TAP для BASIC 48      |
-| ------------ | ------------------------------------------- | ----------------------- | --------------------------- |
-| BaseConf     | `lib/baseconf/baseconf.mk`                  | `$(BASECONF_APP_FLAGS)` | `$(BASECONF_BASIC48_FLAGS)` |
-| TSConf       | `lib/tsconf/tsconf.mk`                      | `$(TSCONF_APP_FLAGS)`   | `$(TSCONF_BASIC48_FLAGS)`   |
+Перед сборкой приложения решите, кто подготовит окружение, как программа получит управление
+и что должно произойти при выходе. Например, при запуске из BASIC 48 нужно сохранить указатель
+стека и регистры, необходимые для возврата. При выходе их нужно восстановить и передать
+управление интерпретатору. За это отвечает код запуска (`crt0` в z88dk). Он также готовит
+среду C и вызывает `main()`. CRT из SDK по умолчанию вызывает `zx_init()` перед `main()`
+и `zx_shutdown()` при выходе.
 
-Сначала соберите `tsconf.lib` командой `make -C /absolute/path/to/zxevo-sdk tsconf-lib`. Затем этот
-Makefile приложения соберёт `demo.tap` из `main.c`. Запустите его командой
-`make ZXEVO_SDK_PATH=/absolute/path/to/zxevo-sdk`.
+- **Штатный Z80 CRT.** Флаги `BASECONF_APP_FLAGS` и `TSCONF_APP_FLAGS` выбирают общий
+  `z80_crt0.asm` для самостоятельной программы, которую запускает ваш загрузчик или прошивка.
+  Адрес загрузки, стек и прерывания согласуйте с этой средой. По умолчанию программа
+  останавливается после выхода из `main()`.
+- **BASIC 48.** Переменные `BASECONF_BASIC48_FLAGS` и `TSCONF_BASIC48_FLAGS` выбирают
+  `-subtype=basic48`. Добавьте `-create-app`, чтобы получить TAP для команды `LOAD ""`.
+  Загрузчик на BASIC читает машинный код с ленты и вызывает его через `RANDOMIZE USR`.
+  Если программа меняла карту памяти или прерывания, восстановите окружение BASIC перед возвратом.
+- **Свой CRT или запуск без CRT.** Для своего CRT добавьте `-crt0=path/to/crt0.asm` к
+  `*_APP_FLAGS` нужной конфигурации. Для сборки без CRT добавьте `--no-crt` и используйте
+  точку входа приложения или загрузчика. За стек, подготовку среды C и инициализацию SDK
+  тогда отвечает ваш код запуска.
 
-```makefile
-.DEFAULT_GOAL := demo.tap
-include $(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk
+При сборке TAP флаг `-create-app` вызывает appmake после линковки. Обычный TAP для BASIC 48
+загружает один образ. Для загрузки секций в разные страницы RAM есть цели appmake из SDK.
+[Упаковка TAP](tools/appmake/README.ru.md)
 
-demo.tap: main.c $(TSCONF_LIB)
-	$(ZCC) $(TSCONF_BASIC48_FLAGS) -m -create-app -o demo main.c
-```
+[Руководство BaseConf](lib/baseconf/README.ru.md) · [Руководство TSConf](lib/tsconf/README.ru.md) ·
+[Общие API и запуск из BASIC 48](lib/common/README.ru.md)
 
-Для TAP под BaseConf используйте его Make-фрагмент, `$(BASECONF_LIB)` и `$(BASECONF_BASIC48_FLAGS)`.
-Сначала из SDK соберите `appmake` командой
-`make appmake Z88DK_SRC=/path/to/z88dk/src`. Для этой сборки также нужны
-хостовый C-компилятор, `patch` и файлы разработки GMP. Профиль BASIC 48 для TSConf использует
-стандартный appmake из z88dk. [BaseConf appmake](tools/appmake/README.ru.md)
+## Размер программы
 
-В CRT из SDK stdio выключен по умолчанию. Для стандартных потоков добавьте
-`-pragma-define:CRT_ENABLE_STDIO=1`. Для вывода через консоль SDK используйте
-`zx_console_printf()` из `<zx/printf.h>` после настройки консоли целевой конфигурации.
-[Общие API](lib/common/README.ru.md)
+Линковщик берёт из архива объекты, на которые ссылается приложение, вместе с их зависимостями.
+В SDK многие функции лежат в отдельных объектах, поэтому неиспользуемый код можно исключить.
+Некоторые объекты используют общие подпрограммы или ссылаются сразу на несколько видеобэкендов.
+Если приложение работает в определённых видеорежимах, оставьте в библиотеке нужные реализации.
+[Параметры BaseConf](lib/baseconf/README.ru.md#выбор-видеорежимов-при-сборке) ·
+[Параметры TSConf](lib/tsconf/README.ru.md#выбор-видеорежимов-при-сборке)
 
-`make examples` собирает примеры BaseConf и TSConf в отдельные BASIC 48 TAP. Для одной конфигурации
-используйте `make examples-baseconf` или `make examples-tsconf`. Исходники лежат в `examples/`
-соответствующей библиотеки, а TAP-файлы попадают в её `build/examples/`.
-[Примеры BaseConf](lib/baseconf/README.ru.md#тесты-и-примеры) ·
-[Примеры TSConf](lib/tsconf/README.ru.md#запуск-из-basic-48) ·
-[Загрузка TAP](lib/common/README.ru.md#профиль-запуска-из-basic-48)
+- В обоих профилях CRT stdio по умолчанию выключен. Для вывода на экран используйте
+  `zx_console_puts()` или `zx_console_printf()`. Для стандартных потоков и `printf()` добавьте
+  `-pragma-define:CRT_ENABLE_STDIO=1`. BASIC 48 по умолчанию берёт шрифт 8×8 из ROM.
+- Если код использует графический API SDK, вызывайте примитивы `zx_draw_*` напрямую. Вызовы
+  классической графики z88dk могут добавить обвязку и вспомогательные функции.
+- Соберите приложение с флагом zcc `-m` и вызовите
+  `python3 tools/profiling/memory.py program.map --sort size`, чтобы увидеть размеры модулей и
+  функций. Процессор видит четыре окна по 16 КиБ. При планировании их раскладки учитывайте
+  код, данные, обнуляемую область BSS, стек и отображённые экранные страницы.
+  [Отчёт по памяти](tools/profiling/README.ru.md#память)
 
-## Тесты
+## Производительность
 
-Раннеру нужны Python 3 и ZEsarUX с ZRCP и поддержкой оборудования, к которому обращается тест.
-`make test` запускает наборы BaseConf, TSConf и `common`. Отдельные наборы запускаются через
-`make test-baseconf`, `make test-tsconf` и `make test-common`. Общие кейсы выполняются на обеих
-конфигурациях.
+В SDK отрисовка графики и шрифтов использует подпрограммы на Z80 ASM. Горизонтальные линии и
+заливка прямоугольников пишут серии пикселей в формате выбранного режима. Группа графических
+операций удерживает отображение экранной памяти между вызовами. На TSConf можно также передавать
+данные через DMA и выводить аппаратные спрайты и прокручиваемые тайловые слои.
 
-```sh
-make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
-python3 lib/tsconf/tests/run.py check --case video/video
-```
-
-`ZESARUX` задаёт исполняемый файл эмулятора. По умолчанию раннер ищет его в `PATH` и стандартных
-каталогах. `ZXEVO_TEST_ROM` переопределяет ROM эмулятора только для профилей `ers-rom` и `ts-bios`.
-Укажите ROM, подходящий выбранной конфигурации и профилю. Некоторым кейсам нужна дополнительная
-поддержка эмулятора, например последовательный мост к хосту. Для части периферии тесты проверяют
-протокол драйвера на фикстурах. [Тестовая инфраструктура](lib/test_support/README.ru.md) ·
-[Тесты BaseConf](lib/baseconf/tests/README.ru.md) ·
-[Тесты TSConf](lib/tsconf/README.ru.md#emulator-tests) ·
-[Общие тесты](lib/common/tests/README.ru.md)
-
-Бинарники и манифесты сохраняются в `tests/build/`, отчёты и снимки в `tests/out/` соответствующей
-библиотеки. Общий набор добавляет подкаталог `baseconf/` или `tsconf/`. `make clean` удаляет
-результаты сборок и тестов SDK и кэш Python.
+- Для линий и заливок используйте готовые примитивы. Вызовы к одной поверхности объединяйте
+  через `zx_graphics_begin()` и `zx_graphics_end()`. Статический фон можно нарисовать один раз,
+  а в анимации обновлять изменившиеся области или двигать аппаратные спрайты и слои TSConf.
+  [Night Train](lib/baseconf/examples/night_train.c) ·
+  [Moon Run](lib/tsconf/examples/moon_run.c)
+- Ищите самые затратные вызовы через `cpu.py`, который считает такты Z80 в ZEsarUX. Сравнивайте
+  сборки при одинаковой частоте CPU, видеорежиме и сцене. Для анимации проверяйте, укладывается
+  ли всё обновление в интервал между кадрами с учётом звука и обработки ввода.
+  [Замеры CPU](tools/profiling/README.ru.md#процессор) ·
+  [Замеры вывода шрифтов](lib/baseconf/bench/README.ru.md)
 
 ## Инструменты
 
-- `python3 tools/profiling/memory.py path/to/program.map --sort size` показывает области памяти,
-  модули и диапазоны функций по карте линковки z88dk, созданной с флагом `-m`.
-- `python3 -m tools.profiling.cpu` измеряет время функции и выбранных вызовов из TAP в
-  отдельном процессе ZEsarUX. По умолчанию берёт `.map` рядом с TAP. Время вложенного вызова
-  учитывается в стоимости внешнего. Флаг `--output` сохраняет замеры по вызовам в JSON. Измеряемые
-  функции должны находиться в резидентном коде, а аргументы со стека снимает вызывающая сторона. Для
-  другой последовательности запуска используйте `--keys` без последнего Enter. Флаги `--zesarux` и
-  `--rom` позволяют выбрать эмулятор и ROM.
-- ZXHost предоставляет почтовый ящик в памяти целевой программы и инструменты Python для её загрузки
-  и управления через ZRCP. [ZXHost](lib/test_support/README.ru.md#zxhost-target-runtime-and-mailbox)
-- `make format` форматирует C, ASM и Markdown. [Форматтер](tools/formatter/README.ru.md)
-
-Чтобы измерить отрисовку Night Train после `make examples-baseconf`, выполните из корня SDK:
-
-```sh
-python3 -m tools.profiling.cpu \
-  --tap lib/baseconf/build/examples/night_train.tap --entry draw_station \
-  --functions zx_draw_fill_rect zx_console_draw_op zx_console_clear
-```
+- [Профилирование](tools/profiling/README.ru.md) описывает `memory.py` для карт линковки и `cpu.py`
+  для замеров тактов Z80 в ZEsarUX.
+- [Расширение z88dk appmake](tools/appmake/README.ru.md) добавляет загрузчик TAP с банками RAM
+  для BaseConf и TSConf.
+- [ZXHost и тестовая инфраструктура](lib/test_support/README.ru.md) загружают программы и собирают
+  результаты из ZEsarUX.
+- [Форматирование исходников](tools/formatter/README.ru.md) описывает `make format` для C, ASM и
+  Markdown.

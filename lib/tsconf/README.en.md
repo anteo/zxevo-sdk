@@ -13,7 +13,7 @@ API. [Public header](include/tsconf.h)
 
 ```sh
 make tsconf-lib
-make example-tsconf
+make examples-tsconf
 make test-tsconf
 ```
 
@@ -28,10 +28,24 @@ z88dk's standard configs, pass the archive directory with `-L`, and include both
 `lib/tsconf/include` and `lib/common/include`. The generated config also supports `-subtype=basic48`
 and includes the startup paths. [Shared Make settings](tsconf.mk)
 
+To build a BASIC 48 TAP in another project, first build the archive with
+`make -C /path/to/zxevo-sdk tsconf-lib`. Pass `ZXEVO_SDK_PATH=/path/to/zxevo-sdk` to the
+application's Makefile.
+
+```makefile
+.DEFAULT_GOAL := demo.tap
+include $(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk
+
+demo.tap: main.c $(TSCONF_LIB)
+	$(ZCC) $(TSCONF_BASIC48_FLAGS) -m -create-app -o demo main.c
+```
+
 The archive can also be used with another target or an application-supplied entry point. Link it
 with `-ltsconf` and use the classic SDCC ABI (`-clib=classic -compiler=sdcc --reserve-regs-iy`). The
 linker resolves hardware-backed `zx_` symbols such as `zx_set_border_color()` once per executable.
 Their implementation is fixed even if the executable links both platform archives.
+
+[Banked TAPs](../../tools/appmake/README.en.md#pack-a-tap)
 
 ### Selecting video backends
 
