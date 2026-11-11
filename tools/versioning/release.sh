@@ -88,5 +88,16 @@ if published=$("$github_cli" release view "$tag" --repo "$repository" --json isD
     --jq 'select(.isDraft | not).url' 2>/dev/null) && [ -n "$published" ]; then
     printf '%s\n' "$published"
 else
-    "$github_cli" release create "$tag" --repo "$repository" --verify-tag --generate-notes
+    tagged_changelog=$(git show "$commit:$changelog")
+    notes=$(printf '%s\n' "$tagged_changelog" | awk -v heading="## $tag" '
+        $0 == heading { in_release = 1; next }
+        in_release && /^## / { exit }
+        in_release { print }
+    ')
+    {
+        if [ -n "$notes" ]; then
+            printf '%s\n\n' "$notes"
+        fi
+        printf '[Full changelog](%s/blob/%s/%s)\n' "$repository" "$tag" "$changelog"
+    } | "$github_cli" release create "$tag" --repo "$repository" --verify-tag --notes-file -
 fi
