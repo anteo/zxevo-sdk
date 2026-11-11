@@ -3,7 +3,7 @@ set -eu
 
 version=${1:-}
 if [ -z "$version" ]; then
-    printf '%s\n' 'Usage: make release VERSION=MAJOR.MINOR.PATCH' >&2
+    printf '%s\n' 'Usage: make release VERSION=<MAJOR.MINOR.PATCH|patch|minor|major>' >&2
     exit 2
 fi
 
@@ -20,6 +20,14 @@ changelog=CHANGELOG.md
 read_sdk_version() {
     awk '/^#define ZXEVO_SDK_VERSION_/ { printf "%s%s", separator, $3; separator = "." }'
 }
+
+case "$version" in
+    patch|minor|major)
+        version=$("$bump_my_version" show --config-file "$bump_config" \
+            --increment "$version" new_version)
+        ;;
+esac
+printf 'Release version %s\n' "$version"
 
 branch=$(git symbolic-ref HEAD)
 remote=$(git remote get-url --push origin)
