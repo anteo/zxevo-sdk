@@ -1,0 +1,7 @@
+{
+  "description": "Kempston mouse port reads and signed counter wraparound",
+  "targets": {
+    "baseconf": {"profiles": ["no-stdio", "no-font8"]}
+  },
+  "emulator_args": ["--enablekempstonmouse"]
+}

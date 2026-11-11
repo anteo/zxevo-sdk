@@ -1,0 +1,8 @@
+{
+  "description": "TS-BIOS SD mount, fragmented reads, seek/skip and directory navigation",
+  "profiles": ["ts-bios"],
+  "emulator_images": {
+    "generator": "fixtures/fat/create_sd.py",
+    "mmc": "ts-fat.img"
+  }
+}

@@ -1,0 +1,134 @@
+#!/bin/sh
+# Assembly formatter.
+#
+# Applies NAME.awk from this directory to every given file. Standalone
+# options are accepted here, so callers decide the assembly rules; the
+# `formatter` dispatcher only forwards arguments it does not use itself.
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+me=${0##*/}
+dialect=${FORMAT_ASM_DIALECT:-sjasm}
+check=0
+changed=0
+
+usage() {
+    cat <<'EOF'
+Usage: format_asm [OPTIONS] <file-or-directory> [...]
+
+Formats assembly sources with NAME.awk from the tools/formatter directory.
+
+Options:
+  --dialect NAME   Rule set: sjasm (default) or z80asm.
+                   The FORMAT_ASM_DIALECT environment variable is the default.
+  --check          Do not write files; list files that need formatting and
+                   exit with status 1 if there are any.
+  -h, --help       Show this help and exit.
+  --               End of options.
+
+Directories are expanded to their immediate *.asm children; explicit file
+arguments are processed regardless of extension. Files are rewritten only when
+their formatted content differs.
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        --dialect)
+            [ "$#" -ge 2 ] || { printf '%s: --dialect needs a value\n' "$me" >&2; usage >&2; exit 2; }
+            dialect=$2
+            shift 2
+            ;;
+        --dialect=*)
+            dialect=${1#*=}
+            shift
+            ;;
+        --check)
+            check=1
+            shift
+            ;;
+        --options)
+            printf '%s\n' 'dialect' 'check'
+            exit 0
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            printf '%s: unknown option: %s\n' "$me" "$1" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+rules="$script_dir/$dialect.awk"
+if [ ! -f "$rules" ]; then
+    printf '%s: unknown dialect: %s\n' "$me" "$dialect" >&2
+    printf '%s: available dialects:\n' "$me" >&2
+    for f in "$script_dir"/*.awk; do
+        [ -f "$f" ] || continue
+        name=${f##*/}
+        printf '  %s\n' "${name%.awk}" >&2
+    done
+    exit 2
+fi
+
+if [ "$#" -eq 0 ]; then
+    printf '%s: no input files\n' "$me" >&2
+    usage >&2
+    exit 2
+fi
+
+workdir=$(mktemp -d "${TMPDIR:-/tmp}/format_asm.XXXXXX")
+cleanup() {
+    rm -rf "$workdir"
+}
+trap cleanup 0 1 2 15
+
+format_file() {
+    out="$workdir/out"
+    awk -f "$rules" "$1" > "$out"
+    if cmp -s "$1" "$out"; then
+        return 0
+    fi
+    changed=$((changed + 1))
+    if [ "$check" -eq 1 ]; then
+        printf '%s: would reformat: %s\n' "$me" "$1"
+    else
+        cat "$out" > "$1"
+    fi
+}
+
+for input do
+    if [ -d "$input" ]; then
+        for file in "$input"/*.asm; do
+            [ -f "$file" ] || continue
+            format_file "$file"
+        done
+    elif [ -f "$input" ]; then
+        format_file "$input"
+    else
+        printf '%s: not found: %s\n' "$me" "$input" >&2
+        exit 2
+    fi
+done
+
+if [ "$check" -eq 1 ]; then
+    if [ "$changed" -eq 0 ]; then
+        printf '%s: nothing to reformat.\n' "$me"
+    else
+        printf '%s: %s file(s) need formatting\n' "$me" "$changed"
+        exit 1
+    fi
+else
+    printf '%s: formatted %s files.\n' "$me" "$changed"
+fi

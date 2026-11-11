@@ -1,0 +1,300 @@
+#!/bin/sh
+# Extension dispatcher for source formatting.
+#
+# Routes files by extension and proxies only options declared by each
+# formatter. Built-in mappings cover C, headers, Markdown and assembly.
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+me=${0##*/}
+
+default_program=format_asm
+dir_exts="asm inc c h md"
+map_count=0
+group_count=0
+status=0
+
+workdir=$(mktemp -d "${TMPDIR:-/tmp}/formatter.XXXXXX")
+cleanup() {
+    rm -rf "$workdir"
+}
+trap cleanup 0 1 2 15
+
+usage() {
+    cat <<'EOF'
+Usage: formatter [OPTIONS] [--] <file-or-directory> [...]
+
+Routes each file to a formatter binary chosen by its extension and gives it
+the arguments it accepts. Built-in mapping: *.c and *.h go to format_c, *.md
+goes to format_md, and every other file goes to format_asm. Built-in
+formatters are looked up in this directory first, then on PATH.
+
+Options:
+  --EXT-formatter PROGRAM   Use PROGRAM for files with extension EXT.
+                            Repeatable, and EXT may be any suffix, for
+                            example --inc-formatter=format_asm.
+  -h, --help                Show this help and exit.
+  --                        End of dispatcher options; the rest are files.
+
+Everything else is forwarded to the formatters that accept it: a formatter
+lists its options with --options, so --check reaches every formatter while
+--dialect=z80asm reaches only format_asm. Forwarded options must be
+self-contained, write --option=value rather than two arguments.
+
+Directories are expanded to *.asm, *.inc, *.c, *.h, *.md and to every extension
+given with --EXT-formatter; explicit file arguments are always processed.
+EOF
+}
+
+# The dispatcher's own state lives in files, so values may contain spaces.
+add_mapping() {
+    n=1
+    while [ "$n" -le "$map_count" ]; do
+        if [ "$(cat "$workdir/map_ext.$n")" = "$1" ]; then
+            printf '%s\n' "$2" > "$workdir/map_prog.$n"
+            return 0
+        fi
+        n=$((n + 1))
+    done
+    map_count=$((map_count + 1))
+    printf '%s\n' "$1" > "$workdir/map_ext.$map_count"
+    printf '%s\n' "$2" > "$workdir/map_prog.$map_count"
+    case " $dir_exts " in
+        *" $1 "*) ;;
+        *) dir_exts="$dir_exts $1" ;;
+    esac
+}
+
+program_for() {
+    n=1
+    while [ "$n" -le "$map_count" ]; do
+        if [ "$(cat "$workdir/map_ext.$n")" = "$1" ]; then
+            cat "$workdir/map_prog.$n"
+            return 0
+        fi
+        n=$((n + 1))
+    done
+    printf '%s\n' "$default_program"
+}
+
+resolve_program() {
+    case $1 in
+        */*)
+            if [ -x "$1" ]; then
+                printf '%s\n' "$1"
+                return 0
+            fi
+            ;;
+        *)
+            if [ -x "$script_dir/$1" ]; then
+                printf '%s\n' "$script_dir/$1"
+                return 0
+            fi
+            if command -v "$1" >/dev/null 2>&1; then
+                command -v "$1"
+                return 0
+            fi
+            ;;
+    esac
+    return 1
+}
+
+# Option name of a forwarded argument: "clang-format" for
+# "--clang-format=/usr/bin/clang" and for "--clang-format".
+option_name() {
+    case $1 in
+        --*) name=${1#--} ;;
+        -*) name=${1#-} ;;
+        *) name="" ;;
+    esac
+    case $name in
+        *=*) name=${name%%=*} ;;
+    esac
+    printf '%s\n' "$name"
+}
+
+route_file() {
+    base=${1##*/}
+    ext=""
+    case $base in
+        *.*) ext=${base##*.} ;;
+    esac
+    ext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
+    program=$(program_for "$ext")
+    path=$(resolve_program "$program") || {
+        printf '%s: formatter not found: %s\n' "$me" "$program" >&2
+        exit 2
+    }
+    idx=0
+    n=1
+    while [ "$n" -le "$group_count" ]; do
+        if [ "$(cat "$workdir/prog.$n")" = "$path" ]; then
+            idx=$n
+            break
+        fi
+        n=$((n + 1))
+    done
+    if [ "$idx" -eq 0 ]; then
+        group_count=$((group_count + 1))
+        idx=$group_count
+        printf '%s\n' "$path" > "$workdir/prog.$idx"
+    fi
+    printf '%s\n' "$1" >> "$workdir/files.$idx"
+}
+
+accepts_option() {
+    if [ -f "$workdir/all.$1" ]; then
+        return 0
+    fi
+    grep -qxF "$2" "$workdir/opts.$1"
+}
+
+: > "$workdir/proxy"
+
+add_mapping asm format_asm
+add_mapping inc format_asm
+add_mapping c format_c
+add_mapping h format_c
+add_mapping md format_md
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        --*)
+            opt=${1#--}
+            case $opt in
+                *=*)
+                    opt_name=${opt%%=*}
+                    opt_value=${opt#*=}
+                    opt_has_value=1
+                    ;;
+                *)
+                    opt_name=$opt
+                    opt_value=""
+                    opt_has_value=0
+                    ;;
+            esac
+            case $opt_name in
+                *-formatter)
+                    ext=${opt_name%-formatter}
+                    if [ "$opt_has_value" -eq 0 ]; then
+                        [ "$#" -ge 2 ] || { printf '%s: --%s needs a value\n' "$me" "$opt_name" >&2; usage >&2; exit 2; }
+                        opt_value=$2
+                        shift
+                    fi
+                    if [ -z "$ext" ] || [ -z "$opt_value" ]; then
+                        printf '%s: --%s needs an extension and a program\n' "$me" "$opt_name" >&2
+                        exit 2
+                    fi
+                    ext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
+                    add_mapping "$ext" "$opt_value"
+                    shift
+                    ;;
+                *)
+                    printf '%s\n' "$1" >> "$workdir/proxy"
+                    shift
+                    ;;
+            esac
+            ;;
+        -*)
+            printf '%s\n' "$1" >> "$workdir/proxy"
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ "$#" -eq 0 ]; then
+    printf '%s: no input files\n' "$me" >&2
+    usage >&2
+    exit 2
+fi
+
+for input do
+    if [ -d "$input" ]; then
+        for ext in $dir_exts; do
+            for file in "$input"/*."$ext"; do
+                [ -f "$file" ] || continue
+                route_file "$file"
+            done
+        done
+    elif [ -f "$input" ]; then
+        route_file "$input"
+    else
+        printf '%s: not found: %s\n' "$me" "$input" >&2
+        exit 2
+    fi
+done
+
+# Ask every formatter what it accepts. A program without --options support
+# gets all forwarded arguments, which keeps custom binaries usable.
+n=1
+while [ "$n" -le "$group_count" ]; do
+    path=$(cat "$workdir/prog.$n")
+    if ! "$path" --options > "$workdir/opts.$n" 2>/dev/null; then
+        : > "$workdir/opts.$n"
+        : > "$workdir/all.$n"
+    fi
+    n=$((n + 1))
+done
+
+# Validation looks at every configured formatter, not only at the ones this
+# run happens to use, so --dialect=z80asm stays valid for a C-only list.
+: > "$workdir/known_opts"
+printf '%s\n' "$default_program" > "$workdir/known_progs"
+n=1
+while [ "$n" -le "$map_count" ]; do
+    cat "$workdir/map_prog.$n" >> "$workdir/known_progs"
+    n=$((n + 1))
+done
+while IFS= read -r program; do
+    path=$(resolve_program "$program") || continue
+    if ! "$path" --options >> "$workdir/known_opts" 2>/dev/null; then
+        printf '*\n' >> "$workdir/known_opts"
+    fi
+done < "$workdir/known_progs"
+
+if ! grep -qxF '*' "$workdir/known_opts"; then
+    while IFS= read -r arg; do
+        if ! grep -qxF "$(option_name "$arg")" "$workdir/known_opts"; then
+            printf '%s: no formatter accepts option: %s\n' "$me" "$arg" >&2
+            printf '%s: a formatter lists its options with --options\n' "$me" >&2
+            exit 2
+        fi
+    done < "$workdir/proxy"
+fi
+
+n=1
+while [ "$n" -le "$group_count" ]; do
+    path=$(cat "$workdir/prog.$n")
+    set --
+    while IFS= read -r arg; do
+        if accepts_option "$n" "$(option_name "$arg")"; then
+            set -- "$@" "$arg"
+        fi
+    done < "$workdir/proxy"
+    set -- "$@" --
+    while IFS= read -r file; do
+        set -- "$@" "$file"
+    done < "$workdir/files.$n"
+    if "$path" "$@"; then
+        rc=0
+    else
+        rc=$?
+    fi
+    if [ "$rc" -gt "$status" ]; then
+        status=$rc
+    fi
+    n=$((n + 1))
+done
+
+exit "$status"

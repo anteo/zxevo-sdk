@@ -1,0 +1,8 @@
+{
+  "description": "DMA copy, fill, blit, bounded polling and optional register setup",
+  "emulator_steps": {
+    "wait-port": {"tsconf_registers": {"25": 1, "2d": 212}},
+    "extended-burst": {"tsconf_registers": {"2c": 3}},
+    "ordinary-burst": {"tsconf_registers": {"2c": 0}}
+  }
+}

@@ -1,0 +1,1 @@
+evo_text80 format=24 wrap=129

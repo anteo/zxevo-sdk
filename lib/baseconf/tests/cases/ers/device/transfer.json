@@ -1,0 +1,9 @@
+{
+  "description": "Read the HDD MBR and verify a Nemo IDE write by reading a spare sector back",
+  "profiles": ["no-stdio", "ers-rom"],
+  "emulator_images": {
+    "generator": "../../test_support/fixtures/create_device_images.py",
+    "ide": "hdd.img"
+  },
+  "timeout": 45
+}

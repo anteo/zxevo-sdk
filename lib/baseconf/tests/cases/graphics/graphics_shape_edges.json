@@ -1,0 +1,4 @@
+{
+  "description": "Clipped and degenerate curves and reversed axis spans",
+  "profiles": ["no-stdio", "no-font8"]
+}

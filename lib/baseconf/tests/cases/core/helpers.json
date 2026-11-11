@@ -1,0 +1,5 @@
+{
+  "description": "BaseConf paging and configuration bitfield helpers",
+  "profiles": ["no-stdio"],
+  "timeout": 30
+}

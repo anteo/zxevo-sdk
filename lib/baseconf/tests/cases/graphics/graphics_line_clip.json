@@ -1,0 +1,5 @@
+{
+  "description": "Bresenham clipping across the full signed coordinate range",
+  "profiles": ["no-stdio", "no-font8"],
+  "timeout": 60
+}

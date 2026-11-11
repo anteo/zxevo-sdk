@@ -1,0 +1,10 @@
+{
+  "description": "Nemo IDE MBR read and sector roundtrips through block and word APIs",
+  "targets": {
+    "baseconf": {"profiles": ["no-stdio", "no-font8"]}
+  },
+  "emulator_images": {
+    "generator": "../../test_support/fixtures/create_device_images.py",
+    "ide": "hdd.img"
+  }
+}

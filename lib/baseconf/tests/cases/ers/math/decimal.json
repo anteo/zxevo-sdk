@@ -1,0 +1,5 @@
+{
+  "description": "Check ERS decimal conversion for maximum unsigned values",
+  "profiles": ["no-stdio", "ers-rom"],
+  "timeout": 30
+}

@@ -1,0 +1,4 @@
+{
+  "description": "The graphics API rejects a mode whose primitive backend was excluded",
+  "profiles": ["no-stdio", "no-font8", "no-primitives"]
+}

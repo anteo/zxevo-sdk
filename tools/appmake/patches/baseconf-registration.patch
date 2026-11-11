@@ -1,0 +1,32 @@
+diff --git a/appmake.h b/appmake.h
+index 3bdb47f..baseconf1 100644
+--- a/appmake.h
++++ b/appmake.h
+@@ -2,6 +2,8 @@
+  *
+  *   z88dk Application Generator (appmake)
+  *
++ *   Local modification (2026-11-04): register the project BaseConf target.
++ *   See the project tools/appmake/baseconf.c and README.en.md for details.
+  *
+  *   $Id: appmake.h $
+  */
+@@ -69,4 +71,7 @@ extern int       abc80_exec(char *target);
+ extern option_t  abc80_options[];
+ 
++extern int       baseconf_exec(char *target);
++extern option_t  baseconf_options[];
++
+ extern int       acetap_exec(char *target);
+ extern option_t  acetap_options[];
+@@ -358,5 +363,9 @@ struct {
+       "Generates disk image files for BBC Micro",
+       NULL,
+       bbc_exec,    bbc_options },
++    { "bin2baseconf", "baseconf", "(C) 2026 ZX Evolution BaseConf contributors",
++      "Creates a BaseConf loader and TAP file",
++      NULL,
++      baseconf_exec, baseconf_options },
+     { "bin3000",  "c128",      "(C) 2001 Stefano Bodrato",
+       "Adds a c128 style disk file header",
+       NULL,

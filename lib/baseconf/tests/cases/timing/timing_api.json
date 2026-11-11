@@ -1,0 +1,4 @@
+{
+  "description": "CPU turbo settings and frame period reported through the AVR",
+  "profiles": ["no-stdio", "no-font8"]
+}

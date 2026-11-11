@@ -1,0 +1,23 @@
+        MODULE bc_newirq_enable_sources
+SECTION code_clib
+PUBLIC _bc_newirq_enable_sources
+EXTERN _bc_newirq_enabled
+
+; Replace the enabled-source mask at 15BDh with D7 set.
+; SDCC mask at SP+2, status in L. Preserve DE/IX/IY, clobber AF/BC/HL.
+_bc_newirq_enable_sources:
+        ld a,(_bc_newirq_enabled)
+        or a
+        ld l,3                       ; ZX_UNAVAILABLE
+        ret z
+        ld hl,2
+        add hl,sp
+        ld a,(hl)
+        or a
+        ld l,1                       ; ZX_INVALID_ARGUMENT if D7 was set
+        ret m
+        or 80h
+        ld bc,15BDh
+        out (c),a
+        ld l,0                       ; ZX_OK
+        ret

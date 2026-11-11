@@ -1,0 +1,4 @@
+{
+  "description": "Physical RAM mapping, write protection, and temporary window leases",
+  "profiles": ["no-stdio"]
+}

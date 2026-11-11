@@ -1,0 +1,4 @@
+{
+  "description": "Scroll the ZX window up and down with both fixed and moving attributes",
+  "profiles": ["no-stdio", "ers-rom", "zx-screen-w1"]
+}

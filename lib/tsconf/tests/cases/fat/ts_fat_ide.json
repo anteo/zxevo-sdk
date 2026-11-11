@@ -1,0 +1,8 @@
+{
+  "description": "TS-BIOS Nemo IDE mount, directory and file creation, WRITE512 and deletion",
+  "profiles": ["ts-bios"],
+  "emulator_images": {
+    "generator": "fixtures/fat/create_sd.py",
+    "ide": "ts-fat.img"
+  }
+}

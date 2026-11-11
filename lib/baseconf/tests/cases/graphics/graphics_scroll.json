@@ -1,0 +1,5 @@
+{
+  "description": "Horizontal and upward graphics scrolling functions",
+  "profiles": ["no-stdio", "no-font8"],
+  "timeout": 60
+}

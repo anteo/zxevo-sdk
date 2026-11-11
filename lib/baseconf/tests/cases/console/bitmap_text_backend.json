@@ -1,0 +1,4 @@
+{
+  "description": "Reject an excluded bitmap text backend and refresh availability when changing surface or font",
+  "profiles": ["no-stdio", "multicolor-text"]
+}

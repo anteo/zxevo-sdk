@@ -1,0 +1,186 @@
+#!/bin/sh
+# C formatter.
+#
+# Applies the z88dk clang-format style stored next to this script to every
+# given file. Standalone options are accepted here, so callers decide the
+# clang-format binary; the `formatter` dispatcher only forwards arguments it
+# does not use itself.
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+me=${0##*/}
+style="$script_dir/z88dk-c.clang-format"
+clang_format=${CLANG_FORMAT:-clang-format}
+check=0
+changed=0
+
+usage() {
+    cat <<'EOF'
+Usage: format_c [OPTIONS] <file-or-directory> [...]
+
+Formats C sources and headers with clang-format and the z88dk-c style stored
+in the tools/formatter directory, so the result does not depend on the working
+directory.
+
+Options:
+  --clang-format PATH   clang-format executable to use. The CLANG_FORMAT
+                        environment variable is the default, then clang-format
+                        from PATH.
+  --style PATH          clang-format style file. Defaults to the bundled
+                        z88dk-c.clang-format.
+  --check               Do not write files; list files that need formatting
+                        and exit with status 1 if there are any.
+  -h, --help            Show this help and exit.
+  --                    End of options.
+
+Directories are expanded to their immediate *.c and *.h children; explicit
+file arguments are processed regardless of extension. Files are rewritten only
+when their formatted content differs. SDCC inline assembly blocks beginning
+with __asm on their own line keep their original instruction lines.
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        --clang-format)
+            [ "$#" -ge 2 ] || { printf '%s: --clang-format needs a value\n' "$me" >&2; usage >&2; exit 2; }
+            clang_format=$2
+            shift 2
+            ;;
+        --clang-format=*)
+            clang_format=${1#*=}
+            shift
+            ;;
+        --style)
+            [ "$#" -ge 2 ] || { printf '%s: --style needs a value\n' "$me" >&2; usage >&2; exit 2; }
+            style=$2
+            shift 2
+            ;;
+        --style=*)
+            style=${1#*=}
+            shift
+            ;;
+        --check)
+            check=1
+            shift
+            ;;
+        --options)
+            printf '%s\n' 'clang-format' 'style' 'check'
+            exit 0
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            printf '%s: unknown option: %s\n' "$me" "$1" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ ! -f "$style" ]; then
+    printf '%s: missing style: %s\n' "$me" "$style" >&2
+    exit 2
+fi
+
+if ! command -v "$clang_format" >/dev/null 2>&1; then
+    printf '%s: clang-format not found: %s\n' "$me" "$clang_format" >&2
+    printf '%s: install it or pass --clang-format PATH\n' "$me" >&2
+    exit 2
+fi
+
+if [ "$#" -eq 0 ]; then
+    printf '%s: no input files\n' "$me" >&2
+    usage >&2
+    exit 2
+fi
+
+workdir=$(mktemp -d "${TMPDIR:-/tmp}/format_c.XXXXXX")
+cleanup() {
+    rm -rf "$workdir"
+}
+trap cleanup 0 1 2 15
+
+format_file() {
+    protected="$workdir/protected"
+    formatted="$workdir/formatted"
+    out="$workdir/out"
+    marker="format_c $workdir"
+    # clang-format parses SDCC assembly as C. Wrap complete blocks temporarily,
+    # leaving existing clang-format guards in charge wherever they are active.
+    awk -v marker="$marker" '
+        !block && /^[[:space:]]*(\/\/|\/\*)[[:space:]]*clang-format off/ { disabled = 1 }
+        !block && /^[[:space:]]*(\/\/|\/\*)[[:space:]]*clang-format on/ { disabled = 0 }
+        { end_asm = /(^|[[:space:]])__endasm[[:space:]]*;/ }
+        !disabled && (/^[[:space:]]*__asm[[:space:]]*$/ ||
+                      (/^[[:space:]]*__asm[[:space:]]/ && end_asm)) { block = 1 }
+        block {
+            assembly = assembly $0 "\n"
+            if (end_asm) {
+                print "// clang-format off: " marker
+                printf "%s", assembly
+                print "// clang-format on: " marker
+                assembly = ""
+                block = 0
+            }
+            next
+        }
+        { print }
+        END { if (block) printf "%s", assembly }
+    ' < "$1" > "$protected"
+    "$clang_format" --Werror --style="file:$style" --assume-filename="$1" < "$protected" > "$formatted"
+    awk -v marker="$marker" '
+        {
+            line = $0
+            sub(/^[[:space:]]*/, "", line)
+            sub(/[[:space:]]*$/, "", line)
+            if (line != "// clang-format off: " marker && line != "// clang-format on: " marker)
+                print
+        }
+    ' "$formatted" > "$out"
+    if cmp -s "$1" "$out"; then
+        return 0
+    fi
+    changed=$((changed + 1))
+    if [ "$check" -eq 1 ]; then
+        printf '%s: would reformat: %s\n' "$me" "$1"
+    else
+        cat "$out" > "$1"
+    fi
+}
+
+for input do
+    if [ -d "$input" ]; then
+        for pattern in '*.c' '*.h'; do
+            for file in "$input"/$pattern; do
+                [ -f "$file" ] || continue
+                format_file "$file"
+            done
+        done
+    elif [ -f "$input" ]; then
+        format_file "$input"
+    else
+        printf '%s: not found: %s\n' "$me" "$input" >&2
+        exit 2
+    fi
+done
+
+if [ "$check" -eq 1 ]; then
+    if [ "$changed" -eq 0 ]; then
+        printf '%s: nothing to reformat.\n' "$me"
+    else
+        printf '%s: %s file(s) need formatting\n' "$me" "$changed"
+        exit 1
+    fi
+else
+    printf '%s: formatted %s files.\n' "$me" "$changed"
+fi

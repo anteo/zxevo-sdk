@@ -1,0 +1,16 @@
+{
+  "configurations": [
+    {
+      "name": "zxevo-sdk",
+      "includePath": [
+        "${workspaceFolder}/lib/common/include",
+        "${workspaceFolder}/lib/baseconf/include",
+        "${workspaceFolder}/lib/tsconf/include",
+        "${default}"
+      ],
+      "compilerPath": "",
+      "cStandard": "c99"
+    }
+  ],
+  "version": 4
+}

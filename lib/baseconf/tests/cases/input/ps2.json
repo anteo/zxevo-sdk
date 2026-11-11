@@ -1,0 +1,7 @@
+{
+  "description": "Inject a key into ZEsarUX and read its PS/2 set-2 make and break codes",
+  "profiles": ["no-stdio", "no-font8"],
+  "emulator_steps": {
+    "inject_a": {"keys": "a"}
+  }
+}

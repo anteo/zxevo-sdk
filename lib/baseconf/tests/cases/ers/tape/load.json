@@ -1,0 +1,9 @@
+{
+  "description": "Load two TAP data blocks through the ERS BASIC hooks and rewind to the first",
+  "profiles": ["no-stdio", "ers-rom"],
+  "emulator_images": {
+    "generator": "../../test_support/fixtures/create_device_images.py",
+    "ide": "hdd.img"
+  },
+  "timeout": 45
+}

@@ -1,0 +1,30 @@
+{
+  "magic": "ZXHP",
+  "version": 1,
+  "header_address": 24576,
+  "header_size": 32,
+  "log_address": 24832,
+  "log_size": 1792,
+  "fields": {
+    "magic": 0,
+    "version": 4,
+    "state": 5,
+    "cancel": 6,
+    "flags": 7,
+    "command": 8,
+    "arg0": 9,
+    "arg1": 10,
+    "result0": 11,
+    "result1": 12,
+    "result2": 13,
+    "result3": 14,
+    "sequence": 15
+  },
+  "states": {
+    "idle": 0,
+    "done": 1,
+    "aborted": 2,
+    "error": 3
+  },
+  "log_format": "nul-terminated"
+}

@@ -1,0 +1,76 @@
+{
+  "default": {
+    "description": "shared runner layout and standard library build settings",
+    "layout": {
+      "code_org": 256,
+      "data_org": 26624,
+      "bss_org": 28672,
+      "stack_org": 32256,
+      "code_page": 32,
+      "data_page": 33,
+      "pinned": 3,
+      "scratch": 3
+    },
+    "library": {
+      "build_dir": "build/tests",
+      "make_targets": [
+        "all"
+      ]
+    },
+    "cflags": [],
+    "defines": []
+  },
+  "no-stdio": {
+    "description": "Disable CRT stdio and the BaseConf CRT generic console hook",
+    "cflags": [
+      "-pragma-define:CRT_ENABLE_STDIO=0"
+    ]
+  },
+  "no-font8": {
+    "description": "Omit the library's default 8x8 font",
+    "library": {
+      "make_args": [
+        "BASECONF_CONSOLE_NO_DEFAULT_FONT=1"
+      ]
+    }
+  },
+  "no-primitives": {
+    "description": "Omit all graphics primitive backends",
+    "library": {
+      "make_args": [
+        "BASECONF_VIDEO_PRIMITIVE_MODES=NONE"
+      ]
+    }
+  },
+  "multicolor-text": {
+    "description": "Enable bitmap text in Multicolor and graphics primitives in standard ZX",
+    "library": {
+      "build_dir": "build/tests-multicolor-text",
+      "make_args": [
+        "BASECONF_VIDEO_TEXT_MODES=ZX_MULTICOLOR",
+        "BASECONF_VIDEO_PRIMITIVE_MODES=ZX_256"
+      ]
+    }
+  },
+  "memory-maps": {
+    "description": "Mirror the resident code and data windows in both BaseConf memory maps",
+    "mirror_resident_map": true
+  },
+  "ers-rom": {
+    "description": "Run with the service ROM in W0 and the test in RAM window 2",
+    "use_test_rom": true,
+    "layout": {
+      "code_org": 32768,
+      "stack_org": 49136,
+      "code_window": 2,
+      "rom_bank": 3,
+      "pinned": 7
+    }
+  },
+  "zx-screen-w1": {
+    "description": "Keep the ZX screen page mapped at 0x4000 for ERS window routines",
+    "layout": {
+      "data_page": 5
+    }
+  }
+}

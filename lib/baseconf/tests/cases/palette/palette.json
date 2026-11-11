@@ -1,0 +1,5 @@
+{
+  "description": "Pentagon pixel pack/unpack round trip for all 256 byte values",
+  "profiles": ["no-stdio"],
+  "timeout": 30
+}

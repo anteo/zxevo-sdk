@@ -1,0 +1,9 @@
+        MODULE clga_callee
+INCLUDE "abi.inc"
+SECTION code_graphics
+PUBLIC _clga_callee
+EXTERN _clga
+
+; Small-C callee-clean 4 words. Preserve the target result and IX/IY. Shadow HL is volatile.
+_clga_callee:
+        BC_ABI_SMALLC_CALLEE _clga,4

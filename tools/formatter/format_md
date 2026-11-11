@@ -1,0 +1,95 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+me=${0##*/}
+config="$script_dir/.prettierrc.json"
+prettier=${PRETTIER:-prettier}
+check=0
+changed=0
+
+usage() {
+    cat <<'USAGE'
+Usage: format_md [OPTIONS] <file-or-directory> [...]
+
+Formats Markdown with Prettier and the config in tools/formatter.
+
+Options:
+  --prettier PATH   Prettier executable (default $PRETTIER, then prettier).
+  --config PATH     Replace the bundled config.
+  --check           Report files needing formatting without writing them.
+  --options         List options accepted by this helper.
+  -h, --help        Show this help.
+  --                End of options.
+
+Directories expand to immediate *.md children. Explicit files are processed
+regardless of extension.
+USAGE
+}
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        --prettier)
+            [ "$#" -ge 2 ] || { printf '%s: --prettier needs a value\n' "$me" >&2; usage >&2; exit 2; }
+            prettier=$2; shift 2 ;;
+        --prettier=*) prettier=${1#*=}; shift ;;
+        --config)
+            [ "$#" -ge 2 ] || { printf '%s: --config needs a value\n' "$me" >&2; usage >&2; exit 2; }
+            config=$2; shift 2 ;;
+        --config=*) config=${1#*=}; shift ;;
+        --check) check=1; shift ;;
+        --options) printf '%s\n' prettier config check; exit 0 ;;
+        -h|--help) usage; exit 0 ;;
+        --) shift; break ;;
+        -*) printf '%s: unknown option: %s\n' "$me" "$1" >&2; usage >&2; exit 2 ;;
+        *) break ;;
+    esac
+done
+
+[ -f "$config" ] || { printf '%s: missing config: %s\n' "$me" "$config" >&2; exit 2; }
+command -v "$prettier" >/dev/null 2>&1 || {
+    printf '%s: prettier not found: %s\n' "$me" "$prettier" >&2
+    exit 2
+}
+[ "$#" -gt 0 ] || { printf '%s: no input files\n' "$me" >&2; usage >&2; exit 2; }
+
+workdir=$(mktemp -d "${TMPDIR:-/tmp}/format_md.XXXXXX")
+cleanup() { rm -rf "$workdir"; }
+trap cleanup 0 1 2 15
+
+format_file() {
+    out="$workdir/out"
+    "$prettier" --config "$config" "$1" > "$out"
+    if cmp -s "$1" "$out"; then return 0; fi
+    changed=$((changed + 1))
+    if [ "$check" -eq 1 ]; then
+        printf '%s: would reformat: %s\n' "$me" "$1"
+    else
+        cat "$out" > "$1"
+    fi
+}
+
+for input do
+    if [ -d "$input" ]; then
+        for file in "$input"/*.md; do
+            [ -f "$file" ] || continue
+            format_file "$file"
+        done
+    elif [ -f "$input" ]; then
+        format_file "$input"
+    else
+        printf '%s: not found: %s\n' "$me" "$input" >&2
+        exit 2
+    fi
+done
+
+if [ "$check" -eq 1 ]; then
+    if [ "$changed" -eq 0 ]; then
+        printf '%s: nothing to reformat.\n' "$me"
+    else
+        printf '%s: %s file(s) need formatting\n' "$me" "$changed"
+        exit 1
+    fi
+else
+    printf '%s: formatted %s files.\n' "$me" "$changed"
+fi

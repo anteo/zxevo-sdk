@@ -1,0 +1,39 @@
+{
+  "description": "Kondratyev UART arguments and host PTY exchange on BaseConf",
+  "targets": {
+    "baseconf": {
+      "profiles": [
+        "no-stdio",
+        "no-font8"
+      ],
+      "emulator_steps": {
+        "ready": {
+          "uart": {
+            "send": [
+              0,
+              255,
+              13,
+              10,
+              128,
+              19,
+              17,
+              195
+            ]
+          }
+        },
+        "transmit": {
+          "uart": {
+            "expect": [
+              85,
+              170,
+              10,
+              13,
+              0,
+              255
+            ]
+          }
+        }
+      }
+    }
+  }
+}

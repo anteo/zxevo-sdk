@@ -1,0 +1,5 @@
+{
+  "description": "z88dk CRT printf and conio output through BaseConf's generic console",
+  "profiles": ["no-font8"],
+  "timeout": 60
+}

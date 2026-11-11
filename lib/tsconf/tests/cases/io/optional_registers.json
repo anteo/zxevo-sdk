@@ -1,0 +1,9 @@
+{
+  "description": "Copper upload and control, and FDR register ABI using emulator shadows",
+  "emulator_steps": {
+    "copper-start": {"tsconf_registers": {"14": 252}},
+    "copper-stop": {"tsconf_registers": {"14": 255}},
+    "capture-on": {"tsconf_registers": {"30": 1}},
+    "capture-off": {"tsconf_registers": {"30": 0}}
+  }
+}

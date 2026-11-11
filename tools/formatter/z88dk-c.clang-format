@@ -1,0 +1,21 @@
+# clang-format 18.1.8. Also applied explicitly to the linked lib/ sources.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+PointerAlignment: Right
+DerivePointerAlignment: false
+SortIncludes: Never
+IncludeBlocks: Preserve
+ReflowComments: false
+AlignTrailingComments:
+  Kind: Leave
+InsertBraces: false
+QualifierAlignment: Leave
+AttributeMacros:
+  - __z88dk_fastcall

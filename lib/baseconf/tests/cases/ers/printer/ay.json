@@ -1,0 +1,5 @@
+{
+  "description": "Check the ERS printer hooks and BASIC COPY through the AY registers",
+  "profiles": ["no-stdio", "ers-rom"],
+  "sources": ["copy_screen.asm"]
+}

@@ -1,0 +1,7 @@
+{
+  "description": "Direct SD1 SPI initialization, register reads and sector I/O",
+  "emulator_images": {
+    "generator": "../../test_support/fixtures/create_device_images.py",
+    "mmc": "sd.img"
+  }
+}

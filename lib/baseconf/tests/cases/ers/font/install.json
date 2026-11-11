@@ -1,0 +1,4 @@
+{
+  "description": "Install the built-in ATM and CP866 fonts and a custom MegaLZ font",
+  "profiles": ["no-stdio", "ers-rom"]
+}

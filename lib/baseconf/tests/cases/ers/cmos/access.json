@@ -1,0 +1,5 @@
+{
+  "description": "Read, write, and restore an ERS CMOS setting",
+  "profiles": ["no-stdio", "ers-rom"],
+  "timeout": 30
+}

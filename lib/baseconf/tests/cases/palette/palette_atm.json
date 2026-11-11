@@ -1,0 +1,4 @@
+{
+  "description": "ATM palette writes in RGB222 and RGB444, beam readback, and cached color",
+  "profiles": ["no-stdio", "no-font8"]
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Mount an existing TRD from IMAGE.MNT and leave the missing entry unmounted",
+  "profiles": ["no-stdio", "ers-rom"],
+  "emulator_images": {
+    "generator": "fixtures/ers/create_automount_image.py",
+    "ide": "hdd.img"
+  },
+  "timeout": 45
+}

@@ -1,0 +1,4 @@
+{
+  "description": "60 Hz raster size, independent canvas bounds and console grid",
+  "profiles": ["60hz"]
+}

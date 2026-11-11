@@ -1,0 +1,5 @@
+{
+  "description": "Check ERS unsigned 16-bit and 32-bit arithmetic services",
+  "profiles": ["no-stdio", "ers-rom"],
+  "timeout": 30
+}
