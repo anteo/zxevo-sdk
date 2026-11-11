@@ -3,15 +3,15 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-The SDK adds the `+baseconf` and `+tsconf` targets to z88dk appmake. Both targets package
-banked TAPs. Build the tool from the SDK root with a z88dk source tree.
+The SDK adds the `+baseconf` and `+tsconf` targets to z88dk appmake. Both targets package banked
+TAPs. Build the tool from the SDK root with a z88dk source tree.
 
 ```sh
 make appmake Z88DK_SRC=/path/to/z88dk/src
 ```
 
-If `ZCCCFG` points to `lib/config` in that tree, `make appmake` finds its `src` directory.
-The build stages appmake in the SDK's local build directory and adds `zxevo.c` and
+If `ZCCCFG` points to `lib/config` in that tree, `make appmake` finds its `src` directory. The build
+stages appmake in the SDK's local build directory and adds `zxevo.c` and
 `patches/zxevo-registration.patch`. Both targets are in `tools/appmake/build/z88dk-appmake`.
 `make -C tools/appmake clean` removes the local build.
 
@@ -81,18 +81,17 @@ provided by the emulator.
 - Combines initialized main-bank sections into one contiguous image, filling address gaps with zero
   bytes. BSS is excluded from initialized payload.
 - The BaseConf loader uses the RAM and CPU settings from ERS/BAS48. It opens the shadow ports,
-  selects the physical page in W3 (`C000–FFFF`) with substitution disabled and restores `BF`
-  before each bank load. W3 stays mapped to the last loaded page.
-- The TSConf loader saves Page3, maps the bank via port `13AFh`, loads it and restores the
-  previous Page3 value.
+  selects the physical page in W3 (`C000–FFFF`) with substitution disabled and restores `BF` before
+  each bank load. W3 stays mapped to the last loaded page.
+- The TSConf loader saves Page3, maps the bank via port `13AFh`, loads it and restores the previous
+  Page3 value.
 - Defaults the load origin to the first initialized section and the BASIC `USR` entry to the map
   symbol `start` when present. This distinction matters when initialized DATA is located at `0x7000`
   while `start` remains at `0x8000`. If the map has no `start`, the load origin is used. BASIC CLEAR
   defaults to `0x5fff`. `--org`, `--usraddr`, and `--clearaddr` override these values. `start`
   includes the CRT startup code; do not use `__CODE_head`, which begins after it.
-- Combines each bank's sections into a W3 image of up to 16 KiB and loads pages in ascending
-  order. For a z80asm `BANK_XX` section, the high address byte encodes the physical page.
+- Combines each bank's sections into a W3 image of up to 16 KiB and loads pages in ascending order.
+  For a z80asm `BANK_XX` section, the high address byte encodes the physical page.
 
-The main image must fit in the 16-bit address space. Keep resident code, the BASIC workspace
-and its stack accessible during loading. Choose bank pages that are free in the target
-configuration.
+The main image must fit in the 16-bit address space. Keep resident code, the BASIC workspace and its
+stack accessible during loading. Choose bank pages that are free in the target configuration.

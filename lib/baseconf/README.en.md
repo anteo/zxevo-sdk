@@ -14,9 +14,9 @@ available through a wrapper around z88dk's Vortex Tracker II player; the module 
 resident, and the application calls the player at a steady rate.
 
 Public headers are in `lib/baseconf/include/`. The target uses the SDK's shared Z80 CRT.
-`baseconf.lib` supplies the standard output hook and the symbols that Spectrum-specific
-functions in z88dk's `zx_clib` use to access the ROM and BASIC workspace. The linker pulls those
-objects in when the application needs them.
+`baseconf.lib` supplies the standard output hook and the symbols that Spectrum-specific functions in
+z88dk's `zx_clib` use to access the ROM and BASIC workspace. The linker pulls those objects in when
+the application needs them.
 
 ## Requirements and build
 
@@ -58,12 +58,12 @@ For a program that returns to BASIC 48, build with `$(BASECONF_BASIC48_FLAGS) -c
 
 ### Selecting video backends
 
-- `BASECONF_VIDEO_TEXT_MODES` selects console output backends. It accepts `ALL`, `GRAPHICS`,
-  `NONE`, or a list of modes such as `ZX_256 ATM_TEXT_80`.
-- `BASECONF_VIDEO_PRIMITIVE_MODES` selects drawing backends with the same syntax. `GRAPHICS`
-  selects all five bitmap and packed graphics modes. The 80×25 modes support text only.
-- `BASECONF_CONSOLE_NO_DEFAULT_FONT=1` drops the console's automatic reference to font8.
-  Select a font with `zx_console_set_font()` before output in graphics modes.
+- `BASECONF_VIDEO_TEXT_MODES` selects console output backends. It accepts `ALL`, `GRAPHICS`, `NONE`,
+  or a list of modes such as `ZX_256 ATM_TEXT_80`.
+- `BASECONF_VIDEO_PRIMITIVE_MODES` selects drawing backends with the same syntax. `GRAPHICS` selects
+  all five bitmap and packed graphics modes. The 80×25 modes support text only.
+- `BASECONF_CONSOLE_NO_DEFAULT_FONT=1` drops the console's automatic reference to font8. Select a
+  font with `zx_console_set_font()` before output in graphics modes.
 
 For example, build with console output in ZX 256 and ATM hardware text, and drawing in ZX 256.
 

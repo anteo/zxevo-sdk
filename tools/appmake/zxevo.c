@@ -297,8 +297,7 @@ static int collect_range(struct memory_bank *bank, int include_main, struct imag
             continue;
         if (!section->size) continue;
         if (section->org < 0 || section_end > 0x10000 || section_end <= section_start) return -1;
-        if (!include_main &&
-            (section_start < W3_START || section_end > W3_END)) {
+        if (!include_main && (section_start < W3_START || section_end > W3_END)) {
             fprintf(stderr, "ZX Evolution: bank section %s must fit in window C000-FFFF\n",
                     section->section_name);
             return -1;
@@ -421,7 +420,8 @@ int zxevo_exec(char *target) {
     load_org = opts.org >= 0 ? (unsigned)opts.org : main_image.start;
     origin_delta = (int)load_org - (int)main_image.start;
     if ((int)main_image.start + origin_delta < 0 || (int)main_image.end + origin_delta > 0x10000) {
-        fprintf(stderr, "ZX Evolution: --org moves the main image outside the 16-bit address space\n");
+        fprintf(stderr,
+                "ZX Evolution: --org moves the main image outside the 16-bit address space\n");
         goto done;
     }
     main_image.start = (unsigned)((int)main_image.start + origin_delta);
@@ -431,8 +431,8 @@ int zxevo_exec(char *target) {
         goto done;
     }
     entry = opts.usr_address >= 0 ? (unsigned)opts.usr_address
-            : have_code_entry   ? (unsigned)((int)code_entry + origin_delta)
-                                : load_org;
+            : have_code_entry     ? (unsigned)((int)code_entry + origin_delta)
+                                  : load_org;
     if (entry > 0xffff || entry < main_image.start || entry >= main_image.end) {
         fprintf(stderr, "ZX Evolution: entry address 0x%04x is outside the main image\n", entry);
         goto done;

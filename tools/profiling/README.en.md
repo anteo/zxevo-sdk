@@ -12,16 +12,15 @@ map with the zcc flag `-m`, then run from the SDK root.
 python3 tools/profiling/memory.py path/to/program.map --sort size
 ```
 
-The report defaults to address order. Use `--module` to filter by module name and
-`--name-width` to change the name column width. Function sizes are estimates based on the
-next linker-visible symbol. Aliases can share a range, and bytes between symbols count
-towards the containing range.
+The report defaults to address order. Use `--module` to filter by module name and `--name-width` to
+change the name column width. Function sizes are estimates based on the next linker-visible symbol.
+Aliases can share a range, and bytes between symbols count towards the containing range.
 
 ## CPU
 
 `cpu.py` runs a BASIC 48 TAP in an isolated ZEsarUX process and measures one Z80 function in
-T-states. The linker map defaults to the `.map` next to the TAP. Choose a caller-clean function
-that stays mapped throughout the measurement. The timing of a selected call includes its callees.
+T-states. The linker map defaults to the `.map` next to the TAP. Choose a caller-clean function that
+stays mapped throughout the measurement. The timing of a selected call includes its callees.
 
 Build Night Train with `make examples-baseconf`, then measure its drawing routine from the SDK root.
 
