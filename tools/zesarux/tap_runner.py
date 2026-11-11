@@ -5,9 +5,9 @@ import os
 import sys
 
 try:
-    from .runner import ZesaruxRunner, default_emulator, keyboard_matrix
+    from .runner import ZesaruxRunner, breakpoint, default_emulator, keyboard_matrix, registers
 except ImportError:
-    from runner import ZesaruxRunner, default_emulator, keyboard_matrix
+    from runner import ZesaruxRunner, breakpoint, default_emulator, keyboard_matrix, registers
 
 
 KEYS = {
@@ -70,6 +70,22 @@ def send_key_script(remote, script, press_instructions, settle_instructions,
         remote.run_cycles(settle_instructions)
         if report is not None:
             report.append(f"CPU frequency after key {chord}: {cpu_speed(remote)}")
+
+
+def run_to_tap_entry(remote, entry, instructions):
+    """Submit the BASIC load command and stop at the TAP entry point."""
+    remote.command("enable-breakpoints")
+    breakpoint(remote, 1, entry)
+    remote.command("set-ui-io-ports " + keyboard_matrix(KEYS["enter"]))
+    remote.run_cycles(120_000)
+    remote.command("set-ui-io-ports " + keyboard_matrix([]))
+    pc, sp = registers(remote)
+    if pc != entry:
+        remote.run_cycles(instructions)
+        pc, sp = registers(remote)
+    if pc != entry:
+        raise RuntimeError(f"did not reach TAP entry ${entry:04X}, stopped at ${pc:04X}")
+    return sp
 
 
 def main():

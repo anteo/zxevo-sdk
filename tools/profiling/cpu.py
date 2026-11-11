@@ -9,8 +9,8 @@ import re
 import socket
 import tempfile
 
-from tools.zesarux.runner import ZesaruxRunner, default_emulator, keyboard_matrix
-from tools.zesarux.tap_runner import KEYS, cpu_speed, send_key_script
+from tools.zesarux.runner import ZesaruxRunner, breakpoint, default_emulator, registers, return_site
+from tools.zesarux.tap_runner import cpu_speed, run_to_tap_entry, send_key_script
 
 
 def function_addresses(path, names):
@@ -34,47 +34,12 @@ def function_addresses(path, names):
     return resolved
 
 
-def registers(remote):
-    response = remote.command("get-registers")
-    fields = re.search(r"\bPC=([0-9A-Fa-f]+)\s+SP=([0-9A-Fa-f]+)", response)
-    if not fields:
-        raise RuntimeError(f"cannot read PC and SP: {response.strip()}")
-    return int(fields[1], 16), int(fields[2], 16)
-
-
-def return_site(remote, sp):
-    data = remote.read_memory(sp, 2)
-    if len(data) != 2:
-        raise RuntimeError(f"cannot read the return address at ${sp:04X}")
-    return int.from_bytes(data, "little"), (sp + 2) & 0xFFFF
-
-
-def breakpoint(remote, index, pc, sp=None):
-    condition = f"PC={pc:04X}H"
-    if sp is not None:
-        condition += f" AND SP={sp:04X}H"
-    remote.command(f"set-breakpoint {index} {condition}")
-    remote.command(f"set-breakpointaction {index} break")
-    remote.command(f"enable-breakpoint {index}")
-
-
 def measure(remote, args, entry, functions):
     remote.enter_cpu_step()
     remote.run_cycles(2_000_000)
     send_key_script(remote, args.keys, 120_000, 100_000)
 
-    remote.command("enable-breakpoints")
-    breakpoint(remote, 1, entry)
-    remote.command("set-ui-io-ports " + keyboard_matrix(KEYS["enter"]))
-    remote.run_cycles(120_000)
-    remote.command("set-ui-io-ports " + keyboard_matrix([]))
-    pc, sp = registers(remote)
-    if pc != entry:
-        remote.run_cycles(args.instructions)
-        pc, sp = registers(remote)
-    if pc != entry:
-        raise RuntimeError(f"did not reach {args.entry} at ${entry:04X}, stopped at ${pc:04X}")
-
+    sp = run_to_tap_entry(remote, entry, args.instructions)
     exit_site = return_site(remote, sp)
     breakpoint(remote, 1, *exit_site)
     for index, address in enumerate(functions, 3):

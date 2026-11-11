@@ -10,6 +10,7 @@ Example::
 """
 
 import os
+import re
 import shutil
 import socket
 import struct
@@ -308,6 +309,30 @@ class ZesaruxRunner:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+
+def registers(remote):
+    response = remote.command("get-registers")
+    fields = re.search(r"\bPC=([0-9A-Fa-f]+)\s+SP=([0-9A-Fa-f]+)", response)
+    if not fields:
+        raise RuntimeError(f"cannot read PC and SP: {response.strip()}")
+    return int(fields[1], 16), int(fields[2], 16)
+
+
+def return_site(remote, sp):
+    data = remote.read_memory(sp, 2)
+    if len(data) != 2:
+        raise RuntimeError(f"cannot read the return address at ${sp:04X}")
+    return int.from_bytes(data, "little"), (sp + 2) & 0xFFFF
+
+
+def breakpoint(remote, index, pc, sp=None):
+    condition = f"PC={pc:04X}H"
+    if sp is not None:
+        condition += f" AND SP={sp:04X}H"
+    remote.command(f"set-breakpoint {index} {condition}")
+    remote.command(f"set-breakpointaction {index} break")
+    remote.command(f"enable-breakpoint {index}")
 
 
 # ZX keyboard matrix: key name -> (row, bit) pairs, bit 0 means pressed.
