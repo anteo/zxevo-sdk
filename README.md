@@ -46,6 +46,9 @@ Set `ZXEVO_SDK_PATH` to the absolute path to the SDK checkout. In the applicatio
 `$(ZXEVO_SDK_PATH)/lib/baseconf/baseconf.mk` or `$(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk`.
 The fragment supplies the target configuration, include paths, library path, and ABI flags.
 
+Include `<zx/version.h>` to read the version macros at compile time or call `zx_sdk_version()` to
+get the linked SDK's version string.
+
 Before building an application, decide who prepares its environment, how it receives control
 and what happens when it exits. When BASIC 48 calls a program, for example, startup saves the
 BASIC stack pointer and registers needed for the return. On exit it restores them and hands
