@@ -10,7 +10,7 @@
 # The dispatcher routes local files by extension. FORMAT_SUBDIRS optionally
 # forwards the target to component Makefiles with their own file lists.
 #
-# Targets provided here: format, format-check, format-plan.
+# Target provided here: format.
 
 # Resolve the dispatcher relative to this included file, not to the caller.
 # It finds the built-in formatters next to itself, so no mapping is needed.
@@ -28,16 +28,10 @@ FORMAT_RECURSE = $(foreach dir,$(FORMAT_SUBDIRS),$(MAKE) -C "$(dir)" $@ &&) :
 # remember the caller's goal here and restore it at the end of this file.
 FORMATTER_DEFAULT_GOAL := $(.DEFAULT_GOAL)
 
-.PHONY: format format-check format-plan
+.PHONY: format
 
-format-check: FORMAT_CHECK_FLAG := --check
-format format-check:
-	$(if $(strip $(FORMAT_FILES)),$(FORMAT_CMD) $(FORMAT_CHECK_FLAG) $(FORMAT_FILES),@:)
-	+@$(FORMAT_RECURSE)
-
-format-plan:
-	@printf 'formatter: %s\n' '$(FORMATTER)'
-	$(if $(strip $(FORMAT_FILES)),@printf '  %s\n' $(FORMAT_FILES),@:)
+format:
+	$(if $(strip $(FORMAT_FILES)),$(FORMAT_CMD) $(FORMAT_FILES),@:)
 	+@$(FORMAT_RECURSE)
 
 # Restore the default goal so `make` without arguments still does what the

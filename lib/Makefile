@@ -1,6 +1,9 @@
-.DEFAULT_GOAL := format-plan
+.DEFAULT_GOAL := help
 
-.PHONY: clean
+.PHONY: help clean
+help:
+	@printf '%s\n' 'make format  Format library sources' 'make clean   Remove library and test outputs'
+
 clean:
 	$(MAKE) -C baseconf clean
 	$(MAKE) -C tsconf clean

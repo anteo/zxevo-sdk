@@ -111,9 +111,7 @@ The suites keep binaries and manifests under `tests/build/` and reports and capt
   sequence, leaving out the final Enter, and `--zesarux` or `--rom` to select the emulator or ROM.
 - ZXHost provides a target-side mailbox and Python tools for loading and controlling a program
   through ZRCP. [ZXHost](lib/test_support/README.en.md#zxhost-target-runtime-and-mailbox)
-- `make format-plan` lists the files selected for formatting, `make format-check` checks them and
-  `make format` applies the formatting. The helpers use `awk` for ASM, `clang-format` for C and
-  Prettier for Markdown. [Formatter](tools/formatter/README.en.md)
+- `make format` formats C, ASM and Markdown. [Formatter](tools/formatter/README.en.md)
 
 To measure Night Train's drawing routine after `make examples-baseconf`, run from the SDK root.
 

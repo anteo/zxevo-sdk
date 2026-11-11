@@ -1,6 +1,9 @@
-.DEFAULT_GOAL := format-plan
+.DEFAULT_GOAL := help
 
-.PHONY: clean
+.PHONY: help clean
+help:
+	@printf '%s\n' 'make format  Format test support sources' 'make clean   Remove Python caches'
+
 clean:
 	find . -type d -name __pycache__ -prune -exec rm -rf -- {} +
 

@@ -116,9 +116,7 @@ python3 lib/tsconf/tests/run.py check --case video/video
   `--rom` позволяют выбрать эмулятор и ROM.
 - ZXHost предоставляет почтовый ящик в памяти целевой программы и инструменты Python для её загрузки
   и управления через ZRCP. [ZXHost](lib/test_support/README.ru.md#zxhost-target-runtime-and-mailbox)
-- `make format-plan` выводит список файлов, `make format-check` проверяет форматирование,
-  `make format` применяет его. Для ASM используется `awk`, для C — `clang-format`, для Markdown —
-  Prettier. [Форматтер](tools/formatter/README.ru.md)
+- `make format` форматирует C, ASM и Markdown. [Форматтер](tools/formatter/README.ru.md)
 
 Чтобы измерить отрисовку Night Train после `make examples-baseconf`, выполните из корня SDK:
 

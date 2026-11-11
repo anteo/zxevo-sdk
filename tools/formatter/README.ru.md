@@ -69,11 +69,7 @@ include ../tools/formatter/formatter.mk
 `FORMAT_FILES` может быть пустым. `FORMATTER_ARGS` передаётся диспетчеру. Для своего бинарника можно
 задать `make CLANG_FORMAT=/path format` или передать `--clang-format=$(CLANG_FORMAT)`.
 
-| Цель           | Действие                                                          |
-| -------------- | ----------------------------------------------------------------- |
-| `format`       | Форматирует `$(FORMAT_FILES)` и передаёт вызов в `FORMAT_SUBDIRS` |
-| `format-check` | Проверяет тот же список без записи                                |
-| `format-plan`  | Выводит путь к диспетчеру и список выбранных файлов               |
+`make format` передаёт `$(FORMAT_FILES)` диспетчеру и вызывает `format` в каталогах `FORMAT_SUBDIRS`.
 
 Чтобы обработать один язык, вызовите обработчик напрямую, например
 `tools/formatter/format_c src include`.

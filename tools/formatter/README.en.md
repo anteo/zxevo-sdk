@@ -80,7 +80,7 @@ include ../tools/formatter/formatter.mk   # keep this last
 
 Set `FORMAT_SUBDIRS` when a Makefile also delegates formatting to component directories. Each
 component uses its own files and dialect. An empty local list is valid, so a component with no
-supported sources can still expose the formatting targets.
+supported sources can still expose the `format` target.
 
 The list is never split by language: the dispatcher routes per file and finds
 `format_c`/`format_asm` next to itself, so the fragment adds no paths or defaults of its own.
@@ -90,11 +90,7 @@ restores the project's default goal, so a bare `make` still builds. `make CLANG_
 keeps working because make exports command-line variables, and a project that pins the binary can
 pass `--clang-format=$(CLANG_FORMAT)` in `FORMATTER_ARGS`.
 
-| Target         | Effect                                                     |
-| -------------- | ---------------------------------------------------------- |
-| `format`       | `$(FORMAT_FILES)` in one dispatcher call                   |
-| `format-check` | `--check` over the same list; fails when a file needs work |
-| `format-plan`  | prints the dispatcher and the selected files               |
+`make format` passes `$(FORMAT_FILES)` to the dispatcher and calls `format` in `FORMAT_SUBDIRS`.
 
 There is no per-language target: the list is one set of files, and only the dispatcher decides who
 formats each file. To format a single language, call that helper directly, for example
