@@ -45,7 +45,7 @@ make appmake Z88DK_SRC=/path/to/z88dk/src
 ```
 
 Добавьте настройки линковки для своих банков RAM. Чтобы использовать CRT с возвратом в BASIC 48,
-добавьте `-crt0=$(ZX_COMMON_ROOT)/basic48_crt0.asm -pragma-define:CRT_ENABLE_STDIO=0` к флагам приложения. Переменные
+добавьте `-crt0=$(ZX_COMMON_ROOT)/crt/basic48_crt0.asm -pragma-define:CRT_ENABLE_STDIO=0` к флагам приложения. Переменные
 `*_BASIC48_FLAGS` уже выбирают цель `+zx` для плоских TAP, поэтому для банковых сборок возьмите
 за основу `*_APP_FLAGS`.
 

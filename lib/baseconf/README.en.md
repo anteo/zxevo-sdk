@@ -9,10 +9,10 @@ text, input, RTC/AVR, audio, storage, and selected ERS and interrupt interfaces.
 available through a wrapper around z88dk's Vortex Tracker II player; the module must remain
 resident, and the application calls the player at a steady rate.
 
-Public headers are in `lib/baseconf/include/`. The library uses the usual z88dk linking model: only
-archive members needed by an application are linked. It does not replace the application's CRT or
-system environment, but provides a target configuration and a local CRT hook for the BaseConf
-console.
+Public headers are in `lib/baseconf/include/`. The target uses the SDK's shared Z80 CRT.
+`baseconf.lib` supplies the standard output hook and the symbols that Spectrum-specific
+functions in z88dk's `zx_clib` use to access the ROM and BASIC workspace. The linker pulls those
+objects in when the application needs them.
 
 ## Requirements and build
 

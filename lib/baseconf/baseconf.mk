@@ -38,9 +38,8 @@ Z80ASM ?= z88dk-z80asm
 unexport Z80ASM
 
 BASECONF_CFG ?= $(BASECONF_ROOT)/config/baseconf.cfg
-BASECONF_CRT_INPUTS := $(BASECONF_CFG) $(BASECONF_ROOT)/config/baseconf_crt0.asm \
-	$(ZX_COMMON_ROOT)/z80_crt0.asm $(ZX_COMMON_ROOT)/crt_no_stdio.inc \
-	$(ZX_COMMON_ROOT)/crt_zx_lifecycle.inc
+BASECONF_CRT_INPUTS := $(BASECONF_CFG) $(ZX_COMMON_ROOT)/crt/z80_crt0.asm \
+	$(ZX_COMMON_ROOT)/crt/crt_no_stdio.inc $(ZX_COMMON_ROOT)/crt/crt_zx_lifecycle.inc
 BASECONF_INCLUDE ?= $(BASECONF_ROOT)/include
 BASECONF_INCLUDE_FLAGS = -I$(BASECONF_INCLUDE) -I$(ZX_COMMON_ROOT)/include
 BASECONF_BUILD ?= $(BASECONF_ROOT)/build/default

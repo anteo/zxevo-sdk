@@ -4,9 +4,9 @@ ZX_EXAMPLE_DIR := $(CURDIR)/examples
 ZX_EXAMPLE_BUILD := $(CURDIR)/build/examples
 ZX_EXAMPLE_SOURCES := $(wildcard $(ZX_EXAMPLE_DIR)/*.c)
 ZX_EXAMPLE_TAPS := $(patsubst $(ZX_EXAMPLE_DIR)/%.c,$(ZX_EXAMPLE_BUILD)/%.tap,$(ZX_EXAMPLE_SOURCES))
-ZX_EXAMPLE_INPUTS := $(ZX_EXAMPLES_MK) $(ZX_COMMON_ROOT)/basic48.cfg \
-	$(ZX_COMMON_ROOT)/basic48_crt0.asm $(ZX_COMMON_ROOT)/crt_no_stdio.inc \
-	$(ZX_COMMON_ROOT)/crt_zx_lifecycle.inc \
+ZX_EXAMPLE_INPUTS := $(ZX_EXAMPLES_MK) $(ZX_COMMON_ROOT)/config/basic48.cfg \
+	$(ZX_COMMON_ROOT)/crt/basic48_crt0.asm $(ZX_COMMON_ROOT)/crt/crt_no_stdio.inc \
+	$(ZX_COMMON_ROOT)/crt/crt_zx_lifecycle.inc \
 	$(wildcard $(ZX_COMMON_ROOT)/include/zx/*.h $(ZX_EXAMPLE_DIR)/*.h)
 
 .PHONY: examples

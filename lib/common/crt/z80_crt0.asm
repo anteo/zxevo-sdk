@@ -1,7 +1,5 @@
 ; Bare-metal Z80 startup using the classic z88dk runtime.
-IFNDEF ZX_CRT_PLATFORM_CODE
         MODULE zx_crt0
-ENDIF
 
 ;-------
 ; Include zcc_opt.def to find out information about us
@@ -40,21 +38,6 @@ defc    TAR__register_sp = -1
 defc    TAR__clib_exit_stack_size = 32
     ; Default, halt loop
 defc    TAR__crt_on_exit = 0x10001
-
-    ; Keep the classic malloc heap disabled unless the application opts in.
-    ; CRT_STACK_SIZE > 0 asks crt_init_heap to use memory between BSS and SP.
-IFDEF ZX_CRT_NO_DEFAULT_HEAP
-IFNDEF CRT_STACK_SIZE
-IFNDEF TAR__crt_stack_size
-defc    TAR__crt_stack_size = -1
-ENDIF
-ENDIF
-IFNDEF CLIB_MALLOC_HEAP_SIZE
-IFNDEF TAR__clib_malloc_heap_size
-defc    TAR__clib_malloc_heap_size = -1
-ENDIF
-ENDIF
-ENDIF
 
 defc    __CPU_CLOCK = 4000000
 INCLUDE "crt/classic/crt_rules.inc"
@@ -103,10 +86,6 @@ INCLUDE "crt/classic/crt_terminate.inc"
 
 l_dcal:
         jp      (hl)
-
-IFDEF ZX_CRT_PLATFORM_CODE
-        ZX_CRT_EMIT_PLATFORM_CODE
-ENDIF
 
 INCLUDE "crt_no_stdio.inc"
 INCLUDE "crt/classic/crt_runtime_selection.inc"

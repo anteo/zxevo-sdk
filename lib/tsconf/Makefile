@@ -49,11 +49,11 @@ all: $(BUILD)/tsconf.lib $(BUILD)/tsconf.cfg
 
 # zcc resolves CRT0 independently of the config's directory. Emit a config
 # with absolute paths for callers that do not include tsconf.mk.
-$(BUILD)/tsconf.cfg: config/tsconf.cfg $(ZX_COMMON_ROOT)/basic48.cfg Makefile FORCE
+$(BUILD)/tsconf.cfg: config/tsconf.cfg $(ZX_COMMON_ROOT)/config/basic48.cfg Makefile FORCE
 	@mkdir -p $(dir $@)
-	@sed -e '/^INCLUDE \.\.\/\.\.\/common\/basic48\.cfg$$/d' \
+	@sed -e '/^INCLUDE \.\.\/\.\.\/common\/config\/basic48\.cfg$$/d' \
 		-e 's|$${ZX_COMMON_ROOT}|$(ZX_COMMON_ROOT)|g' \
-		$< $(ZX_COMMON_ROOT)/basic48.cfg > $@.tmp
+		$< $(ZX_COMMON_ROOT)/config/basic48.cfg > $@.tmp
 	@cmp -s $@.tmp $@ || mv $@.tmp $@
 	@rm -f $@.tmp
 
