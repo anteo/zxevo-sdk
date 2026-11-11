@@ -81,7 +81,9 @@ restore the BASIC ROM, workspace, stack mapping and interrupt state before retur
 changes them. The CRT restores SP, IX and IY, and returns the exit code in BC. An initialization
 error skips `main()` and becomes the exit code. If the application exits with code zero, a shutdown
 error becomes the exit code. Finish any graphics groups and release leased windows before exiting.
-The profile disables CRT stdio.
+
+The default Z80 and BASIC 48 CRTs both leave stdio off by default. Enable standard streams
+with `-pragma-define:CRT_ENABLE_STDIO=1`.
 
 The standard 8x8 font uses the BASIC ROM glyphs at `3D00h`. Keep the ROM mapped in W0 while using
 the font. To use the embedded glyphs instead, build with `-pragma-define:CRT_USE_ROM_FONT=0`.

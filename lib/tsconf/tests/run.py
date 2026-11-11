@@ -33,14 +33,12 @@ class TSConfSuite(TestSuite):
         flags = [f"+{config}", f"-L{build_dir}", f"-I{include}", f"-I{common_include}",
                  f"-Ca-I{TEST_SUPPORT_INCLUDE}",
                  f"-DTS_TEST_DATA_PAGE={data_page}"]
-        if not profile.get("stdio"):
-            flags.append("-pragma-define:CRT_ENABLE_STDIO=0")
         return TargetBuild(
             flags=flags,
             env={},
             sources=(),
             inputs=(Path(__file__), config, common / "config" / "basic48.cfg",
-                    common / "crt" / "z80_crt0.asm", common / "crt" / "crt_no_stdio.inc",
+                    common / "crt" / "z80_crt0.asm", common / "crt" / "crt_stdio.inc",
                     common / "crt" / "crt_zx_lifecycle.inc",
                     build_dir / "tsconf.lib", TEST_SUPPORT_INCLUDE / "mmap.inc",
                     *sorted(common_include.rglob("*.h")),

@@ -60,7 +60,8 @@ run: build
 
 $(BUILD)/console-crt.tap: Makefile console_crt.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(ZX_APPMAKE_BIN)
 	mkdir -p $(BUILD)
-	PATH=$(dir $(ZX_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -create-app -Cz+baseconf -Cz--name=BCCRT -o $(BUILD)/console-crt console_crt.c
+	PATH=$(dir $(ZX_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -pragma-define:CRT_ENABLE_STDIO=1 \
+		-create-app -Cz+baseconf -Cz--name=BCCRT -o $(BUILD)/console-crt console_crt.c
 
 run-crt: $(BUILD)/console-crt.tap
 	$(PYTHON) $(ROOT)/tools/zesarux/tap_runner.py --tap $(BUILD)/console-crt.tap --machine BaseConf --tape-at-start --keys 'i;w40;load;quote;quote;enter;w40' --instructions $(INSTRUCTIONS) --shot $(BUILD)/console-crt.png --log $(BUILD)/console-crt.log --report $(BUILD)/console-crt-report.txt

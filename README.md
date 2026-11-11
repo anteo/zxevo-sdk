@@ -66,7 +66,8 @@ For a BaseConf BASIC 48 TAP, use the BaseConf fragment, `$(BASECONF_LIB)` and
 helper also requires a host C compiler, `patch` and GMP development files. TSConf's BASIC 48 profile
 uses the standard z88dk appmake. [BaseConf appmake](tools/appmake/README.en.md)
 
-The BASIC 48 profile disables CRT stdio. For formatted output, use `zx_console_printf()` from
+The SDK CRTs leave stdio off by default. Enable standard streams with
+`-pragma-define:CRT_ENABLE_STDIO=1`. For SDK console output, use `zx_console_printf()` from
 `<zx/printf.h>` after configuring the target console. [Common APIs](lib/common/README.en.md)
 
 `make examples` builds the BaseConf and TSConf examples as individual BASIC 48 TAPs. Use

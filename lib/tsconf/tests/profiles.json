@@ -13,7 +13,7 @@
   },
   "stdio": {
     "description": "Enable classic z88dk stdio through the TSConf console hook",
-    "stdio": true
+    "cflags": ["-pragma-define:CRT_ENABLE_STDIO=1"]
   },
   "60hz": {
     "description": "Build TSConf software geometry for 60 Hz",

@@ -45,7 +45,7 @@ TSConf recipe can invoke zcc as follows.
 ```
 
 Add the linker settings for your RAM banks. To use the BASIC 48 CRT and return to BASIC, add
-`-crt0=$(ZX_COMMON_ROOT)/crt/basic48_crt0.asm -pragma-define:CRT_ENABLE_STDIO=0` to the application flags. The `*_BASIC48_FLAGS`
+`-crt0=$(ZX_COMMON_ROOT)/crt/basic48_crt0.asm` to the application flags. The `*_BASIC48_FLAGS`
 variables already select `+zx` for flat TAPs, so use `*_APP_FLAGS` as the base for banked builds.
 
 To package an existing linked program, invoke the tool directly with `+baseconf` or `+tsconf`.

@@ -41,9 +41,7 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
 
 Use `TSCONF_BUILD` to keep different archive profiles in separate directories. Surface selection and
 `ts_video_set_mode` reject excluded draw modes. Direct video register setters remain available. An
-application that uses console output or drawing can omit the other backends this way. Build an
-application with `-pragma-define:CRT_ENABLE_STDIO=0` to keep the CRT from pulling in the console.
-Direct calls to the console and video APIs still work.
+application that uses console output or drawing can omit the other backends this way.
 
 Build with `TSCONF_VIDEO_60HZ=1` when the FPGA uses its optional 60 Hz timing. This defines the
 software geometry for the archive. The FPGA timing is configured separately. The `360×288` raster
@@ -130,9 +128,9 @@ through the library. Text mode doubles the raster width in pixels. `zx_console_g
 usable columns and rows for the selected surface and font. At 60 Hz the largest text and packed
 console grids use 30 rows.
 
-With the regular `tsconf.cfg` target, `printf` uses the selected surface. The shared `basic48`
-profile disables stdio. In either profile, `zx_console_puts()` writes a string at the cursor and
-`zx_console_printf()` formats strings and 16-bit integers on the same selected surface.
+With stdio enabled via `-pragma-define:CRT_ENABLE_STDIO=1`, `printf()` writes to the selected
+surface in both profiles. `zx_console_puts()` writes a string at the cursor and
+`zx_console_printf()` formats strings and 16-bit integers without requiring stdio.
 [zx/printf.h](../common/include/zx/printf.h)
 
 The caller maps a ZX or native text page before selecting it and keeps the mapping during output.

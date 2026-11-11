@@ -7,6 +7,7 @@
 
 defc    crt0 = 1
 INCLUDE "zcc_opt.def"
+INCLUDE "crt_stdio.inc"
 INCLUDE "crt_zx_lifecycle.inc"
 
 ;-------
@@ -87,7 +88,7 @@ INCLUDE "crt/classic/crt_terminate.inc"
 l_dcal:
         jp      (hl)
 
-INCLUDE "crt_no_stdio.inc"
+        ZX_CRT_STDIO
 INCLUDE "crt/classic/crt_runtime_selection.inc"
 
     ; If we were given a model then use it

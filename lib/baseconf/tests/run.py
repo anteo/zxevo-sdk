@@ -39,7 +39,7 @@ class BaseConfSuite(TestSuite):
             env={"BASECONF_ROOT": str(BASECONF)},
             sources=(SUPPORT / "bc_case.c",),
             inputs=(Path(__file__), config, common / "config" / "basic48.cfg",
-                    common / "crt" / "z80_crt0.asm", common / "crt" / "crt_no_stdio.inc",
+                    common / "crt" / "z80_crt0.asm", common / "crt" / "crt_stdio.inc",
                     common / "crt" / "crt_zx_lifecycle.inc", build_dir / "baseconf.lib",
                     SUPPORT / "bc_case.h", SUPPORT / "mmap.inc",
                     *sorted(common_include.rglob("*.h"))),

@@ -68,7 +68,8 @@ demo.tap: main.c $(TSCONF_LIB)
 хостовый C-компилятор, `patch` и файлы разработки GMP. Профиль BASIC 48 для TSConf использует
 стандартный appmake из z88dk. [BaseConf appmake](tools/appmake/README.ru.md)
 
-Профиль BASIC 48 отключает stdio в CRT. Для форматированного вывода используйте
+В CRT из SDK stdio выключен по умолчанию. Для стандартных потоков добавьте
+`-pragma-define:CRT_ENABLE_STDIO=1`. Для вывода через консоль SDK используйте
 `zx_console_printf()` из `<zx/printf.h>` после настройки консоли целевой конфигурации.
 [Общие API](lib/common/README.ru.md)
 

@@ -224,17 +224,18 @@ The text buffer is 512 bytes and truncates on overflow.
 
 `default` is always applied first and holds shared settings such as memory layout and the library
 build directory. The names in a case's `profiles` array are then merged in order into one build
-configuration. z88dk defaults `CRT_ENABLE_STDIO` to `1`, so cases that use CRT stdio need no stdio
-layer. Select `no-stdio` only for cases that need to omit it.
+configuration. The CRT leaves stdio off by default. Cases that use standard streams or
+`printf()` select the `stdio` layer.
 
-| Layer           | Setting                               | Effect                                                  |
-| --------------- | ------------------------------------- | ------------------------------------------------------- |
-| `no-stdio`      | `CRT_ENABLE_STDIO=0`                  | Disable CRT stdio and the BaseConf generic console hook |
-| `no-font8`      | `BASECONF_CONSOLE_NO_DEFAULT_FONT=1`  | Omit the default 8×8 font from the library              |
-| `no-primitives` | `BASECONF_VIDEO_PRIMITIVE_MODES=NONE` | Omit graphics primitive backends                        |
+| Layer           | Setting                              | Effect                                    |
+| --------------- | ------------------------------------ | ----------------------------------------- |
+| `stdio`         | `CRT_ENABLE_STDIO=1`                 | Enable CRT stdio and its console hook      |
+| `no-stdio`      | `CRT_ENABLE_STDIO=0`                 | Disable CRT stdio and its console hook     |
+| `no-font8`      | `BASECONF_CONSOLE_NO_DEFAULT_FONT=1`  | Omit the default 8×8 font from the library |
+| `no-primitives` | `BASECONF_VIDEO_PRIMITIVE_MODES=NONE` | Omit graphics primitive backends          |
 
-For example, `no-stdio` plus `no-primitives` builds a text-only configuration. With only `no-font8`,
-the default CRT stdio setting remains enabled. Conflicting assignments are reported as an error.
+For example, `no-primitives` builds a text-only configuration. Conflicting assignments are
+reported as an error.
 
 Profile fields:
 
