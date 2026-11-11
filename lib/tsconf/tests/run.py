@@ -8,7 +8,7 @@ TESTS = Path(__file__).resolve().parent
 TSCONF = TESTS.parent
 sys.path.insert(0, str(TESTS.parents[2]))
 
-from lib.test_support.runner import (  # noqa: E402
+from tools.test_runner.runner import (  # noqa: E402
     TEST_SUPPORT_INCLUDE, FrameworkError, TargetBuild, TestSuite, run_test_build,
 )
 

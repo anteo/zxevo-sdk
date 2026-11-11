@@ -1,11 +1,8 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help clean
+.PHONY: help
 help:
-	@printf '%s\n' 'make format  Format test support sources' 'make clean   Remove Python caches'
+	@printf '%s\n' 'make format  Format Z80 test support sources'
 
-clean:
-	find . -type d -name __pycache__ -prune -exec rm -rf -- {} +
-
-FORMAT_FILES := $(wildcard include/*.h src/*.c *.md)
+FORMAT_FILES := $(wildcard include/*.h src/*.c)
 include ../../tools/formatter/formatter.mk

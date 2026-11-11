@@ -2,7 +2,7 @@
   "description": "Load a TRD from the FAT HDD into the ERS RAM disk and verify its source entry",
   "profiles": ["no-stdio", "ers-rom"],
   "emulator_images": {
-    "generator": "../../test_support/fixtures/create_device_images.py",
+    "generator": "../../../tools/test_runner/fixtures/create_device_images.py",
     "ide": "hdd.img"
   },
   "timeout": 45

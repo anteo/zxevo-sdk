@@ -10,7 +10,7 @@ BASECONF = TESTS.parent
 SUPPORT = TESTS / "support"
 sys.path.insert(0, str(TESTS.parents[2]))
 
-from lib.test_support.runner import FrameworkError, TargetBuild, TestSuite, run_test_build  # noqa: E402
+from tools.test_runner.runner import FrameworkError, TargetBuild, TestSuite, run_test_build  # noqa: E402
 
 
 class BaseConfSuite(TestSuite):

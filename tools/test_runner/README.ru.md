@@ -5,8 +5,11 @@
 
 `runner.py` собирает C-кейсы через z88dk, загружает блоки в ZEsarUX через ZRCP, получает результаты
 через ZXHost и сравнивает снимки, текст и бинарные данные. Метаданные, эталоны, профили и фикстуры
-находятся рядом с тестами библиотек. Общий набор использует одну директорию кейсов и два машинных
-адаптера с раздельными выходными каталогами. [Общие тесты](../common/tests/README.ru.md)
+находятся рядом с тестами библиотек. Генераторы общих образов лежат в [`fixtures/`](fixtures/). Код
+для Z80 и описание протокола лежат в [`lib/test_support`](../../lib/test_support/).
+
+Общий набор использует одну директорию кейсов и два машинных адаптера с раздельными выходными
+каталогами. [Общие тесты](../../lib/common/tests/README.ru.md)
 
 Если C-компилятор завершится по `SIGSEGV`, раннер сохраняет диагностику в `build.sigsegv.log` или
 `library-build.sigsegv.log` и повторяет сборку один раз. Обычные ошибки компиляции выводятся сразу.
@@ -26,15 +29,15 @@ make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 Бинарники и манифесты попадают в `tests/build/`, отчёты и снимки — в `tests/out/` соответствующей
 библиотеки. Общий набор добавляет подкаталог для каждой конфигурации. Команда `make clean` из корня
 SDK удаляет результаты сборок, тестов и кэш Python.
-[Тесты BaseConf](../baseconf/tests/README.ru.md) ·
-[Тесты TSConf](../tsconf/README.ru.md#emulator-tests) ·
-[Общие тесты](../common/tests/README.ru.md)
+[Тесты BaseConf](../../lib/baseconf/tests/README.ru.md) ·
+[Тесты TSConf](../../lib/tsconf/README.ru.md#emulator-tests) ·
+[Общие тесты](../../lib/common/tests/README.ru.md)
 
 ## Добавление набора
 
 Новый набор хранит C-кейсы и соответствующие JSON в `tests/cases/`, а `profiles.json` и точку входа
 раннера в `tests/`. Передайте `TestSuite` путь к тестам и имя машины ZEsarUX. Адаптер реализует
-следующие методы. [Адаптер BaseConf](../baseconf/tests/run.py)
+следующие методы. [Адаптер BaseConf](../../lib/baseconf/tests/run.py)
 
 - `build_target` собирает целевую библиотеку и возвращает флаги, окружение, дополнительные исходники
   и файлы, по которым определяется актуальность сборки. Укажите CRT, раскладку и входные файлы,
@@ -63,10 +66,10 @@ SDK удаляет результаты сборок, тестов и кэш Pyt
 
 ZXHost — небольшой C-модуль для программы на ZX. Он публикует в памяти почтовый ящик с запросом и
 результатом и лог фиксированного размера. Адреса, поля, версия и состояния заданы в
-[`protocol.json`](protocol.json). Перед линковкой сгенерируйте константы C.
+[`protocol.json`](../../lib/test_support/protocol.json). Перед линковкой сгенерируйте константы C.
 
 ```sh
-python3 tools/zesarux/zx_host/generate_header.py \
+python3 tools/test_runner/zx_host/generate_header.py \
   lib/test_support/protocol.json build/zx_host_config.h
 ```
 
@@ -82,12 +85,12 @@ python3 tools/zesarux/zx_host/generate_header.py \
 
 ### Модули Python
 
-- `tools/zesarux/zx_host/protocol.py` проверяет и кодирует поля почтового ящика.
-- `tools/zesarux/zx_host/manifest.py` описывает параметры запуска, блоки и группы тестов,
+- `tools/test_runner/zx_host/protocol.py` проверяет и кодирует поля почтового ящика.
+- `tools/test_runner/zx_host/manifest.py` описывает параметры запуска, блоки и группы тестов,
   сериализует манифест в JSON.
-- `tools/zesarux/zx_host/basic.py` формирует BASIC-команды `POKE` для начального запроса.
-- `tools/zesarux/zx_host/session.py` предоставляет `ZXHostSession`. Он загружает блоки манифеста,
-  отправляет команду, ждёт ответ с нужным номером и поддерживает запрос отмены.
+- `tools/test_runner/zx_host/basic.py` формирует BASIC-команды `POKE` для начального запроса.
+- `tools/test_runner/zx_host/session.py` предоставляет `ZXHostSession`. Он загружает блоки
+  манифеста, отправляет команду, ждёт ответ с нужным номером и поддерживает запрос отмены.
 - `tools/zesarux/runner.py` запускает ZEsarUX и предоставляет клиент ZRCP.
 
 Если программа переносит почтовый ящик после запуска, манифест может описать перенос через
@@ -95,7 +98,7 @@ python3 tools/zesarux/zx_host/generate_header.py \
 копирования.
 
 ```python
-from tools.zesarux.zx_host import ZXHostSession
+from tools.test_runner.zx_host import ZXHostSession
 
 with ZXHostSession("build/manifest.json", "/path/to/zesarux") as session:
     session.start(command=1, args=(0, 0))

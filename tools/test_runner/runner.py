@@ -24,10 +24,12 @@ from pathlib import Path
 
 from tools.zesarux.runner import default_emulator
 from tools.zesarux.tap_runner import send_key_script
-from tools.zesarux.zx_host.session import ZXHostSession
 
-TEST_SUPPORT = Path(__file__).resolve().parent
-ROOT = TEST_SUPPORT.parents[1]
+from .zx_host.session import ZXHostSession
+
+TEST_RUNNER = Path(__file__).resolve().parent
+ROOT = TEST_RUNNER.parents[1]
+TEST_SUPPORT = ROOT / "lib" / "test_support"
 PROTOCOL_FILE = TEST_SUPPORT / "protocol.json"
 TEST_SUPPORT_INCLUDE = TEST_SUPPORT / "include"
 ZX_HOST_SOURCE = TEST_SUPPORT / "src" / "zx_host.c"
@@ -1057,7 +1059,7 @@ class TestSuite:
         if not (stamp.is_file() and stamp.read_text() == fingerprint + "\n" and manifest_path.is_file()):
             generated_header = out_dir / "zx_host_config.h"
             subprocess.run(
-                [sys.executable, str(ROOT / "tools" / "zesarux" / "zx_host" / "generate_header.py"),
+                [sys.executable, str(TEST_RUNNER / "zx_host" / "generate_header.py"),
                  str(PROTOCOL_FILE), str(generated_header)],
                 check=True, capture_output=True, text=True)
             command = [

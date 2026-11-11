@@ -2,7 +2,7 @@
   "description": "Verify that the NMI lock prevents opening the ERS file browser",
   "profiles": ["no-stdio", "ers-rom"],
   "emulator_images": {
-    "generator": "../../test_support/fixtures/create_device_images.py",
+    "generator": "../../../tools/test_runner/fixtures/create_device_images.py",
     "ide": "hdd.img"
   },
   "emulator_steps": {

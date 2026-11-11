@@ -38,7 +38,7 @@ make
 
 Команда `make examples` собирает TAP для BASIC 48, а `make test` запускает тесты в эмуляторе.
 [Загрузка примеров](lib/common/README.ru.md#профиль-запуска-из-basic-48) ·
-[Настройка тестов](lib/test_support/README.ru.md#запуск-тестов)
+[Настройка тестов](tools/test_runner/README.ru.md#запуск-тестов)
 
 ## Подключение SDK к приложению
 
@@ -117,7 +117,7 @@ make
   для замеров тактов Z80 в ZEsarUX.
 - [Расширение z88dk appmake](tools/appmake/README.ru.md) добавляет загрузчик TAP с банками RAM
   для BaseConf и TSConf.
-- [ZXHost и тестовая инфраструктура](lib/test_support/README.ru.md) загружают программы и собирают
+- [ZXHost и тестовая инфраструктура](tools/test_runner/README.ru.md) загружают программы и собирают
   результаты из ZEsarUX.
 - [Форматирование исходников](tools/formatter/README.ru.md) описывает `make format` для C, ASM и
   Markdown.

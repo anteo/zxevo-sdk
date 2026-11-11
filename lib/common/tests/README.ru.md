@@ -20,4 +20,4 @@ ZEsarUX с мостом для UART Кондратьева.
 Бинарники и манифесты сохраняются в `build/baseconf` и `build/tsconf`, результаты в `out/baseconf` и
 `out/tsconf`. В выводе имя машины указывается перед именем кейса, например `BaseConf/audio` и
 `TSConf/audio`. Специфичные для платформы проверки, в том числе NMI и ловушки исполнения BaseConf,
-находятся в отдельных наборах. [Раннер и ZXHost](../../test_support/README.ru.md)
+находятся в отдельных наборах. [Раннер и ZXHost](../../../tools/test_runner/README.ru.md)

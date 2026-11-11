@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "test_support" / "fixtures"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[5] / "tools" / "test_runner" / "fixtures"))
 from create_device_images import SECTOR_SIZE, fat32_image  # noqa: E402
 
 

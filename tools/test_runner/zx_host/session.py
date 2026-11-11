@@ -3,12 +3,9 @@ import json
 import os
 import time
 
-try:
-    from ..runner import ZesaruxRunner
-    from .protocol import ZXHostProtocol
-except ImportError:
-    from zesarux.runner import ZesaruxRunner
-    from .protocol import ZXHostProtocol
+from tools.zesarux.runner import ZesaruxRunner
+
+from .protocol import ZXHostProtocol
 
 
 class ZXHostSession:

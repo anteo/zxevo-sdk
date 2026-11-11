@@ -4,9 +4,9 @@
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 This directory contains the BaseConf test cases, their machine adapter and the older TAP probes. The
-shared [ZX Evolution test harness](../../test_support/README.en.md) drives the emulator and compares
-results. [Common library cases](../../common/tests/README.en.md) run separately on both machines.
-The console TAP tests are at the end. The font benchmark lives in
+shared [ZX Evolution test harness](../../../tools/test_runner/README.en.md) drives the emulator and
+compares results. [Common library cases](../../common/tests/README.en.md) run separately on both
+machines. The console TAP tests are at the end. The font benchmark lives in
 [`../bench/README.en.md`](../bench/README.en.md).
 
 ## Test framework

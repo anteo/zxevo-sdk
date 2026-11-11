@@ -8,7 +8,6 @@ clean:
 	$(MAKE) -C baseconf clean
 	$(MAKE) -C tsconf clean
 	$(MAKE) -C common/tests clean
-	$(MAKE) -C test_support clean
 
 FORMAT_SUBDIRS := baseconf test_support tsconf
 FORMAT_FILES := $(wildcard common/crt/*.asm common/src/*/z80/*.asm common/src/*/z80/*.inc common/include/zx/*.h common/*.c common/*.md)

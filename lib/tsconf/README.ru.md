@@ -247,7 +247,8 @@ API также монтирует Nemo IDE, открывает каталоги,
 для почтового ящика и данных C. Большинство кейсов выполняются из W2 и используют W3 для страниц
 фикстур. Эмулятор задаётся через `make test-tsconf ZESARUX=/path/to/zesarux`. Для одного кейса
 используйте `python3 lib/tsconf/tests/run.py check --case video/video`, для всего каталога
-`--case video`. [Раннер](../test_support/README.ru.md) · [Общие тесты](../common/tests/README.ru.md)
+`--case video`. [Раннер](../../tools/test_runner/README.ru.md) ·
+[Общие тесты](../common/tests/README.ru.md)
 
 Кейсы проверяют регистры, отображение RAM, растровые IRQ, DMA, SD SPI, legacy ZiFi, графику,
 прокрутку и регистры Beta Disk. Снимки проверяют итоговое изображение. ZEsarUX пишет байты FMAPS

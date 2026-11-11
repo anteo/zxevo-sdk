@@ -248,7 +248,8 @@ The suite uses the shared test harness and ZXHost on ZEsarUX's **TSConf** machin
 resident for the mailbox and C data, runs most cases from W2 and uses W3 for their banked fixtures.
 Select an emulator with `make test-tsconf ZESARUX=/path/to/zesarux`. To run one case, use
 `python3 lib/tsconf/tests/run.py check --case video/video` from the repository root. Use
-`--case video` to select the entire category. [Shared test harness](../test_support/README.en.md) ·
+`--case video` to select the entire category.
+[Shared test harness](../../tools/test_runner/README.en.md) ·
 [Common tests on both machines](../common/tests/README.en.md)
 
 The tests exercise register access and RAM paging, raster IRQs, DMA, SD SPI, legacy ZiFi, video

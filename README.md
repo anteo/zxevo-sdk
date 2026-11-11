@@ -38,7 +38,7 @@ make
 
 Run `make examples` to build the BASIC 48 TAPs or `make test` to run the emulator suites. See the
 [example launch instructions](lib/common/README.en.md#basic-48-startup-profile) and
-[test setup](lib/test_support/README.en.md#running-the-suites).
+[test setup](tools/test_runner/README.en.md#running-the-suites).
 
 ## Use the SDK in an application
 
@@ -117,6 +117,6 @@ sprites and scrolling tile layers.
   measuring Z80 T-states in ZEsarUX.
 - The [z88dk appmake extension](tools/appmake/README.en.md) packages banked TAPs for BaseConf
   and TSConf.
-- [ZXHost and the test harness](lib/test_support/README.en.md) load programs and collect results
+- [ZXHost and the test harness](tools/test_runner/README.en.md) load programs and collect results
   from ZEsarUX.
 - [Source formatting](tools/formatter/README.en.md) covers `make format` for C, ASM, and Markdown.

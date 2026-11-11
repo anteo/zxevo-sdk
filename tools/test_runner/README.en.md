@@ -5,21 +5,23 @@
 
 `runner.py` builds C cases with z88dk, loads the linked blocks through ZEsarUX and ZXHost, and
 compares screenshots, text and binary output. Case metadata, reference outputs, machine-specific
-profiles and fixtures live with each library.
+profiles and fixtures live with each library. Shared image generators live in
+[`fixtures/`](fixtures/). The Z80 runtime and mailbox specification live in
+[`lib/test_support`](../../lib/test_support/).
 
 If the C compiler exits with `SIGSEGV`, the runner saves the diagnostics in `build.sigsegv.log` or
 `library-build.sigsegv.log` and retries the build once. Ordinary compiler errors are reported
 immediately.
 
-The [common suite](../common/tests/README.en.md) runs one case directory with both machine adapters
-and keeps build and result directories separate by machine.
+The [common suite](../../lib/common/tests/README.en.md) runs one case directory with both machine
+adapters and keeps build and result directories separate by machine.
 
 ## Running the suites
 
 From the SDK root, run `make test` to run the BaseConf, TSConf, and common suites. The runner needs
-Python 3 and ZEsarUX with ZRCP. Set `ZESARUX` to select the executable, or let the runner find it
-on `PATH` or in a standard installation directory. Set `ZXEVO_TEST_ROM` to override the ROM used
-by the `ers-rom` and `ts-bios` profiles.
+Python 3 and ZEsarUX with ZRCP. Set `ZESARUX` to select the executable, or let the runner find it on
+`PATH` or in a standard installation directory. Set `ZXEVO_TEST_ROM` to override the ROM used by the
+`ers-rom` and `ts-bios` profiles.
 
 ```sh
 make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
@@ -27,18 +29,18 @@ make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 
 Use `make test-baseconf`, `make test-tsconf`, or `make test-common` to run a single suite. Binaries
 and manifests go to `tests/build/`, and reports and captures go to `tests/out/` under the
-corresponding library. The common suite adds machine-specific subdirectories. Run `make clean`
-from the SDK root to remove build and test outputs and Python caches.
-[BaseConf tests](../baseconf/tests/README.en.md) ·
-[TSConf tests](../tsconf/README.en.md#emulator-tests) ·
-[Common tests](../common/tests/README.en.md)
+corresponding library. The common suite adds machine-specific subdirectories. Run `make clean` from
+the SDK root to remove build and test outputs and Python caches.
+[BaseConf tests](../../lib/baseconf/tests/README.en.md) ·
+[TSConf tests](../../lib/tsconf/README.en.md#emulator-tests) ·
+[Common tests](../../lib/common/tests/README.en.md)
 
 ## Adding a suite
 
 To add a suite, put its C cases and optional matching JSON under its own `tests/cases/`. Put
 `profiles.json` and a short entry point in the suite's `tests/` directory. See the
-[BaseConf adapter](../baseconf/tests/run.py). Pass the suite's test directory and ZEsarUX machine
-name to `TestSuite` and supply these methods.
+[BaseConf adapter](../../lib/baseconf/tests/run.py). Pass the suite's test directory and ZEsarUX
+machine name to `TestSuite` and supply these methods.
 
 - `build_target` builds any target library and returns the compiler flags, environment, extra
   sources and inputs that invalidate a cached case. Include the target CRT layout and any library or
@@ -71,11 +73,11 @@ persistent writes disabled.
 request/result mailbox and a bounded text log in target memory. It is not the Python controller or
 the emulator transport.
 
-`protocol.json` is the source of truth for the header address, layout, states, version and log
-range. Generate the C constants before linking a target:
+[`protocol.json`](../../lib/test_support/protocol.json) defines the header address, layout, states,
+version and log range. Generate the C constants before linking a target.
 
 ```sh
-python3 tools/zesarux/zx_host/generate_header.py \
+python3 tools/test_runner/zx_host/generate_header.py \
   lib/test_support/protocol.json build/zx_host_config.h
 ```
 
@@ -93,11 +95,11 @@ last by the Python protocol codec; the target preserves it in the completion hea
 
 ### Python roles
 
-`tools/zesarux/zx_host/protocol.py` validates and encodes the mailbox descriptor.
-`tools/zesarux/zx_host/manifest.py` provides typed launch, block and test-group records and
-serializes the program manifest at the JSON boundary. `tools/zesarux/zx_host/basic.py` can build
+`tools/test_runner/zx_host/protocol.py` validates and encodes the mailbox descriptor.
+`tools/test_runner/zx_host/manifest.py` provides typed launch, block and test-group records and
+serializes the program manifest at the JSON boundary. `tools/test_runner/zx_host/basic.py` can build
 BASIC POKEs for the startup request from the same descriptor fields.
-`tools/zesarux/zx_host/session.py` provides `ZXHostSession`, a host-side session with a ZXHost
+`tools/test_runner/zx_host/session.py` provides `ZXHostSession`, a host-side session with a ZXHost
 target. It loads the blocks listed in a program manifest, sends an initial command, polls for the
 matching sequence, reads results and can request cooperative cancellation. `tools/zesarux/runner.py`
 remains the emulator transport used internally by that session. A package that remaps the mailbox
@@ -105,7 +107,7 @@ after launch may include `runtime_memory` in its manifest; the session checks th
 log fit the declared CPU window and bootstrap-to-runtime transfer range.
 
 ```python
-from tools.zesarux.zx_host import ZXHostSession
+from tools.test_runner.zx_host import ZXHostSession
 
 with ZXHostSession("build/manifest.json", "/path/to/zesarux") as session:
     session.start(command=1, args=(0, 0))

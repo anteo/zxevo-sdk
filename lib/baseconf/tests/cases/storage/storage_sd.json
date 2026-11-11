@@ -2,7 +2,7 @@
   "description": "SD SPI transaction, MBR read, and block write/read on a disposable image",
   "profiles": ["no-stdio", "no-font8"],
   "emulator_images": {
-    "generator": "../../test_support/fixtures/create_device_images.py",
+    "generator": "../../../tools/test_runner/fixtures/create_device_images.py",
     "mmc": "sd.img"
   }
 }

@@ -40,6 +40,6 @@ clean:
 
 include tools/appmake/appmake.mk
 
-FORMAT_FILES := README.md README.ru.md $(wildcard tools/formatter/*.md tools/profiling/*.md)
+FORMAT_FILES := README.md README.ru.md $(wildcard tools/formatter/*.md tools/profiling/*.md tools/test_runner/*.md)
 FORMAT_SUBDIRS := lib tools/appmake
 include tools/formatter/formatter.mk

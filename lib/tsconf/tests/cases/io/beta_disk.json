@@ -2,7 +2,7 @@
   "description": "Kempston button input, FDDVirt selection and VG93 register roundtrips",
   "emulator_args": ["--joystickemulated", "Kempston"],
   "emulator_images": {
-    "generator": "../../test_support/fixtures/create_trd_image.py",
+    "generator": "../../../tools/test_runner/fixtures/create_trd_image.py",
     "trd": "disk.trd"
   },
   "emulator_steps": {
