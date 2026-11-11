@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf test test-baseconf test-tsconf test-common clean
+.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf test test-baseconf test-tsconf test-common test-appmake clean
 
 all: baseconf-lib tsconf-lib
 
@@ -31,6 +31,10 @@ test-tsconf:
 
 test-common:
 	$(MAKE) -C lib/common/tests test
+
+test-appmake:
+	@mkdir -p tools/appmake/build/tests
+	@$(MAKE) --no-print-directory -C tools/appmake test 2>tools/appmake/build/tests/make.log
 
 clean:
 	$(MAKE) -C lib clean

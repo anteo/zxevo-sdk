@@ -57,6 +57,19 @@ The linked map and section binaries must follow z88dk appmake naming and be avai
 supplied base name. The target reads addresses and sizes from the map rather than demo-specific
 filenames.
 
+## Test banked TAPs
+
+Run the appmake suite separately from the library tests.
+
+```sh
+make test-appmake ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
+```
+
+The suite builds a banked TAP with each target and runs `LOAD ""` in BASIC 48. It checks the bytes
+in both physical RAM pages, the W3 mapping at entry and the return to BASIC. Test TAPs, build logs
+and emulator logs are under `tools/appmake/build/tests/`. Omit `ZXEVO_TEST_ROM` to use the ROMs
+provided by the emulator.
+
 ## Target behavior
 
 - Writes a tokenized Spectrum BASIC loader and standard TAP CODE blocks.
