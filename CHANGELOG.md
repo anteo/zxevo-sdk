@@ -19,11 +19,13 @@
 - (appmake) support banked TSConf TAPs
 - (crt) make stdio opt-in for both profiles
 - (version) expose the SDK version in C
+- (release) accept patch, minor, and major increments
 
 ### Fixes
 
 - (appmake) use the SDK packager for TSConf
 - (formatter) show directory progress and omit empty summaries
+- (release) publish version notes from the changelog
 
 ### Refactoring
 
