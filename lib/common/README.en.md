@@ -64,8 +64,8 @@ BaseConf and TSConf share the `-subtype=basic48` zcc profile and CRT. Use
 Makefile. Include the corresponding library's Make fragment to set the target, ABI and archive
 paths. For direct zcc calls, export `ZX_COMMON_ROOT` as the absolute path to this directory and
 supply the target's include and library paths and ABI flags
-(`-clib=classic -compiler=sdcc --reserve-regs-iy`). BaseConf also needs `BASECONF_ROOT` and its
-project appmake built with `make appmake`.
+(`-clib=classic -compiler=sdcc --reserve-regs-iy`). BaseConf also needs `BASECONF_ROOT`. Both
+targets use the SDK appmake, which you can build with `make appmake` before a direct zcc call.
 
 ```sh
 make examples

@@ -29,25 +29,23 @@ make appmake Z88DK_SRC=/path/to/z88dk/src
 
 ## Упаковка TAP
 
-Обычные TAP для BASIC 48 в обеих конфигурациях используют стандартную цель appmake `+zx`.
-В BaseConf `APPMAKEEXE` указывает на локальную сборку appmake. TSConf использует appmake из
-установленного z88dk.
+В обеих конфигурациях `APPMAKEEXE` выбирает appmake из SDK. Для обычных TAP под BASIC 48
+используется его стандартная цель `+zx`. В Makefile подключите фрагмент нужной конфигурации и
+добавьте `$(ZX_APPMAKE_BIN)` в зависимости правила сборки TAP.
 
-Для банкового TAP подключите Make-фрагмент конфигурации и добавьте `$(ZX_APPMAKE_BIN)` в
-зависимости правила сборки TAP. Для BaseConf передайте `-Cz+baseconf` с
-`$(BASECONF_APP_FLAGS)`. Для TSConf передайте `-Cz+tsconf` с `$(TSCONF_APP_FLAGS)` и поставьте
-каталог бинарника SDK первым в `PATH`. Пример команды в правиле сборки TSConf.
+Для банкового TAP передайте `-Cz+baseconf` с `$(BASECONF_APP_FLAGS)` или `-Cz+tsconf` с
+`$(TSCONF_APP_FLAGS)`. Пример команды в правиле сборки TSConf.
 
 ```makefile
-	PATH="$(dir $(ZX_APPMAKE_BIN)):$$PATH" $(ZCC) $(TSCONF_APP_FLAGS) \
+	$(ZCC) $(TSCONF_APP_FLAGS) \
 	  -pragma-define:CRT_ORG_CODE=0x8000 -m -create-app -Cz+tsconf \
 	  -Cz--name=MYPROGRAM -o build/program src/main.c
 ```
 
 Добавьте настройки линковки для своих банков RAM. Чтобы использовать CRT с возвратом в BASIC 48,
 добавьте `-crt0=$(ZX_COMMON_ROOT)/crt/basic48_crt0.asm` к флагам приложения. Переменные
-`*_BASIC48_FLAGS` уже выбирают цель `+zx` для плоских TAP, поэтому для банковых сборок возьмите
-за основу `*_APP_FLAGS`.
+`*_BASIC48_FLAGS` уже выбирают цель `+zx` для плоских TAP, поэтому для банковых сборок возьмите за
+основу `*_APP_FLAGS`.
 
 Для упаковки уже слинкованной программы вызовите инструмент напрямую с `+baseconf` или `+tsconf`.
 

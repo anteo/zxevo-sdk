@@ -29,17 +29,15 @@ local modification and this repository retains the corresponding project source 
 
 ## Pack a TAP
 
-Flat BASIC 48 TAPs use the standard appmake target `+zx` on both machines. BaseConf's
-`APPMAKEEXE` points to the local build of appmake. TSConf uses the appmake shipped with z88dk.
+Both configurations select the SDK appmake through `APPMAKEEXE`. Flat BASIC 48 TAPs use its standard
+target `+zx`. When building TAPs from a Makefile, include the target's Make fragment and add
+`$(ZX_APPMAKE_BIN)` as a prerequisite of the TAP rule.
 
-For a banked TAP, include the target's Make fragment and add `$(ZX_APPMAKE_BIN)` as a prerequisite
-of the TAP rule. Use the application flags and select one appmake target. For BaseConf use
-`-Cz+baseconf` with `$(BASECONF_APP_FLAGS)`. For TSConf use `-Cz+tsconf` with
-`$(TSCONF_APP_FLAGS)` and put the SDK binary's directory first on `PATH`. For example, a
-TSConf recipe can invoke zcc as follows.
+For a banked TAP, use `-Cz+baseconf` with `$(BASECONF_APP_FLAGS)` or `-Cz+tsconf` with
+`$(TSCONF_APP_FLAGS)`. A TSConf recipe can invoke zcc as follows.
 
 ```makefile
-	PATH="$(dir $(ZX_APPMAKE_BIN)):$$PATH" $(ZCC) $(TSCONF_APP_FLAGS) \
+	$(ZCC) $(TSCONF_APP_FLAGS) \
 	  -pragma-define:CRT_ORG_CODE=0x8000 -m -create-app -Cz+tsconf \
 	  -Cz--name=MYPROGRAM -o build/program src/main.c
 ```

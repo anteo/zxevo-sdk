@@ -24,18 +24,19 @@ TAP под BASIC 48 — `$(TSCONF_BASIC48_FLAGS) -create-app`. При прямо
 `tsconf.cfg`, сгенерированный рядом с архивом. Для каталога сборки по умолчанию это
 `+<абсолютный-путь-к-zxevo-sdk>/lib/tsconf/build/default/tsconf.cfg`. `ZCCCFG` должен указывать на
 стандартные конфигурации z88dk. Передайте путь к архиву через `-L`, а `lib/tsconf/include` и
-`lib/common/include` добавьте в пути поиска заголовков. Сгенерированный конфиг включает пути к CRT и
-поддерживает `-subtype=basic48`. [Настройки Make](tsconf.mk)
+`lib/common/include` добавьте в пути поиска заголовков. Сгенерированный конфиг поддерживает
+`-subtype=basic48` и содержит пути к CRT и appmake из SDK. Перед упаковкой TAP прямым вызовом zcc
+выполните `make appmake` в SDK. [Настройки Make](tsconf.mk)
 
 Чтобы собрать TAP для BASIC 48 в другом проекте, сначала соберите архив командой
-`make -C /path/to/zxevo-sdk tsconf-lib`. Передайте `ZXEVO_SDK_PATH=/path/to/zxevo-sdk`
-в Makefile приложения.
+`make -C /path/to/zxevo-sdk tsconf-lib`. Передайте `ZXEVO_SDK_PATH=/path/to/zxevo-sdk` в Makefile
+приложения.
 
 ```makefile
 .DEFAULT_GOAL := demo.tap
 include $(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk
 
-demo.tap: main.c $(TSCONF_LIB)
+demo.tap: main.c $(TSCONF_LIB) $(ZX_APPMAKE_BIN)
 	$(ZCC) $(TSCONF_BASIC48_FLAGS) -m -create-app -o demo main.c
 ```
 

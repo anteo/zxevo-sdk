@@ -47,8 +47,7 @@ HEADERS := $(wildcard include/*.h include/tsconf/*.h src/*/*.h) $(COMMON_C_HEADE
 .PHONY: all test clean FORCE
 all: $(BUILD)/tsconf.lib $(BUILD)/tsconf.cfg
 
-# zcc resolves CRT0 independently of the config's directory. Emit a config
-# with absolute paths for callers that do not include tsconf.mk.
+# Emit absolute CRT and appmake paths for callers that do not include tsconf.mk.
 $(BUILD)/tsconf.cfg: config/tsconf.cfg $(ZX_COMMON_ROOT)/config/basic48.cfg Makefile FORCE
 	@mkdir -p $(dir $@)
 	@sed -e '/^INCLUDE \.\.\/\.\.\/common\/config\/basic48\.cfg$$/d' \
@@ -91,7 +90,7 @@ $(BUILD)/tsconf.lib: Makefile $(BUILD)/sources $(OBJECTS) $(COMMON_OBJECTS)
 
 ZX_EXAMPLE_FLAGS = $(TSCONF_BASIC48_FLAGS)
 ZX_EXAMPLE_DEPS := Makefile tsconf.mk $(TSCONF_CFG) $(BUILD)/tsconf.lib \
-	$(wildcard $(TSCONF_INCLUDE)/*.h $(TSCONF_INCLUDE)/tsconf/*.h)
+	$(ZX_APPMAKE_BIN) $(wildcard $(TSCONF_INCLUDE)/*.h $(TSCONF_INCLUDE)/tsconf/*.h)
 include $(ZX_COMMON_ROOT)/examples.mk
 $(ZX_EXAMPLE_BUILD)/%.tap: TSCONF_BUILD := $(abspath $(BUILD))
 

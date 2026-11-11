@@ -12,10 +12,10 @@ tsconf-lib:
 
 examples: examples-baseconf examples-tsconf
 
-examples-baseconf:
+examples-baseconf: appmake
 	$(MAKE) -C lib/baseconf examples
 
-examples-tsconf:
+examples-tsconf: appmake
 	$(MAKE) -C lib/tsconf examples
 
 test:

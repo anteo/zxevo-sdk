@@ -25,8 +25,9 @@ TAP profile. For direct zcc invocation, use the `tsconf.cfg` generated next to `
 library build. With the default build directory, pass
 `+<absolute-path-to-zxevo-sdk>/lib/tsconf/build/default/tsconf.cfg`. Keep `ZCCCFG` pointed at
 z88dk's standard configs, pass the archive directory with `-L`, and include both
-`lib/tsconf/include` and `lib/common/include`. The generated config also supports `-subtype=basic48`
-and includes the startup paths. [Shared Make settings](tsconf.mk)
+`lib/tsconf/include` and `lib/common/include`. The generated config supports `-subtype=basic48` and
+includes paths to the SDK CRT and appmake. Run `make appmake` in the SDK before packaging a TAP
+directly with zcc. [Shared Make settings](tsconf.mk)
 
 To build a BASIC 48 TAP in another project, first build the archive with
 `make -C /path/to/zxevo-sdk tsconf-lib`. Pass `ZXEVO_SDK_PATH=/path/to/zxevo-sdk` to the
@@ -36,7 +37,7 @@ application's Makefile.
 .DEFAULT_GOAL := demo.tap
 include $(ZXEVO_SDK_PATH)/lib/tsconf/tsconf.mk
 
-demo.tap: main.c $(TSCONF_LIB)
+demo.tap: main.c $(TSCONF_LIB) $(ZX_APPMAKE_BIN)
 	$(ZCC) $(TSCONF_BASIC48_FLAGS) -m -create-app -o demo main.c
 ```
 

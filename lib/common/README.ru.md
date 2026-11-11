@@ -72,8 +72,9 @@ CRT вызывает `zx_init()` до `main()` и `zx_shutdown()` при вых�
 Make-фрагмент целевой библиотеки и передайте `$(BASECONF_BASIC48_FLAGS) -create-app` или
 `$(TSCONF_BASIC48_FLAGS) -create-app`. Для прямого вызова zcc задайте `ZX_COMMON_ROOT` абсолютным
 путём к этому каталогу и передайте пути к заголовкам и библиотеке и флаги ABI
-`-clib=classic -compiler=sdcc --reserve-regs-iy`. Для BaseConf также нужны `BASECONF_ROOT` и
-appmake, собранный командой `make appmake`.
+`-clib=classic -compiler=sdcc --reserve-regs-iy`. Для BaseConf также задайте `BASECONF_ROOT`. Обе
+конфигурации используют appmake из SDK. Перед упаковкой TAP прямым вызовом zcc соберите инструмент
+командой `make appmake`.
 
 ```sh
 make examples
