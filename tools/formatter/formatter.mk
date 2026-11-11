@@ -22,7 +22,7 @@ FORMATTER ?= $(FORMATTER_DIR)/formatter
 FORMATTER_ARGS ?=
 
 FORMAT_CMD = $(FORMATTER) $(FORMATTER_ARGS)
-FORMAT_RECURSE = $(foreach dir,$(FORMAT_SUBDIRS),$(MAKE) -C "$(dir)" $@ &&) :
+FORMAT_RECURSE = $(foreach dir,$(FORMAT_SUBDIRS),$(MAKE) --no-print-directory -C "$(dir)" $@ &&) :
 
 # The first target of an included file silently becomes the default goal, so
 # remember the caller's goal here and restore it at the end of this file.
@@ -31,7 +31,8 @@ FORMATTER_DEFAULT_GOAL := $(.DEFAULT_GOAL)
 .PHONY: format
 
 format:
-	$(if $(strip $(FORMAT_FILES)),$(FORMAT_CMD) $(FORMAT_FILES),@:)
+	@printf 'formatting %s\n' "$(CURDIR)"
+	@$(if $(strip $(FORMAT_FILES)),$(FORMAT_CMD) $(FORMAT_FILES),:)
 	+@$(FORMAT_RECURSE)
 
 # Restore the default goal so `make` without arguments still does what the

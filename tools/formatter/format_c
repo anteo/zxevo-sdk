@@ -181,6 +181,6 @@ if [ "$check" -eq 1 ]; then
         printf '%s: %s file(s) need formatting\n' "$me" "$changed"
         exit 1
     fi
-else
+elif [ "$changed" -gt 0 ]; then
     printf '%s: formatted %s files.\n' "$me" "$changed"
 fi
