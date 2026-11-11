@@ -51,16 +51,16 @@ ensure-baseconf:
 
 $(BASECONF_LIB): | ensure-baseconf
 
-$(APP).tap: Makefile console_printf.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(BASECONF_APPMAKE_BIN)
+$(APP).tap: Makefile console_printf.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(ZX_APPMAKE_BIN)
 	mkdir -p $(BUILD)
-	PATH=$(dir $(BASECONF_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -DCONSOLE_TEST_MODE=$(TEST_MODE) -DCONSOLE_TEST_FONT=$(TEST_FONT) -DCONSOLE_TEST_SCROLL=$(TEST_SCROLL) -create-app -Cz+baseconf -Cz--name=BCONSOLE $(APPMAKE_OPTIONS) -o $(APP) console_printf.c
+	PATH=$(dir $(ZX_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -DCONSOLE_TEST_MODE=$(TEST_MODE) -DCONSOLE_TEST_FONT=$(TEST_FONT) -DCONSOLE_TEST_SCROLL=$(TEST_SCROLL) -create-app -Cz+baseconf -Cz--name=BCONSOLE $(APPMAKE_OPTIONS) -o $(APP) console_printf.c
 
 run: build
 	$(PYTHON) $(ROOT)/tools/zesarux/tap_runner.py --tap $(APP).tap --machine BaseConf --tape-at-start --keys 'i;w40;load;quote;quote;enter;w40' --instructions $(INSTRUCTIONS) --shot $(APP).png --log $(APP).log --report $(APP)-report.txt
 
-$(BUILD)/console-crt.tap: Makefile console_crt.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(BASECONF_APPMAKE_BIN)
+$(BUILD)/console-crt.tap: Makefile console_crt.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(ZX_APPMAKE_BIN)
 	mkdir -p $(BUILD)
-	PATH=$(dir $(BASECONF_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -create-app -Cz+baseconf -Cz--name=BCCRT -o $(BUILD)/console-crt console_crt.c
+	PATH=$(dir $(ZX_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -create-app -Cz+baseconf -Cz--name=BCCRT -o $(BUILD)/console-crt console_crt.c
 
 run-crt: $(BUILD)/console-crt.tap
 	$(PYTHON) $(ROOT)/tools/zesarux/tap_runner.py --tap $(BUILD)/console-crt.tap --machine BaseConf --tape-at-start --keys 'i;w40;load;quote;quote;enter;w40' --instructions $(INSTRUCTIONS) --shot $(BUILD)/console-crt.png --log $(BUILD)/console-crt.log --report $(BUILD)/console-crt-report.txt

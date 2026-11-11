@@ -38,6 +38,8 @@ clean:
 	find . \( -name .git -o -name build -o -name out \) -prune -o \
 	  -type d -name __pycache__ -prune -exec rm -rf -- {} +
 
+include tools/appmake/appmake.mk
+
 FORMAT_FILES := README.md README.ru.md $(wildcard tools/formatter/*.md tools/profiling/*.md)
 FORMAT_SUBDIRS := lib tools/appmake
 include tools/formatter/formatter.mk

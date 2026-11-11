@@ -61,8 +61,8 @@ demo.tap: main.c $(TSCONF_LIB)
 ```
 
 For a BaseConf BASIC 48 TAP, use the BaseConf fragment, `$(BASECONF_LIB)` and
-`$(BASECONF_BASIC48_FLAGS)`. Build `baseconf-appmake` first with
-`make -C lib/baseconf baseconf-appmake Z88DK_SRC=/path/to/z88dk/src` from the SDK checkout. The
+`$(BASECONF_BASIC48_FLAGS)`. Build `appmake` first with
+`make appmake Z88DK_SRC=/path/to/z88dk/src` from the SDK checkout. The
 helper also requires a host C compiler, `patch` and GMP development files. TSConf's BASIC 48 profile
 uses the standard z88dk appmake. [BaseConf appmake](tools/appmake/README.en.md)
 

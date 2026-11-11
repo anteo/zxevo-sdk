@@ -8,7 +8,7 @@ all:
 help:
 	@printf '%s\n' \
 	  'make [all|clean|help] Z88DK_SRC=/path/to/z88dk/src' \
-	  '  all    Build the z88dk appmake with the BaseConf format (default)' \
+	  '  all    Build z88dk appmake with banked BaseConf and TSConf TAP support' \
 	  '  clean  Remove build/' \
 	  'See README.en.md for setup.'
 

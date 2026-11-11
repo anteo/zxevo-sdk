@@ -73,7 +73,7 @@ Make-фрагмент целевой библиотеки и передайте 
 `$(TSCONF_BASIC48_FLAGS) -create-app`. Для прямого вызова zcc задайте `ZX_COMMON_ROOT` абсолютным
 путём к этому каталогу и передайте пути к заголовкам и библиотеке и флаги ABI
 `-clib=classic -compiler=sdcc --reserve-regs-iy`. Для BaseConf также нужны `BASECONF_ROOT` и
-appmake, собранный командой `make -C lib/baseconf baseconf-appmake`.
+appmake, собранный командой `make appmake`.
 
 ```sh
 make examples

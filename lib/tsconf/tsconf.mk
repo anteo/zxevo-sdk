@@ -15,3 +15,5 @@ TSCONF_ABI_FLAGS ?= -clib=classic -compiler=sdcc --reserve-regs-iy
 
 TSCONF_APP_FLAGS = +$(TSCONF_CFG) $(TSCONF_ABI_FLAGS) -I$(TSCONF_INCLUDE) -I$(ZX_COMMON_ROOT)/include -L$(TSCONF_BUILD)
 TSCONF_BASIC48_FLAGS = $(TSCONF_APP_FLAGS) -subtype=basic48
+
+include $(ZX_COMMON_ROOT)/../../tools/appmake/appmake.mk

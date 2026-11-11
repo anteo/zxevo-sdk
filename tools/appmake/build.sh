@@ -17,18 +17,16 @@ for required in appmake/appmake.h appmake/Makefile common/dirname.c common/dirna
 done
 
 build_dir="$script_dir/build"
-stage_dir="$build_dir/source"
 mkdir -p "$build_dir"
-rm -rf "$stage_dir"
+stage_dir=$(mktemp -d "$build_dir/source.XXXXXX")
 trap 'rm -rf "$stage_dir"' EXIT HUP INT TERM
-mkdir -p "$stage_dir"
 cp -R "$src_dir/appmake" "$stage_dir/"
 mkdir -p "$stage_dir/common"
 cp "$src_dir/common/dirname.c" "$src_dir/common/dirname.h" "$stage_dir/common/"
 cp "$src_dir/config.h" "$stage_dir/"
-cp "$script_dir/baseconf.c" "$stage_dir/appmake/baseconf.c"
+cp "$script_dir/zxevo.c" "$stage_dir/appmake/zxevo.c"
 
-patch -d "$stage_dir/appmake" -p1 < "$script_dir/patches/baseconf-registration.patch"
+patch -d "$stage_dir/appmake" -p1 < "$script_dir/patches/zxevo-registration.patch"
 
 gmp_cflags=$(pkg-config --cflags gmp 2>/dev/null || true)
 gmp_libs=$(pkg-config --libs gmp 2>/dev/null || true)
@@ -40,5 +38,5 @@ make -C "$stage_dir/appmake" \
     CC="${CC:-cc}" \
     CFLAGS="$cflags" \
     LDFLAGS="$gmp_libs"
-cp "$stage_dir/appmake/z88dk-appmake" "$build_dir/z88dk-appmake"
+mv "$stage_dir/appmake/z88dk-appmake" "$build_dir/z88dk-appmake"
 echo "Built $build_dir/z88dk-appmake using z88dk source version $(sed -n 's/^#define Z88DK_VERSION \(.*\)$/\1/p' "$stage_dir/config.h")"

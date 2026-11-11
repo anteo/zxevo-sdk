@@ -1,9 +1,8 @@
 /*
- * BaseConf TAP backend for z88dk appmake.
+ * ZX Evolution TAP backend for z88dk appmake.
  * Copyright (c) 2026 BaseConf contributors.
  *
- * Adds ZX Evolution BaseConf TAP loading and physical-page selection to the
- * upstream z88dk appmake driver. RAM/turbo mode comes from ERS/BAS48 startup.
+ * Adds banked TAP loading for BaseConf and TSConf to z88dk appmake.
  * See tools/appmake/README.en.md for provenance.
  */
 
@@ -12,11 +11,12 @@
 #include <limits.h>
 
 #define BASIC_MAX 32768
-#define BASECONF_WINDOW_START 0xc000
-#define BASECONF_WINDOW_END 0x10000
+#define W3_START 0xc000
+#define W3_END 0x10000
 #define BASECONF_PORT_CONFIG 0x00bf
 #define BASECONF_PORT_W3 0xfff7
 #define BASECONF_PORT_RAM_PAGE 0xf7f7
+#define TSCONF_PORT_W3 0x13af
 
 static struct {
     char *binname;
@@ -27,19 +27,19 @@ static struct {
     int org;
     int usr_address;
     int clear_address;
-} bc = {NULL, NULL, NULL, NULL, NULL, -1, -1, -1};
+} opts = {NULL, NULL, NULL, NULL, NULL, -1, -1, -1};
 
-option_t baseconf_options[] = {
-    {'b', "binfile", "Linked binary file", OPT_STR, &bc.binname},
-    {'c', "crt0file", "crt0 file used in linking", OPT_STR, &bc.crtfile},
-    {'o', "output", "Name of output TAP file", OPT_STR, &bc.outfile},
-    {0, "name", "TAP program name (1-10 characters; default BASECONF)", OPT_STR, &bc.name},
+option_t zxevo_options[] = {
+    {'b', "binfile", "Linked binary file", OPT_STR, &opts.binname},
+    {'c', "crt0file", "crt0 file used in linking", OPT_STR, &opts.crtfile},
+    {'o', "output", "Name of output TAP file", OPT_STR, &opts.outfile},
+    {0, "name", "TAP program name (1-10 characters; default machine name)", OPT_STR, &opts.name},
     {0, "bank-prefix", "Prefix for bank TAP names (1-7 characters; default BANK)", OPT_STR,
-     &bc.bank_prefix},
-    {0, "org", "Override the address of the main load image", OPT_INT, &bc.org},
+     &opts.bank_prefix},
+    {0, "org", "Override the address of the main load image", OPT_INT, &opts.org},
     {0, "usraddr", "Address to run after loading (defaults to map symbol start)", OPT_INT,
-     &bc.usr_address},
-    {0, "clearaddr", "Address to CLEAR at (defaults to 0x5fff)", OPT_INT, &bc.clear_address},
+     &opts.usr_address},
+    {0, "clearaddr", "Address to CLEAR at (defaults to 0x5fff)", OPT_INT, &opts.clear_address},
     {0, NULL, NULL, OPT_NONE, NULL}};
 
 struct image_range {
@@ -101,13 +101,18 @@ static int append_basic_out_statement(char *buffer, size_t capacity, size_t *use
     return append_integer(buffer, capacity, used, (int)value);
 }
 
-static int append_open_baseconf_page_registers(char *buffer, size_t capacity, size_t *used) {
-    /* LET b=IN 191 : OUT 191,2*INT (b/2)+1. Preserve the ROM's tape
-     * breakpoint and any other BF flags while enabling shadow ports. */
+static int append_save_port(char *buffer, size_t capacity, size_t *used, unsigned port) {
     if (append_text(buffer, capacity, used,
                     "\xf1"
-                    "b=\xbf") ||
-        append_integer(buffer, capacity, used, BASECONF_PORT_CONFIG) ||
+                    "b=\xbf")) /* LET b=IN */
+        return -1;
+    return append_integer(buffer, capacity, used, (int)port);
+}
+
+static int append_open_baseconf_page_registers(char *buffer, size_t capacity, size_t *used) {
+    /* OUT 191,2*INT (b/2)+1. Preserve the ROM's tape breakpoint and other
+     * BF flags while enabling shadow ports. */
+    if (append_save_port(buffer, capacity, used, BASECONF_PORT_CONFIG) ||
         append_basic_out_port(buffer, capacity, used, BASECONF_PORT_CONFIG) ||
         append_integer(buffer, capacity, used, 2) ||
         append_text(buffer, capacity, used, "*\xba(b/") ||
@@ -116,8 +121,8 @@ static int append_open_baseconf_page_registers(char *buffer, size_t capacity, si
     return append_integer(buffer, capacity, used, 1);
 }
 
-static int append_select_bank_w3_page(char *buffer, size_t capacity, size_t *used,
-                                      unsigned char page) {
+static int append_select_baseconf_page(char *buffer, size_t capacity, size_t *used,
+                                       unsigned char page) {
     /* Disable 7FFD substitution before selecting the full page. */
     if (append_basic_out_statement(buffer, capacity, used, BASECONF_PORT_W3,
                                    0x40 | ((unsigned char)~page & 0x3f)))
@@ -126,8 +131,8 @@ static int append_select_bank_w3_page(char *buffer, size_t capacity, size_t *use
                                       (unsigned char)~page);
 }
 
-static int append_close_baseconf_page_registers(char *buffer, size_t capacity, size_t *used) {
-    if (append_basic_out_port(buffer, capacity, used, BASECONF_PORT_CONFIG)) return -1;
+static int append_restore_port(char *buffer, size_t capacity, size_t *used, unsigned port) {
+    if (append_basic_out_port(buffer, capacity, used, port)) return -1;
     return append_text(buffer, capacity, used, "b");
 }
 
@@ -138,6 +143,23 @@ static int append_load(char *buffer, size_t capacity, size_t *used) {
     memcpy(buffer + *used, load_code, sizeof(load_code));
     *used += sizeof(load_code);
     return 0;
+}
+
+static int append_load_bank(char *buffer, size_t capacity, size_t *used, int tsconf,
+                            unsigned char page) {
+    if (tsconf) {
+        /* Page3 is readable. Restore the BASIC mapping after each load. */
+        return append_save_port(buffer, capacity, used, TSCONF_PORT_W3) ||
+               append_basic_out_statement(buffer, capacity, used, TSCONF_PORT_W3, page) ||
+               append_load(buffer, capacity, used) ||
+               append_restore_port(buffer, capacity, used, TSCONF_PORT_W3);
+    }
+
+    /* Restore BF before the ROM handles LOAD. */
+    return append_open_baseconf_page_registers(buffer, capacity, used) ||
+           append_select_baseconf_page(buffer, capacity, used, page) ||
+           append_restore_port(buffer, capacity, used, BASECONF_PORT_CONFIG) ||
+           append_load(buffer, capacity, used);
 }
 
 static int append_line(char *program, size_t capacity, size_t *used, unsigned line_number,
@@ -155,14 +177,12 @@ static int append_line(char *program, size_t capacity, size_t *used, unsigned li
 }
 
 static int make_basic(char *buffer, size_t capacity, size_t *used, unsigned entry,
-                      int clear_address, const struct image_range banks[MAXBANKS]) {
+                      int clear_address, int tsconf, const struct image_range banks[MAXBANKS]) {
     char line[256];
     size_t line_used;
     int i;
-    unsigned char page;
     *used = 0;
 
-    /* BaseConf's ERS/BAS48 startup prepares RAM mode and turbo state. */
     line_used = 0;
     if (line_used + 1 > sizeof(line)) return -1;
     line[line_used++] = (char)0xfd; /* CLEAR */
@@ -176,12 +196,8 @@ static int make_basic(char *buffer, size_t capacity, size_t *used, unsigned entr
         return -1;
     for (i = 0; i < MAXBANKS; ++i) {
         if (!banks[i].data) continue;
-        page = (unsigned char)i;
         line_used = 0;
-        if (append_open_baseconf_page_registers(line, sizeof(line), &line_used)) return -1;
-        if (append_select_bank_w3_page(line, sizeof(line), &line_used, page)) return -1;
-        if (append_close_baseconf_page_registers(line, sizeof(line), &line_used)) return -1;
-        if (append_load(line, sizeof(line), &line_used)) return -1;
+        if (append_load_bank(line, sizeof(line), &line_used, tsconf, (unsigned char)i)) return -1;
         if (append_line(buffer, capacity, used, 30 + (unsigned)i * 10, line, line_used)) return -1;
     }
     line_used = 0;
@@ -282,8 +298,8 @@ static int collect_range(struct memory_bank *bank, int include_main, struct imag
         if (!section->size) continue;
         if (section->org < 0 || section_end > 0x10000 || section_end <= section_start) return -1;
         if (!include_main &&
-            (section_start < BASECONF_WINDOW_START || section_end > BASECONF_WINDOW_END)) {
-            fprintf(stderr, "BaseConf: bank section %s must fit in window C000-FFFF\n",
+            (section_start < W3_START || section_end > W3_END)) {
+            fprintf(stderr, "ZX Evolution: bank section %s must fit in window C000-FFFF\n",
                     section->section_name);
             return -1;
         }
@@ -308,7 +324,7 @@ static int collect_range(struct memory_bank *bank, int include_main, struct imag
         dest = range->data + (unsigned)section->org - start;
         input = fopen(section->filename, "rb");
         if (!input) {
-            fprintf(stderr, "BaseConf: cannot open section binary %s: %s\n", section->filename,
+            fprintf(stderr, "ZX Evolution: cannot open section binary %s: %s\n", section->filename,
                     strerror(errno));
             free(range->data);
             range->data = NULL;
@@ -342,7 +358,7 @@ static void free_memory_images(struct banked_memory *memory, struct image_range 
     mb_cleanup_memory(memory);
 }
 
-int baseconf_exec(char *target) {
+int zxevo_exec(char *target) {
     struct banked_memory memory;
     struct aligned_data aligned;
     struct image_range main_image = {0, 0, NULL}, banks[MAXBANKS] = {{0, 0, NULL}};
@@ -355,92 +371,89 @@ int baseconf_exec(char *target) {
     unsigned entry, load_org, code_entry = 0;
     int clear_address, i, result = -1, origin_delta = 0;
     int have_code_entry;
-    (void)target;
+    int tsconf = strcmp(target, "tsconf") == 0;
 
-    if (!bc.binname) return -1;
-    tap_name = bc.name ? bc.name : "BASECONF";
+    if (!opts.binname) return -1;
+    tap_name = opts.name ? opts.name : (tsconf ? "TSCONF" : "BASECONF");
     if (!*tap_name || strlen(tap_name) > 10) {
-        fprintf(stderr, "BaseConf: TAP name must contain 1 to 10 characters\n");
+        fprintf(stderr, "ZX Evolution: TAP name must contain 1 to 10 characters\n");
         return -1;
     }
-    bank_prefix = bc.bank_prefix ? bc.bank_prefix : "BANK";
+    bank_prefix = opts.bank_prefix ? opts.bank_prefix : "BANK";
     if (!*bank_prefix || strlen(bank_prefix) > 7) {
-        fprintf(stderr, "BaseConf: bank prefix must contain 1 to 7 characters\n");
+        fprintf(stderr, "ZX Evolution: bank prefix must contain 1 to 7 characters\n");
         return -1;
     }
-    if (bc.org < -1 || bc.usr_address < -1 || bc.clear_address < -1) {
-        fprintf(stderr, "BaseConf: addresses must be non-negative\n");
+    if (opts.org < -1 || opts.usr_address < -1 || opts.clear_address < -1) {
+        fprintf(stderr, "ZX Evolution: addresses must be non-negative\n");
         return -1;
     }
-    if (!bc.crtfile) {
-        snprintf(crtname, sizeof(crtname) - 1, "%s", bc.binname);
-        suffix_change(crtname, "");
-        bc.crtfile = crtname;
-    }
-    snprintf(mapname, sizeof(mapname) - 1, "%s", bc.crtfile);
+    snprintf(crtname, sizeof(crtname), "%s", opts.crtfile ? opts.crtfile : opts.binname);
+    if (!opts.crtfile) suffix_change(crtname, "");
+    snprintf(mapname, sizeof(mapname) - 1, "%s", crtname);
     suffix_change(mapname, ".map");
-    snprintf(outname, sizeof(outname) - 1, "%s", bc.outfile ? bc.outfile : bc.binname);
-    if (!bc.outfile) suffix_change(outname, ".tap");
-    if (strcmp(outname, bc.binname) == 0) {
-        fprintf(stderr, "BaseConf: input and output file names must differ\n");
+    snprintf(outname, sizeof(outname) - 1, "%s", opts.outfile ? opts.outfile : opts.binname);
+    if (!opts.outfile) suffix_change(outname, ".tap");
+    if (strcmp(outname, opts.binname) == 0) {
+        fprintf(stderr, "ZX Evolution: input and output file names must differ\n");
         return -1;
     }
     if (!(fmap = fopen(mapname, "r"))) {
-        fprintf(stderr, "BaseConf: cannot open map file %s\n", mapname);
+        fprintf(stderr, "ZX Evolution: cannot open map file %s\n", mapname);
         return -1;
     }
     memset(&memory, 0, sizeof(memory));
     memset(&aligned, 0, sizeof(aligned));
     mb_create_bankspace(&memory, "BANK");
-    mb_enumerate_banks(fmap, bc.binname, &memory, &aligned);
+    mb_enumerate_banks(fmap, opts.binname, &memory, &aligned);
     have_code_entry = map_symbol_address(fmap, "start", &code_entry) == 0;
     fclose(fmap);
     if (memory.num != 1) {
-        fprintf(stderr, "BaseConf: invalid bank-space configuration\n");
+        fprintf(stderr, "ZX Evolution: invalid bank-space configuration\n");
         goto done;
     }
     normalize_linker_banks(&memory);
     if (mb_sort_banks(&memory) != 0) goto done;
     if (collect_range(&memory.mainbank, 1, &main_image) <= 0) {
-        fprintf(stderr, "BaseConf: no initialized main CODE/DATA image found\n");
+        fprintf(stderr, "ZX Evolution: no initialized main CODE/DATA image found\n");
         goto done;
     }
-    load_org = bc.org >= 0 ? (unsigned)bc.org : main_image.start;
+    load_org = opts.org >= 0 ? (unsigned)opts.org : main_image.start;
     origin_delta = (int)load_org - (int)main_image.start;
     if ((int)main_image.start + origin_delta < 0 || (int)main_image.end + origin_delta > 0x10000) {
-        fprintf(stderr, "BaseConf: --org moves the main image outside the 16-bit address space\n");
+        fprintf(stderr, "ZX Evolution: --org moves the main image outside the 16-bit address space\n");
         goto done;
     }
     main_image.start = (unsigned)((int)main_image.start + origin_delta);
     main_image.end = (unsigned)((int)main_image.end + origin_delta);
     if (main_image.end - main_image.start > 65533) {
-        fprintf(stderr, "BaseConf: main payload is too large for one TAP CODE block\n");
+        fprintf(stderr, "ZX Evolution: main payload is too large for one TAP CODE block\n");
         goto done;
     }
-    entry = bc.usr_address >= 0 ? (unsigned)bc.usr_address
+    entry = opts.usr_address >= 0 ? (unsigned)opts.usr_address
             : have_code_entry   ? (unsigned)((int)code_entry + origin_delta)
                                 : load_org;
     if (entry > 0xffff || entry < main_image.start || entry >= main_image.end) {
-        fprintf(stderr, "BaseConf: entry address 0x%04x is outside the main image\n", entry);
+        fprintf(stderr, "ZX Evolution: entry address 0x%04x is outside the main image\n", entry);
         goto done;
     }
-    clear_address = bc.clear_address >= 0 ? bc.clear_address : 0x5fff;
+    clear_address = opts.clear_address >= 0 ? opts.clear_address : 0x5fff;
     if (clear_address < 0 || clear_address > 65535) goto done;
     for (i = 0; i < MAXBANKS; ++i) {
         int collected = collect_range(&memory.bankspace[0].membank[i], 0, &banks[i]);
         if (collected < 0) goto done;
         if (collected > 0 && banks[i].end - banks[i].start > 0x4000) {
-            fprintf(stderr, "BaseConf: bank %d payload exceeds the 16 KiB window\n", i);
+            fprintf(stderr, "ZX Evolution: bank %d payload exceeds the 16 KiB window\n", i);
             goto done;
         }
     }
-    if (make_basic(basic, sizeof(basic), &basic_length, entry, clear_address, banks) != 0) {
-        fprintf(stderr, "BaseConf: BASIC loader exceeds supported size\n");
+    if (make_basic(basic, sizeof(basic), &basic_length, entry, clear_address, tsconf, banks) != 0) {
+        fprintf(stderr, "ZX Evolution: BASIC loader exceeds supported size\n");
         goto done;
     }
     out = fopen(outname, "wb");
     if (!out) {
-        fprintf(stderr, "BaseConf: cannot create %s\n", outname);
+        fprintf(stderr, "ZX Evolution: cannot create %s\n", outname);
         goto done;
     }
     if (write_basic(out, tap_name, (unsigned char *)basic, basic_length) ||

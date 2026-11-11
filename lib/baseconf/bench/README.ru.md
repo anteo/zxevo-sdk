@@ -12,7 +12,7 @@
 ZX256 измеряются font5 и font8, результат сохраняется в
 `lib/baseconf/bench/build/font-draw-bench-0-results.json`. В ATM640 измеряется font5, результат
 сохраняется в `lib/baseconf/bench/build/font-draw-bench-4-results.json`. Эмулятор выбирается
-переменной `ZESARUX`. Для сборки TAP нужен BaseConf appmake.
+переменной `ZESARUX`. Для сборки TAP нужен appmake из SDK.
 [Требования appmake](../../../tools/appmake/README.ru.md)
 
 ### Исторические замеры

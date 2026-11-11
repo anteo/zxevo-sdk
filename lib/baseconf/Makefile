@@ -60,11 +60,11 @@ all: $(BUILD)/baseconf.lib
 
 help:
 	@printf '%s\n' \
-	  'make [all|examples|baseconf-appmake|clean|help]' \
+	  'make [all|examples|appmake|clean|help]' \
 	  '  all                       Build baseconf.lib (default)' \
 	  '  examples                  Build all BASIC 48 example TAPs' \
 	  '  clean                     Remove local library, test and benchmark outputs' \
-	  '  baseconf-appmake          Build the appmake used to package TAP files' \
+	  '  appmake                   Build the appmake used to package TAP files' \
 	  '  clean                     Remove the current BUILD directory' \
 	  '  BUILD                     Archive and object directory (default build/default)' \
 	  '  BASECONF_VIDEO_TEXT_MODES       Select text backends (default ALL)' \
@@ -110,7 +110,7 @@ $(BUILD)/baseconf.lib: Makefile baseconf.mk $(BUILD)/baseconf.sources $(C_OBJECT
 
 ZX_EXAMPLE_FLAGS = $(BASECONF_BASIC48_FLAGS)
 ZX_EXAMPLE_DEPS := Makefile baseconf.mk $(BASECONF_CFG) $(BUILD)/baseconf.lib \
-	$(BASECONF_APPMAKE_BIN) $(wildcard $(BASECONF_INCLUDE)/*.h $(BASECONF_INCLUDE)/baseconf/*.h)
+	$(ZX_APPMAKE_BIN) $(wildcard $(BASECONF_INCLUDE)/*.h $(BASECONF_INCLUDE)/baseconf/*.h)
 include $(ZX_COMMON_ROOT)/examples.mk
 $(ZX_EXAMPLE_BUILD)/%.tap: BASECONF_BUILD := $(abspath $(BUILD))
 

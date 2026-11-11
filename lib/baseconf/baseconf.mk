@@ -45,7 +45,6 @@ BASECONF_INCLUDE ?= $(BASECONF_ROOT)/include
 BASECONF_INCLUDE_FLAGS = -I$(BASECONF_INCLUDE) -I$(ZX_COMMON_ROOT)/include
 BASECONF_BUILD ?= $(BASECONF_ROOT)/build/default
 BASECONF_LIB ?= $(BASECONF_BUILD)/baseconf.lib
-BASECONF_APPMAKE_BIN ?= $(abspath $(BASECONF_ROOT)/../../tools/appmake/build/z88dk-appmake)
 BASECONF_ABI_FLAGS ?= -clib=classic -compiler=sdcc --reserve-regs-iy
 BASECONF_APP_FLAGS = +$(BASECONF_CFG) $(BASECONF_ABI_FLAGS) $(BASECONF_INCLUDE_FLAGS) -L$(BASECONF_BUILD)
 BASECONF_BASIC48_FLAGS = $(BASECONF_APP_FLAGS) -subtype=basic48
@@ -55,11 +54,6 @@ ifneq ($(strip $(ZCCCFG)),)
 Z88DK_ROOT := $(abspath $(ZCCCFG)/../..)
 endif
 endif
-ifeq ($(strip $(Z88DK_SRC)),)
-ifneq ($(strip $(ZCCCFG)),)
-Z88DK_SRC := $(abspath $(ZCCCFG)/../../src)
-endif
-endif
 
 BASECONF_LIBRARY_INPUTS := $(BASECONF_ROOT)/Makefile $(BASECONF_ROOT)/baseconf.mk \
 	$(wildcard $(ZX_COMMON_ROOT)/src/*/z80/*.asm $(ZX_COMMON_ROOT)/src/*/z80/*.inc) \
@@ -67,13 +61,4 @@ BASECONF_LIBRARY_INPUTS := $(BASECONF_ROOT)/Makefile $(BASECONF_ROOT)/baseconf.m
 	$(wildcard $(ZX_COMMON_ROOT)/include/zx/*.h) \
 	$(shell find $(BASECONF_ROOT)/src $(BASECONF_ROOT)/include -type f \( -name '*.c' -o -name '*.asm' -o -name '*.h' -o -name '*.inc' \) | sort)
 
-# Consumers that package TAP applications opt into this rule. The library's
-# default archive target has no dependency on appmake or its external sources.
-.PHONY: baseconf-appmake
-baseconf-appmake: $(BASECONF_APPMAKE_BIN)
-
-$(BASECONF_APPMAKE_BIN): $(BASECONF_ROOT)/../../tools/appmake/Makefile \
-		$(BASECONF_ROOT)/../../tools/appmake/build.sh \
-		$(BASECONF_ROOT)/../../tools/appmake/baseconf.c \
-		$(BASECONF_ROOT)/../../tools/appmake/patches/baseconf-registration.patch
-	$(MAKE) -C $(BASECONF_ROOT)/../../tools/appmake Z88DK_SRC="$(Z88DK_SRC)"
+include $(ZX_COMMON_ROOT)/../../tools/appmake/appmake.mk

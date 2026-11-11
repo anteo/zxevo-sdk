@@ -10,7 +10,7 @@ The benchmark draws 64 opaque `p` glyphs through each font descriptor callback. 
 positions cycle through x=0, 6, 12, and 18, exercising four bit offsets within a byte. ZX256
 measures font5 and font8 and writes `lib/baseconf/bench/build/font-draw-bench-0-results.json`.
 ATM640 measures font5 and writes `lib/baseconf/bench/build/font-draw-bench-4-results.json`. Use
-`ZESARUX=/path/to/zesarux` to select the emulator. Building the TAP requires BaseConf appmake.
+`ZESARUX=/path/to/zesarux` to select the emulator. Building the TAP requires the SDK appmake.
 [Appmake prerequisites](../../../tools/appmake/README.en.md)
 
 ### Historical measurements

@@ -34,9 +34,9 @@ ensure-baseconf:
 
 $(BASECONF_LIB): | ensure-baseconf
 
-$(BENCH_APP).tap: Makefile font_draw_bench.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(BASECONF_APPMAKE_BIN)
+$(BENCH_APP).tap: Makefile font_draw_bench.c mmap.inc $(BASECONF_LIBRARY_INPUTS) $(BASECONF_CRT_INPUTS) $(BASECONF_LIB) $(ZX_APPMAKE_BIN)
 	mkdir -p $(BUILD)
-	PATH=$(dir $(BASECONF_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -DBENCH_MODE=$(BENCH_MODE) -create-app -Cz+baseconf -Cz--name=BCFONT $(APPMAKE_OPTIONS) -o $(BENCH_APP) font_draw_bench.c
+	PATH=$(dir $(ZX_APPMAKE_BIN)):$$PATH $(ZCC) $(COMMON) $(INCLUDES) -DBENCH_MODE=$(BENCH_MODE) -create-app -Cz+baseconf -Cz--name=BCFONT $(APPMAKE_OPTIONS) -o $(BENCH_APP) font_draw_bench.c
 
 ifeq ($(BENCH_MODE),4)
 $(BENCH_APP).tap: CODE_ORG=0x8000
