@@ -1,6 +1,7 @@
 # z88dk appmake BaseConf extension
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 This directory contains the project-owned `+baseconf` backend and a small registration patch for
 z88dk appmake. It does not vendor upstream appmake sources. To build, provide an existing z88dk

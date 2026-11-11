@@ -1,6 +1,7 @@
 # BaseConf tests
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 This directory contains the BaseConf test cases, their machine adapter and the older TAP probes. The
 shared [ZX Evolution test harness](../../test_support/README.en.md) drives the emulator and compares

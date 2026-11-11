@@ -1,6 +1,7 @@
 # TSConf library
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 `tsconf.lib` is a Z80 archive for z88dk's classic SDCC ABI. The register, video and DMA APIs use the
 TSConf hardware directly. The TS-FAT API calls the stock TS-BIOS. Include `tsconf.h` for the public

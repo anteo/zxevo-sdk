@@ -1,6 +1,7 @@
 # Библиотека TSConf
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 `tsconf.lib` — архив Z80 для ABI classic SDCC в z88dk. Функции управления регистрами, видео и DMA
 работают напрямую с TSConf. TS-FAT вызывает ROM TS-BIOS. Публичные функции доступны через

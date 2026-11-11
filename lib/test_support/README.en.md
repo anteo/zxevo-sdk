@@ -1,6 +1,7 @@
 # ZX Evolution test support
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 `runner.py` builds C cases with z88dk, loads the linked blocks through ZEsarUX and ZXHost, and
 compares screenshots, text and binary output. Case metadata, reference outputs, machine-specific

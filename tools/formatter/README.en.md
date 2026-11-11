@@ -1,6 +1,7 @@
 # Source formatters
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Four small programs, one job each:
 
@@ -12,11 +13,11 @@ Four small programs, one job each:
 | `format_md`  | Markdown via Prettier            | `--prettier`, `--config`, `--check`    |
 
 ```sh
-tools/formatter/formatter --dialect=z80asm lib/common/src/color/z80 lib/common/include/zx README.en.md
+tools/formatter/formatter --dialect=z80asm lib/common/src/color/z80 lib/common/include/zx README.md
 tools/formatter/formatter --check lib/common/include/zx
 tools/formatter/format_asm --dialect z80asm lib/common/src/color/z80
 tools/formatter/format_c --clang-format /opt/bin/clang-format examples
-tools/formatter/format_md README.en.md README.ru.md
+tools/formatter/format_md README.md README.ru.md
 ```
 
 ## formatter: routing and proxying

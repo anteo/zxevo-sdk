@@ -1,6 +1,7 @@
 # Общий код ZX Evolution
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 ASM-исходники в `src/<подсистема>/z80` реализуют адресацию ZX-битмапа, запись символов и пикселей,
 отсечение линий Брезенхема и прямоугольников, обход эллипсов, побайтовые заливки, прокрутку

@@ -1,6 +1,7 @@
 # Font draw benchmarks
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Run `make -C lib/baseconf/bench` for ZX256 or `make -C lib/baseconf/bench BENCH_MODE=4` for ATM640.
 The harness measures ZEsarUX's partial Z80 T-state counter between start/end breakpoints.

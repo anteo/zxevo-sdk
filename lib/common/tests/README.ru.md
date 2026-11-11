@@ -1,6 +1,7 @@
 # Тесты общего кода
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Одни и те же кейсы проверяют звук, мышь, прерывания Z80, Nemo IDE, UART, ZX-атрибуты, данные
 SD-карты, запись версии AVR, пул страниц RAM и страничную кучу в BaseConf и TSConf.

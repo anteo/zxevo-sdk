@@ -1,6 +1,7 @@
 # Shared ZX Evolution code
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 The ASM sources under `src/<subsystem>/z80` implement the mapped ZX bitmap layout, glyph and pixel
 writes, clipped Bresenham lines, ellipse traversal, rectangle clipping, byte fills, plane scrolling,

@@ -1,6 +1,7 @@
 # Тестовая инфраструктура ZX Evolution
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 `runner.py` собирает C-кейсы через z88dk, загружает блоки в ZEsarUX через ZRCP, получает результаты
 через ZXHost и сравнивает снимки, текст и бинарные данные. Метаданные, эталоны, профили и фикстуры

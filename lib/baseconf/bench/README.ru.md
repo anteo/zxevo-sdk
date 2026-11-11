@@ -1,6 +1,7 @@
 # Замеры вывода шрифтов
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Команда `make -C lib/baseconf/bench` запускает замер в ZX256, а
 `make -C lib/baseconf/bench BENCH_MODE=4` запускает замер в ATM640. Раннер считывает частичный

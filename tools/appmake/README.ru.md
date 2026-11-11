@@ -1,6 +1,7 @@
 # Расширение z88dk appmake для BaseConf
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 В этом каталоге находятся упаковщик `+baseconf` и патч его регистрации в z88dk appmake. Для сборки
 укажите каталог исходников z88dk.

@@ -1,6 +1,7 @@
 # BaseConf
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 `lib/baseconf` — библиотека на C и Z80 assembler для приложений ZX Evolution, работающих с
 FPGA-профилем BaseConf. Она объединяет доступ к карте памяти и портам BaseConf с видеорежимами,

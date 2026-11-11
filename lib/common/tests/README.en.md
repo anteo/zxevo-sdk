@@ -1,6 +1,7 @@
 # Common library tests
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Run the same audio, mouse, Z80 IRQ, Nemo IDE, UART, ZX attribute, SD card data, AVR version record
 and RAM pool/heap cases on BaseConf and TSConf.

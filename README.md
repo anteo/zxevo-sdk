@@ -1,6 +1,7 @@
 # zxevo-sdk
 
-[Русский](README.ru.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 C and Z80 assembly libraries for ZX Evolution applications targeting BaseConf or TSConf. The SDK
 includes z88dk target configurations, a BASIC 48 startup profile, emulator tests and host tools.

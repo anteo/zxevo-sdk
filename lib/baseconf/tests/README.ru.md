@@ -1,6 +1,7 @@
 # Тесты BaseConf
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Здесь находятся кейсы BaseConf, адаптер машины и отдельные TAP для проверки консоли. Общий раннер
 собирает кейсы, загружает их в ZEsarUX через ZRCP и сравнивает результаты, полученные через ZXHost.

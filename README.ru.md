@@ -1,6 +1,7 @@
 # zxevo-sdk
 
-[English](README.en.md)
+[![English](https://img.shields.io/badge/lang-en-blue.svg)](README.md)
+[![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 Библиотеки C и Z80 ASM для приложений ZX Evolution под BaseConf и TSConf. В SDK входят конфигурации
 z88dk, профиль запуска из BASIC 48, тесты в эмуляторе и инструменты для разработки.
