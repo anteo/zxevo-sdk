@@ -7,3 +7,6 @@ __pycache__/
 build/
 
 AGENTS.md
+
+# Local working documents
+/docs/

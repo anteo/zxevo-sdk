@@ -7,3 +7,4 @@ test build list:
 
 clean:
 	$(PYTHON) -B $(TEST_RUNNER) common clean
+	rm -rf -- build
