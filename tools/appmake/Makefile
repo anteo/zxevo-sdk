@@ -11,7 +11,7 @@ test:
 help:
 	@printf '%s\n' \
 	  'make [all|test|clean|help] Z88DK_SRC=/path/to/z88dk/src' \
-	  '  all    Build z88dk appmake with banked BaseConf and TSConf TAP support' \
+	  '  all    Build z88dk appmake with BaseConf/TSConf TAP and TSConf SPG support' \
 	  '  test   Verify banked TAP loading in BaseConf and TSConf in ZEsarUX' \
 	  '  clean  Remove build/' \
 	  'See README.en.md for setup.'

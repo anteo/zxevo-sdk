@@ -1,8 +1,10 @@
-# Applications opt in by depending on the host tool when they package a TAP.
+# Applications opt in by depending on the host tool when they package a TAP or SPG.
 ifndef ZX_APPMAKE_MK_INCLUDED
 ZX_APPMAKE_MK_INCLUDED := 1
 ZX_APPMAKE_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 ZX_APPMAKE_BIN := $(ZX_APPMAKE_DIR)/build/z88dk-appmake
+ZX_MHMT_DIR := $(abspath $(ZX_APPMAKE_DIR)/../mhmt)
+ZX_MHMT_BIN := $(ZX_MHMT_DIR)/build/mhmt
 
 ifeq ($(strip $(Z88DK_SRC)),)
 ifneq ($(strip $(ZCCCFG)),)
@@ -14,7 +16,10 @@ ZX_APPMAKE_DEFAULT_GOAL := $(.DEFAULT_GOAL)
 .PHONY: appmake
 appmake: $(ZX_APPMAKE_BIN)
 
-$(ZX_APPMAKE_BIN): $(addprefix $(ZX_APPMAKE_DIR)/,Makefile build.sh zxevo.c patches/zxevo-registration.patch)
+$(ZX_MHMT_BIN): $(ZX_MHMT_DIR)/Makefile $(wildcard $(ZX_MHMT_DIR)/src/*)
+	$(MAKE) -C "$(ZX_MHMT_DIR)"
+
+$(ZX_APPMAKE_BIN): $(addprefix $(ZX_APPMAKE_DIR)/,Makefile build.sh zxevo.c patches/zxevo-registration.patch) $(ZX_MHMT_BIN)
 	$(MAKE) -C "$(ZX_APPMAKE_DIR)" Z88DK_SRC="$(Z88DK_SRC)"
 
 .DEFAULT_GOAL := $(ZX_APPMAKE_DEFAULT_GOAL)

@@ -38,5 +38,7 @@ make -C "$stage_dir/appmake" \
     CC="${CC:-cc}" \
     CFLAGS="$cflags" \
     LDFLAGS="$gmp_libs"
+
+make -C "$script_dir/../mhmt" CC="${CC:-cc}"
 mv "$stage_dir/appmake/z88dk-appmake" "$build_dir/z88dk-appmake"
 echo "Built $build_dir/z88dk-appmake using z88dk source version $(sed -n 's/^#define Z88DK_VERSION \(.*\)$/\1/p' "$stage_dir/config.h")"

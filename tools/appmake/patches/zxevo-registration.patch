@@ -1,3 +1,19 @@
+diff --git a/appmake.c b/appmake.c
+--- a/appmake.c
++++ b/appmake.c
+@@ -56,4 +56,5 @@ static char       **remove_files = NULL;     // files scheduled for deletion on exit similar to temp_files
+ static void         delete_scheduled_files(void);
+ 
++const char *zxevo_appmake_path;
+ int main(int argc, char *argv[])
+ {
+@@ -64,5 +65,6 @@ int main(int argc, char *argv[])
+     char   *target = NULL;
+ 
++    zxevo_appmake_path = argv[0];
+ #ifdef WIN32
+     /* Randomize temporary filenames for windows */
+     snprintf(tmpnambuf, sizeof(tmpnambuf), "apm%04X", ((unsigned int)time(NULL)) & 0xffff);
 diff --git a/appmake.h b/appmake.h
 --- a/appmake.h
 +++ b/appmake.h
@@ -27,7 +43,7 @@ diff --git a/appmake.h b/appmake.h
 +      NULL,
 +      zxevo_exec, zxevo_options },
 +    { "bin2tsconf", "tsconf", "(C) 2026 ZX Evolution contributors",
-+      "Creates a banked TSConf TAP file",
++      "Creates a banked TSConf TAP or SPG file",
 +      NULL,
 +      zxevo_exec, zxevo_options },
      { "bin3000",  "c128",      "(C) 2001 Stefano Bodrato",
