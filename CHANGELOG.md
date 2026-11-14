@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.1.0
+
+### Documentation
+
+- (sdk) document APIs, tools, and example ports
+
+### Features
+
+- (sdk) add shared audio, graphics, and RAM window APIs
+- (appmake) package SPG images with optional page compression
+- (tools) add asset conversion and emulator capture utilities
+- (examples) port evosdk TSConf demonstrations
+- (xnx) port game to TSConf SDK
+
+### Fixes
+
+- (formatter) indent nested sjasmplus blocks
+- (test-runner) stop service ROM at boot checkpoints
+- (formatter) preserve SDCC hash-asm blocks
+
+### Other changes
+
+- (tests) format assembly helpers and documentation
+- (build) wire example targets and clean generated outputs
+
+### Refactoring
+
+- (test-runner) unify C and ASM suites with TOML profiles
+- (examples) group TSConf SDK demos under sdk
+
 ## v0.0.1
 
 ### Build and CI
