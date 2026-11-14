@@ -28,9 +28,9 @@ python3 tools/test_runner/runner.py baseconf check --case core/helpers
 python3 tools/test_runner/runner.py baseconf check --case core
 ```
 
-Requirements: `zcc`, `z88dk-z80asm`, ZEsarUX with ZRCP, Python 3.11 or newer. Set `ZESARUX` for the executable
-and `ZXEVO_TEST_ROM` for a specific ROM in the `ers-rom` profile. Otherwise the profile uses the
-emulator's own ROM.
+Requirements: `zcc`, `z88dk-z80asm`, ZEsarUX with ZRCP, Python 3.11 or newer. Set `ZESARUX` for the
+executable and `ZXEVO_TEST_ROM` for a specific ROM in the `ers-rom` profile. Otherwise the profile
+uses the emulator's own ROM.
 
 ### Layout
 
@@ -97,8 +97,8 @@ lib/baseconf/tests/
 | BSS             | `7000–…`        | end + 1 KiB ≤ `7E00`       |
 | stack           | `7E00` downward | —                          |
 
-The shared runner checks these bounds from `.map` and stops the build on violation. Large initialized tables
-go in `const` (rodata), or `data_org`/`bss_org` are raised in the profile.
+The shared runner checks these bounds from `.map` and stops the build on violation. Large
+initialized tables go in `const` (rodata), or `data_org`/`bss_org` are raised in the profile.
 
 In this layout W0 is mapped as RAM. Tests run with `BC_ERS_NONE`; interrupts are disabled and
 vectors are replaced with stubs.
@@ -220,10 +220,9 @@ sources = ["extra.c"]
 ### Profiles
 
 `[profiles.default]` holds shared settings such as memory layout and the library build directory.
-The BaseConf layers inherit them through `parent = "default"`. For each run, the runner applies
-the parents once, then merges the layers separated by `+` in order.
-The CRT leaves stdio off by default. Cases that use standard streams or `printf()` select the
-`stdio` layer.
+The BaseConf layers inherit them through `parent = "default"`. For each run, the runner applies the
+parents once, then merges the layers separated by `+` in order. The CRT leaves stdio off by default.
+Cases that use standard streams or `printf()` select the `stdio` layer.
 
 | Layer           | Setting                               | Effect                                     |
 | --------------- | ------------------------------------- | ------------------------------------------ |
@@ -283,8 +282,8 @@ The screenshot is taken after `DONE`, when the test has stopped drawing.
 
 ### Expected files and names
 
-Shared references live in the case's directory and use its filename stem.
-Put individual overrides under the profile directory.
+Shared references live in the case's directory and use its filename stem. Put individual overrides
+under the profile directory.
 
 ```
 cases/<package>/<case>/<case>.<NN>_<tag>.<ext>
@@ -308,9 +307,11 @@ cases/core/smoke/smoke.04_out.txt
 
 - `make ... shots` (`runner.py baseconf check --update`) writes expected files on PASS.
 - The first profile updates shared files and any of its own overrides. Other profiles record
-  overrides for changed or additional outputs. See [C case profiles and references](../../../tools/test_runner/README.en.md#c-case-profiles-and-references).
+  overrides for changed or additional outputs. See
+  [C case profiles and references](../../../tools/test_runner/README.en.md#c-case-profiles-and-references).
 - `make ... test` (`runner.py baseconf check`) compares:
-  - PNG: differing pixel count, first difference coordinate, `<name>.diff.png` in the profile's output directory;
+  - PNG: differing pixel count, first difference coordinate, `<name>.diff.png` in the profile's
+    output directory;
   - text: unified diff in `<stem>.diff.txt` in the same directory;
   - binary: first differing offset and a hex window.
 - An expected file without a produced output is an error; remove the file manually or through
@@ -335,8 +336,8 @@ python3 tools/test_runner/runner.py baseconf clean [--case PATH]
   cases under that directory. A unique file stem such as `helpers` also works. Repeat `--case` to
   combine selections.
 - `--profile` is repeatable and selects full run names such as `no-stdio+no-font8`.
-- `clean` removes generated files in `build/` and local Python caches. With `--case`, it
-  removes only the selected cases' generated files.
+- `clean` removes generated files in `build/` and local Python caches. With `--case`, it removes
+  only the selected cases' generated files.
 
 Exit codes: `0` — PASS, `1` — FAIL or build error, `2` — emulator/ZRCP error.
 
