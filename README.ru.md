@@ -3,9 +3,9 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-| [BaseConf · Night Train](lib/baseconf/README.ru.md)                                 | [TSConf · Moon Run](lib/tsconf/README.ru.md)                                                                |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| ![Ночной поезд в режиме ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](lib/tsconf/examples/screenshots/moon_run.png) |
+| [BaseConf · Night Train](lib/baseconf/README.ru.md)                                 | [TSConf · Moon Run](lib/tsconf/README.ru.md)                                                                    |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| ![Ночной поезд в режиме ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](lib/tsconf/examples/sdk/screenshots/moon_run.png) |
 
 SDK на C и Z80 ASM для приложений ZX Evolution под BaseConf и TSConf. Включает общие API, примеры
 для BASIC 48 и тесты в ZEsarUX.
@@ -103,7 +103,8 @@ DMA и выводить аппаратные спрайты и прокручи�
 - Для линий и заливок используйте готовые примитивы. Вызовы к одной поверхности объединяйте через
   `zx_graphics_begin()` и `zx_graphics_end()`. Статический фон можно нарисовать один раз, а в
   анимации обновлять изменившиеся области или двигать аппаратные спрайты и слои TSConf.
-  [Night Train](lib/baseconf/examples/night_train.c) · [Moon Run](lib/tsconf/examples/moon_run.c)
+  [Night Train](lib/baseconf/examples/night_train.c) ·
+  [Moon Run](lib/tsconf/examples/sdk/moon_run.c)
 - Ищите самые затратные вызовы через `cpu.py`, который считает такты Z80 в ZEsarUX. Сравнивайте
   сборки при одинаковой частоте CPU, видеорежиме и сцене. Для анимации проверяйте, укладывается ли
   всё обновление в интервал между кадрами с учётом звука и обработки ввода.
@@ -112,10 +113,18 @@ DMA и выводить аппаратные спрайты и прокручи�
 
 ## Инструменты
 
+- [Окружения инструментов Python](tools/python/README.ru.md) автоматически готовят зависимости без
+  ручной активации venv и передачи интерпретатора в Make.
+- [Скриншоты эмулятора](tools/screenshots/README.ru.md): захват SPG TSConf и TAP BASIC 48 на TSConf,
+  BaseConf или Spectrum 48K с настройкой времени выполнения и ввода с клавиатуры.
+- [Инструменты ресурсов](tools/assets/README.ru.md): конвертация изображений и WAV, генерация C/ASM
+  из бинарных ресурсов и упаковка блоков ZX0 в банки для распаковщика z88dk.
+  [Порты примеров evosdk](lib/tsconf/examples/evosdk/README.ru.md)
 - [Профилирование](tools/profiling/README.ru.md) описывает `memory.py` для карт линковки и `cpu.py`
   для замеров тактов Z80 в ZEsarUX.
-- [Расширение z88dk appmake](tools/appmake/README.ru.md) добавляет загрузчик TAP с банками RAM для
-  BaseConf и TSConf.
+- [Расширение z88dk appmake](tools/appmake/README.ru.md) упаковывает TAP с банками RAM для BaseConf
+  и TSConf, а также SPG для TSConf. Отдельный [инструмент mhmt](tools/mhmt/README.ru.md) сжимает
+  страницы SPG в MegaLZ или Hrust.
 - [ZXHost и тестовая инфраструктура](tools/test_runner/README.ru.md) загружают программы и собирают
   результаты из ZEsarUX.
 - [Форматирование исходников](tools/formatter/README.ru.md) описывает `make format` для C, ASM и

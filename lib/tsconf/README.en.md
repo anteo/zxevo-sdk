@@ -3,9 +3,9 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-| Hello                                                        | Harbour                                                                     | Moon Run                                                                                   |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| ![Greeting on the ZX screen](examples/screenshots/hello.png) | ![A sailboat at sunset in 256-color mode](examples/screenshots/harbour.png) | ![A hardware sprite flies over a tiled lunar landscape](examples/screenshots/moon_run.png) |
+| Hello                                                            | Harbour                                                                         | Moon Run                                                                                       |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| ![Greeting on the ZX screen](examples/sdk/screenshots/hello.png) | ![A sailboat at sunset in 256-color mode](examples/sdk/screenshots/harbour.png) | ![A hardware sprite flies over a tiled lunar landscape](examples/sdk/screenshots/moon_run.png) |
 
 `tsconf.lib` is a Z80 archive for z88dk's classic SDCC ABI. The register, video and DMA APIs use the
 TSConf hardware directly. The TS-FAT API calls the stock TS-BIOS. Include `tsconf.h` for the public
@@ -68,17 +68,39 @@ then has 240 active lines.
 
 ### BASIC 48 startup profile
 
-`make examples-tsconf` builds the BASIC 48 TAPs in `lib/tsconf/build/examples/`.
+`make examples-tsconf` builds the BASIC 48 TAPs in `lib/tsconf/build/examples/`. Sources are grouped
+under `examples/sdk/` and `examples/evosdk/`, each with its own screenshots.
+[Example groups](examples/README.en.md)
 
-- [`hello`](examples/hello.c) selects the standard ZX screen and prints a greeting.
-- [`harbour`](examples/harbour.c) paints a sailboat at sunset in 256-color mode with a custom RGB555
-  palette, a sky gradient and reflections.
-- [`moon_run`](examples/moon_run.c) flies a hardware sprite over a lunar landscape. Two tile layers
-  scroll at different speeds to create parallax.
+- [`hello`](examples/sdk/hello.c) selects the standard ZX screen and prints a greeting.
+- [`harbour`](examples/sdk/harbour.c) paints a sailboat at sunset in 256-color mode with a custom
+  RGB555 palette, a sky gradient and reflections.
+- [`moon_run`](examples/sdk/moon_run.c) flies a hardware sprite over a lunar landscape. Two tile
+  layers scroll at different speeds to create parallax.
 
 The extended scenes use scratch RAM pages above `3Fh` and leave the ZX palette in bank F available
 when they return to BASIC.
 [Startup and launch instructions](../common/README.en.md#basic-48-startup-profile)
+
+### evosdk ports
+
+Ports of the evosdkts demonstrations from the TSConf repository, using zxevo-sdk.
+[Build instructions, controls and resource loading](examples/evosdk/README.en.md)
+
+| Font / Keyboard                                                                          | Mouse / Joystick                                                                                       |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| ![Original color font and keyboard input](examples/evosdk/screenshots/font_keyboard.png) | ![Hardware mouse pointer over the original background](examples/evosdk/screenshots/mouse_joystick.png) |
+
+| Sprites                                                                                  | Slideshow                                                                |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| ![Animated balls using TSConf hardware sprites](examples/evosdk/screenshots/sprites.png) | ![Original slideshow picture](examples/evosdk/screenshots/slideshow.png) |
+
+| XNX — title screen                                             | XNX — first level                                                            |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| ![XNX title screen](examples/evosdk/xnx/screenshots/title.png) | ![XNX gameplay on the first level](examples/evosdk/xnx/screenshots/game.png) |
+
+[XNX](examples/evosdk/xnx/README.en.md) is a separate SPG application with hardware sprites, PT3
+music, AYFX effects and PCM8/Covox samples.
 
 ## Hardware APIs
 
@@ -102,15 +124,15 @@ when they return to BASIC.
 - `ts_joystick_read` reads Kempston with Beta Disk ports closed. `ts_fdd_set_config` configures
   FDDVirt. Use `zx_fdd_*` for Beta Disk registers with a physical drive selected.
   [Input API](include/tsconf/input.h) · [FDD API](../common/include/zx/fdd.h)
-- `ts_memory_set_page0` through `ts_memory_set_page3` map the CPU windows. `ts_memory_set_config`
-  selects ROM or RAM in W0, and `ts_memory_set_cache` controls cache enables per window. Page2 and
-  Page3 also have getters.
+- `ts_map_ram_page` maps RAM into W1–W3. `ts_memory_set_page0` selects a ROM or RAM page in W0
+  according to MemConfig; `ts_memory_set_config` selects which kind. `ts_memory_set_cache` controls
+  cache enables per window. Page2 and Page3 also have getters.
 - The shared headers provide PT3, Covox, Kempston mouse, Z80 interrupt control and Nemo IDE PIO on
   `IDE_HDD` builds. [Shared APIs](../common/README.en.md)
-- `ts_map_ram_page` maps RAM into W1–W3 and returns a `zx_status_t`. Pair `ts_window_acquire` with
-  `ts_window_release` for temporary mappings in W2 or W3, where the current page can be read back.
-  Keep the lease, code, stack and needed data outside the borrowed window. Serialize it with
-  TS-BIOS, packed drawing and direct paging writes.
+- `ts_map_ram_page` returns a `zx_status_t`. Pair `zx_acquire_ram` with `zx_release_ram` for
+  temporary mappings in W2 or W3, where the current page can be read back. Keep the lease, code,
+  stack and needed data outside the borrowed window. Serialize it with TS-BIOS, packed drawing and
+  direct paging writes.
 - Use the common `zx_ram_page_pool_init` and `zx_ram_page_alloc` for physical RAM pages. Call
   `ts_ram_heap_init` with a dedicated `ts_window_lease_t` to bind a common banked heap to W2 or W3.
   Allocation, mapping, unmapping, freeing and destruction use `zx_ram_heap_*`.
@@ -118,9 +140,15 @@ when they return to BASIC.
 - `ts_video_set_config`, `ts_video_set_page` and `ts_video_set_scroll` set the display mode, base
   page and nine-bit graphics offsets. The video header also provides setters for PalSel, Border,
   TSConfig and SGPage.
-- Map FMAPS over disposable backing memory with `ts_fmaps_enable`. Upload CRAM colors and SFILE
-  descriptors with `ts_fmaps_write_words`, then call `ts_fmaps_disable`. Coordinate access with
-  interrupt handlers and DMA.
+- Use `ts_video_upload_sprites(ZX_WINDOW_3, first, sprites, count)` and
+  `ts_video_upload_palette(ZX_WINDOW_3, first, colors, count)` to upload descriptors/colors. A NULL
+  source clears the selected entries. These functions enable FMAPS in the first 4 KiB of the
+  selected CPU window, write the entries, then disable FMAPS and restore IFF. Map disposable
+  writable RAM there beforehand and keep code, stack and source outside that aperture. The functions
+  leave RAM paging unchanged. FMAPS must be disabled on entry; exclude NMI/DMA writers and schedule
+  live updates during blanking to avoid tearing. `ZX_WINDOW_3` names a 16 KiB CPU window, not a
+  physical RAM page. Low-level `ts_fmaps_enable` still accepts any 4 KiB-aligned CPU address for
+  custom transfers.
 - `ts_dma_start`, `ts_dma_busy` and `ts_dma_wait` control DMA independently of ROM. Start with an
   idle engine and use uncached CPU mappings for DMA buffers. The transfer descriptor uses physical
   pages and even byte offsets. Encode the words per burst and the number of bursts as the respective
@@ -157,7 +185,7 @@ With W3 free and the ZX palette already set:
 
 ```c
 ts_video_set_scroll(0, 0);
-ts_memory_set_page3(0x60);
+ts_map_ram_page(ZX_WINDOW_3, 0x60);
 if (ts_video_set_mode(TS_VIDEO_ZX | TS_VIDEO_256X192 | TS_VIDEO_HIDE_TSU,
                       0x60, (volatile void *)0xc000) != ZX_OK) return 1;
 zx_console_printf("TSConf %d\n", 48);
@@ -185,6 +213,20 @@ extra stack bytes. [Shared console API](../common/include/zx/console.h) ·
 [Native text options](include/tsconf/console.h) ·
 [Shared graphics API](../common/include/zx/graphics.h)
 
+`zx_blit4()` and `zx_blit4_key()` share their C interface with BaseConf and copy linear 4bpp images
+to the selected 16C surface. `zx_bitmap4_t` supplies pixels, dimensions and byte stride; the high
+nibble is the left pixel. The CPU backend supports any key 0..15, signed clipping to the 512×512
+backing canvas and odd edges without changing neighbouring pixels. It borrows W3 and restores it on
+return; keep source, code and stack outside W3. Calls are synchronous and can nest inside a graphics
+group. They leave ink/paper, palettes and the displayed page unchanged, and do not acquire DMA.
+[Shared blit API](../common/include/zx/blit.h)
+
+For a 320×200 16C bitmap, `ts_video_draw_16c_tile` copies a packed 8×8 tile directly from physical
+RAM. `ts_video_fill_16c_screen`, `ts_video_copy_16c_screen` and `ts_video_copy_16c_tile` handle
+double buffering without application-owned DMA descriptors. Screen bases must align to eight
+physical pages; drawing goes to a hidden page and the application selects it with
+`ts_video_set_page` at a frame boundary. [16C video API](include/tsconf/video.h)
+
 ## Tile layers
 
 Both 64×64 tile maps share the physical page selected by `ts_video_set_tile_map_page`. Each layer
@@ -196,7 +238,7 @@ layer 0.
 ```c
 ts_video_set_tile_map_page(0x60);
 ts_video_set_tile0_page(0x48);
-ts_memory_set_page3(0x60);
+ts_map_ram_page(ZX_WINDOW_3, 0x60);
 ts_video_write_tile((volatile void *)0xc000, 0, 3, 2, TS_TILE_ENTRY(65, 2) | TS_TILE_FLIP_X);
 ts_video_set_tile0_scroll(0, 0);
 ts_video_set_tsu_config(TS_TSU_TILE0);
@@ -263,5 +305,16 @@ The TS-FAT cases run code and stack in W3 with TS-BIOS in W0. The SD case checks
 navigation. The Nemo IDE case exercises creation, writing and deletion. ZEsarUX implements IDE DMA
 writes and omits RAM-to-SPI DMA, so the TS-FAT write case uses IDE. Copper and FDR cases check the
 register and memory interface. The AVR contract, FT812 and ZiFi32 cases use device or SPI fixtures
-for transactions and responses. Run `python3 tools/test_runner/runner.py tsconf check --case fat/ts_fat` to use
-the ROM provided by the emulator. Set `ZXEVO_TEST_ROM` to select a specific TS-BIOS ROM.
+for transactions and responses. Run
+`python3 tools/test_runner/runner.py tsconf check --case fat/ts_fat` to use the ROM provided by the
+emulator. Set `ZXEVO_TEST_ROM` to select a specific TS-BIOS ROM.
+
+### PCM8 / Covox
+
+`zx_covox_play(samples, count, delay)` plays resident unsigned PCM8 without changing CPU/IFF.
+`zx_pcm8_play_banked` accepts a physical page/offset/count descriptor, a window and a caller-owned
+lease. On TSConf, W2 and W3 can be leased; W0/W1 lack page readback. The player switches consecutive
+pages through `zx_acquired_ram_set_page`, disables INT, then restores the window and IFF. The caller
+sets and restores CPU speed and cache. Descriptor, lease, code and stack remain outside the selected
+window. Sample spacing is `64 + 14*delay` T-states; delay 18 at 3.5 MHz gives approximately 11076
+Hz. `zx_covox_set_level(128)` writes the idle midpoint to the DAC.

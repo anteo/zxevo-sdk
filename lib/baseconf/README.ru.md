@@ -215,6 +215,14 @@ if (zx_graphics_end() != ZX_OK) return 1;
 графические примитивы меняют битовую карту, сохраняя атрибуты. [video.h](include/baseconf/video.h) ·
 [graphics.h](../common/include/zx/graphics.h)
 
+`zx_blit4()` и `zx_blit4_key()` копируют линейные изображения 4bpp со старшим левым полубайтом в
+поверхность ATM320. Общий `zx_bitmap4_t` задаёт пиксели, размеры и шаг строки в байтах; прозрачный
+вариант сохраняет фон для любого ключа 0…15. Обе функции обрезают знаковые координаты и сохраняют
+соседние пиксели на нечётных краях. Обе страницы назначения должны быть отображены для записи, а
+источник, код и стек — оставаться резидентными вне них. Во время рисования нельзя держать window
+lease: подготавливайте банковые ресурсы резидентными блоками между завершёнными вызовами. ASM-обход
+строк не меняет палитру и текущие ink/paper. [Общий API blit](../common/include/zx/blit.h)
+
 В classic z88dk подключите `#include <games.h>` для вывода программных спрайтов через `putsprite()`,
 сохранения и восстановления фона через `bksave()` и `bkrestore()`, а также опроса джойстика через
 `joystick()`. Реализация `putsprite()` для ZX работает со стандартной битовой картой по адресу
@@ -247,10 +255,17 @@ if (bc_set_ulaplus_palette(3, 0x9e) != ZX_OK) return 1;
 bc_set_ulaplus_enabled(1);
 ```
 
-Запись ATM RGB222/RGB444 выбирает цвет по текущему положению луча, поэтому приложение синхронизирует
-запись с растром. [console.h](../common/include/zx/console.h) · [text.h](include/baseconf/text.h) ·
-[zx/printf.h](../common/include/zx/printf.h) · [font.h](include/baseconf/font.h) ·
-[palette.h](include/baseconf/palette.h)
+Низкоуровневая запись ATM RGB222/RGB444 выбирает цвет по текущему положению луча.
+`bc_palette_load_rgb222()` принимает 16 байт `00RRGGBB` в порядке индексов и ждёт стандартного
+кадрового IRQ перед пакетной записью с выбором цвета бордюра. Нужны `zx_init`, известное владение
+окном AVR, RGB222, растр Pentagon/60Hz и включённые INT с единственным стандартным кадровым
+источником. ISR должен возвращаться за 1,17 мс; NMI и параллельные изменения палитры, растра и
+страниц исключаются. Занятые window/video lease, newirq и растры 48K/128K с синхронизацией бордюра
+отклоняются. Загрузчик восстанавливает BF, xx77, FDD и бордюр, не пишет в FE-аудио. Существующий
+`bc_ers_set_palette()` сохраняется для своего ROM-контекста. Полные условия и статусы — в
+[palette.h](include/baseconf/palette.h). [console.h](../common/include/zx/console.h) ·
+[text.h](include/baseconf/text.h) · [zx/printf.h](../common/include/zx/printf.h) ·
+[font.h](include/baseconf/font.h) · [palette.h](include/baseconf/palette.h)
 
 ### Мышь и клавиатура
 
@@ -332,10 +347,11 @@ zx_status_t received = zx_uart_wait_receive_polls(&byte, 4096);
 [sound.h в z88dk](https://github.com/z88dk/z88dk/blob/master/include/sound.h) ·
 [psg.h в z88dk](https://github.com/z88dk/z88dk/blob/master/include/psg.h)
 
-`zx_covox_play()` блокирующе воспроизводит упакованные 4-битные сэмплы, начиная со старшей половины
-байта. Для AY библиотека оборачивает PT3-плеер z88dk. Модуль должен оставаться доступен в памяти, а
-приложение вызывает `zx_pt3_play()` один раз за музыкальный тик. Пример подходит для модуля с одним
-тиком на кадр, если CPU просыпается от кадрового INT.
+`zx_covox_play(samples, count, delay)` блокирующе воспроизводит unsigned PCM8. Интервал равен
+`64 + 14*delay` тактам CPU, delay — 1..255; CPU/IFF не меняются. Для AY библиотека оборачивает
+PT3-плеер z88dk. Модуль должен оставаться доступен в памяти, а приложение вызывает `zx_pt3_play()`
+один раз за музыкальный тик. Пример подходит для модуля с одним тиком на кадр, если CPU просыпается
+от кадрового INT.
 
 ```c
 extern const uint8_t music_pt3[];

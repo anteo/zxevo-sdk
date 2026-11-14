@@ -211,6 +211,14 @@ draw to mapped pages in a different format from the displayed mode. In ZX mode, 
 the bitmap and preserve the attributes. [video.h](include/baseconf/video.h) ·
 [graphics.h](../common/include/zx/graphics.h)
 
+`zx_blit4()` and `zx_blit4_key()` copy linear high-nibble-first 4bpp images to an ATM320 draw
+surface. The shared `zx_bitmap4_t` describes pixels, dimensions and byte stride; the keyed call
+preserves pixels equal to any index 0..15. Both clip signed coordinates and retain neighbours at odd
+edges. Map both writable surface pages before the call and keep the source, code and stack resident
+outside them. Window leases cannot be active during drawing: prepare banked images in resident
+chunks between completed calls. The routines use direct ASM spans and leave the palette and
+ink/paper unchanged. [Shared blit API](../common/include/zx/blit.h)
+
 In z88dk classic, use `#include <games.h>` for software sprites with `putsprite()`, background save
 and restore with `bksave()` and `bkrestore()`, and joystick input with `joystick()`. The ZX
 implementation of `putsprite()` uses the standard bitmap at `0x4000`. Map the intended screen page
@@ -243,8 +251,15 @@ if (bc_set_ulaplus_palette(3, 0x9e) != ZX_OK) return 1;
 bc_set_ulaplus_enabled(1);
 ```
 
-ATM RGB222/RGB444 writes target the color currently under the raster beam, so the application
-controls write timing. [console.h](../common/include/zx/console.h) ·
+Low-level ATM RGB222/RGB444 writes target the color currently under the raster beam.
+`bc_palette_load_rgb222()` instead accepts 16 `00RRGGBB` bytes in index order and waits for the
+standard frame IRQ before a complete border-selected update. It requires `zx_init`, known AVR window
+ownership, RGB222 mode, a Pentagon/60Hz raster and enabled INT with only the standard frame source.
+The ISR must return within 1.17 ms; exclude NMI and concurrent palette/raster/paging changes. Active
+window/video leases, newirq and synchronized-border 48K/128K rasters are rejected. The loader
+restores BF, xx77, FDD and border, and does not write FE audio. The ERS-specific
+`bc_ers_set_palette()` remains available for its ROM context. See the full preconditions and
+statuses in [palette.h](include/baseconf/palette.h). [console.h](../common/include/zx/console.h) ·
 [text.h](include/baseconf/text.h) · [zx/printf.h](../common/include/zx/printf.h) ·
 [font.h](include/baseconf/font.h) · [palette.h](include/baseconf/palette.h)
 
@@ -326,8 +341,9 @@ plus simple AY melodies with `psg_play()`. Use `#include <psg.h>` for direct con
 volume and registers. [z88dk sound.h](https://github.com/z88dk/z88dk/blob/master/include/sound.h) ·
 [z88dk psg.h](https://github.com/z88dk/z88dk/blob/master/include/psg.h)
 
-`zx_covox_play()` plays packed 4-bit samples, high nibble first, and blocks until playback ends. For
-AY, the library wraps the z88dk PT3 player. Keep the module mapped and call `zx_pt3_play()` once per
+`zx_covox_play(samples, count, delay)` plays unsigned PCM8 and blocks until playback ends. Sample
+spacing is `64 + 14*delay` CPU T-states; delay must be 1..255. It leaves CPU/IFF unchanged. For AY,
+the library wraps the z88dk PT3 player. Keep the module mapped and call `zx_pt3_play()` once per
 music tick. This example assumes one music tick per frame and a frame interrupt as the CPU wake
 source.
 

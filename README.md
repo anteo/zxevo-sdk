@@ -3,9 +3,9 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-| [BaseConf · Night Train](lib/baseconf/README.en.md)                                  | [TSConf · Moon Run](lib/tsconf/README.en.md)                                                          |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| ![Night railway scene in ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![A hardware sprite flies over a tiled lunar landscape](lib/tsconf/examples/screenshots/moon_run.png) |
+| [BaseConf · Night Train](lib/baseconf/README.en.md)                                  | [TSConf · Moon Run](lib/tsconf/README.en.md)                                                              |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| ![Night railway scene in ATM 320](lib/baseconf/examples/screenshots/night_train.png) | ![A hardware sprite flies over a tiled lunar landscape](lib/tsconf/examples/sdk/screenshots/moon_run.png) |
 
 A C and Z80 assembly SDK for ZX Evolution applications on BaseConf and TSConf. It includes shared
 APIs, BASIC 48 examples, and tests that run in ZEsarUX.
@@ -104,7 +104,8 @@ scrolling tile layers.
 - Use line and rectangle primitives for runs and areas. Batch draws to the same surface with
   `zx_graphics_begin()` and `zx_graphics_end()`. Draw static scenery once and update only the areas
   that change, or move hardware sprites and layers on TSConf.
-  [Night Train](lib/baseconf/examples/night_train.c) · [Moon Run](lib/tsconf/examples/moon_run.c)
+  [Night Train](lib/baseconf/examples/night_train.c) ·
+  [Moon Run](lib/tsconf/examples/sdk/moon_run.c)
 - Use `cpu.py` to find expensive calls by measuring Z80 T-states in ZEsarUX. Compare builds with the
   same clock speed, video mode and scene. For animation, measure the whole update against the time
   available between frames, including other work such as sound and input.
@@ -113,10 +114,18 @@ scrolling tile layers.
 
 ## Tools
 
+- [Python tool environments](tools/python/README.en.md) prepare private dependencies automatically,
+  without manual venv activation or interpreter overrides in Make.
+- [Emulator screenshots](tools/screenshots/README.en.md) capture TSConf SPGs and BASIC 48 TAPs on
+  TSConf, BaseConf or Spectrum 48K, with configurable execution time and keyboard input.
+- [Asset tools](tools/assets/README.en.md) convert images and WAV audio, emit binary resources as
+  C/ASM, and pack ZX0 blocks into banks for the z88dk decompressor.
+  [evosdk TSConf ports](lib/tsconf/examples/evosdk/README.en.md)
 - [Profiling](tools/profiling/README.en.md) covers `memory.py` for linker maps and `cpu.py` for
   measuring Z80 T-states in ZEsarUX.
 - The [z88dk appmake extension](tools/appmake/README.en.md) packages banked TAPs for BaseConf and
-  TSConf.
+  TSConf, and SPG files for TSConf. The separate [mhmt tool](tools/mhmt/README.en.md) compresses SPG
+  pages in MegaLZ or Hrust.
 - [ZXHost and the test harness](tools/test_runner/README.en.md) load programs and collect results
   from ZEsarUX.
 - [Source formatting](tools/formatter/README.en.md) covers `make format` for C, ASM, and Markdown.

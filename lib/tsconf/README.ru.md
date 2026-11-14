@@ -3,9 +3,9 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-| Hello                                                       | Harbour                                                                     | Moon Run                                                                                         |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| ![Приветствие на ZX-экране](examples/screenshots/hello.png) | ![Парусник на закате в режиме 256 цветов](examples/screenshots/harbour.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](examples/screenshots/moon_run.png) |
+| Hello                                                           | Harbour                                                                         | Moon Run                                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| ![Приветствие на ZX-экране](examples/sdk/screenshots/hello.png) | ![Парусник на закате в режиме 256 цветов](examples/sdk/screenshots/harbour.png) | ![Аппаратный спрайт корабля над тайловой лунной поверхностью](examples/sdk/screenshots/moon_run.png) |
 
 `tsconf.lib` — архив Z80 для ABI classic SDCC в z88dk. Функции управления регистрами, видео и DMA
 работают напрямую с TSConf. TS-FAT вызывает ROM TS-BIOS. Публичные функции доступны через
@@ -68,16 +68,38 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
 
 ### Запуск из BASIC 48
 
-`make examples-tsconf` собирает TAP для BASIC 48 в `lib/tsconf/build/examples/`.
+`make examples-tsconf` собирает TAP для BASIC 48 в `lib/tsconf/build/examples/`. Исходники разделены
+на `examples/sdk/` и `examples/evosdk/`, у каждой группы свои скриншоты.
+[Структура примеров](examples/README.ru.md)
 
-- [`hello`](examples/hello.c) выбирает стандартный ZX-экран и выводит приветствие.
-- [`harbour`](examples/harbour.c) рисует парусник на закате в режиме 256 цветов с палитрой RGB555,
-  градиентом неба и отражением солнца.
-- [`moon_run`](examples/moon_run.c) показывает полёт корабля над Луной. Корабль рисуют аппаратные
-  спрайты, а два тайловых слоя движутся с разной скоростью и создают параллакс.
+- [`hello`](examples/sdk/hello.c) выбирает стандартный ZX-экран и выводит приветствие.
+- [`harbour`](examples/sdk/harbour.c) рисует парусник на закате в режиме 256 цветов с палитрой
+  RGB555, градиентом неба и отражением солнца.
+- [`moon_run`](examples/sdk/moon_run.c) показывает полёт корабля над Луной. Корабль рисуют
+  аппаратные спрайты, а два тайловых слоя движутся с разной скоростью и создают параллакс.
 
 Расширенные сцены используют свободные страницы RAM выше `3Fh` и сохраняют палитру ZX в банке F.
 [Профиль и загрузка TAP](../common/README.ru.md#профиль-запуска-из-basic-48)
+
+### Порты evosdk
+
+Демонстрации evosdkts из репозитория TSConf, перенесённые на zxevo-sdk.
+[Сборка, управление и загрузка ресурсов](examples/evosdk/README.ru.md)
+
+| Font / Keyboard                                                                              | Mouse / Joystick                                                                              |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| ![Исходный цветной шрифт и ввод с клавиатуры](examples/evosdk/screenshots/font_keyboard.png) | ![Аппаратный указатель мыши на исходном фоне](examples/evosdk/screenshots/mouse_joystick.png) |
+
+| Sprites                                                                                   | Slideshow                                                                 |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| ![Анимация шариков аппаратными спрайтами TSConf](examples/evosdk/screenshots/sprites.png) | ![Исходная картинка слайд-шоу](examples/evosdk/screenshots/slideshow.png) |
+
+| XNX — титульный экран                                             | XNX — первый уровень                                                   |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ![Титульный экран XNX](examples/evosdk/xnx/screenshots/title.png) | ![Игра XNX на первом уровне](examples/evosdk/xnx/screenshots/game.png) |
+
+[XNX](examples/evosdk/xnx/README.ru.md) — отдельное приложение SPG с аппаратными спрайтами, музыкой
+PT3, эффектами AYFX и сэмплами PCM8/Covox.
 
 ## Аппаратные интерфейсы
 
@@ -100,12 +122,12 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
 - `ts_joystick_read` читает Kempston при закрытых портах Beta Disk. `ts_fdd_set_config` настраивает
   FDDVirt. С выбранным физическим дисководом к регистрам Beta Disk обращаются через `zx_fdd_*`.
   [Ввод](include/tsconf/input.h) · [ВГ93](../common/include/zx/fdd.h)
-- `ts_memory_set_page0` … `ts_memory_set_page3` отображают страницы в окна CPU.
-  `ts_memory_set_config` выбирает ROM или RAM в W0, `ts_memory_set_cache` управляет кэшем окон. Для
-  Page2 и Page3 есть чтение. `ts_map_ram_page` отображает RAM в W1–W3 и возвращает `zx_status_t`.
-  `ts_window_acquire` и `ts_window_release` временно занимают W2 или W3. Держите дескриптор, код,
-  стек и нужные данные вне занятого окна. Согласуйте доступ с TS-BIOS, рисованием в упакованных
-  режимах и прямой записью страниц. [Память](include/tsconf/memory.h)
+- `ts_map_ram_page` отображает RAM в W1–W3; `ts_memory_set_page0` выбирает страницу ROM или RAM в W0
+  согласно MemConfig. `ts_memory_set_config` выбирает ROM или RAM в W0, `ts_memory_set_cache`
+  управляет кэшем окон. Для Page2 и Page3 есть чтение. `ts_map_ram_page` отображает RAM в W1–W3 и
+  возвращает `zx_status_t`. `zx_acquire_ram` и `zx_release_ram` временно занимают W2 или W3. Держите
+  дескриптор, код, стек и нужные данные вне занятого окна. Согласуйте доступ с TS-BIOS, рисованием в
+  упакованных режимах и прямой записью страниц. [Память](include/tsconf/memory.h)
 - `zx_ram_page_pool_init` и `zx_ram_page_alloc` управляют пулом физических страниц. Вызовите
   `ts_ram_heap_init` с выделенным `ts_window_lease_t`, чтобы привязать общую кучу к W2 или W3.
   Остальные операции выполняются через `zx_ram_heap_*`.
@@ -114,9 +136,15 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
   сборках `IDE_HDD`. [Общие API](../common/README.ru.md)
 - `ts_video_set_config`, `ts_video_set_page` и `ts_video_set_scroll` задают режим дисплея, базовую
   страницу и девятибитовые смещения. В заголовке есть функции для PalSel, Border, TSConfig и SGPage.
-  Отобразите FMAPS через `ts_fmaps_enable` поверх RAM, которую можно перезаписать. Загрузите цвета
-  CRAM и дескрипторы SFILE через `ts_fmaps_write_words`, затем вызовите `ts_fmaps_disable`.
-  Согласуйте доступ с обработчиками IRQ и DMA. [Видео](include/tsconf/video.h)
+  `ts_video_upload_sprites(ZX_WINDOW_3, first, sprites, count)` загружает дескрипторы,
+  `ts_video_upload_palette(ZX_WINDOW_3, first, colors, count)` — цвета. Источник NULL очищает
+  выбранные записи. Функции включают FMAPS в первых 4 КиБ выбранного окна CPU, записывают данные,
+  выключают FMAPS и восстанавливают IFF. Заранее отобразите туда RAM, которую можно перезаписать;
+  код, стек и источник должны находиться вне этой области. Отображение RAM не меняется. При входе
+  FMAPS должен быть выключен; исключите записи NMI/DMA, а живое изображение обновляйте во время
+  гашения, чтобы избежать разрывов. `ZX_WINDOW_3` — окно CPU по 16 КиБ, не физическая страница RAM.
+  Для нестандартных переносов низкоуровневый `ts_fmaps_enable` принимает любой адрес CPU,
+  выровненный на 4 КиБ. [Видео](include/tsconf/video.h)
 - `ts_dma_start`, `ts_dma_busy` и `ts_dma_wait` управляют DMA напрямую. Перед запуском дождитесь
   свободного DMA. Для буферов используйте некэшируемые отображения CPU. В дескрипторе задаются
   физические страницы и чётные байтовые смещения. Число слов в пакете и число пакетов кодируются как
@@ -151,7 +179,7 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
 
 ```c
 ts_video_set_scroll(0, 0);
-ts_memory_set_page3(0x60);
+ts_map_ram_page(ZX_WINDOW_3, 0x60);
 if (ts_video_set_mode(TS_VIDEO_ZX | TS_VIDEO_256X192 | TS_VIDEO_HIDE_TSU,
                       0x60, (volatile void *)0xc000) != ZX_OK) return 1;
 zx_console_printf("TSConf %d\n", 48);
@@ -178,6 +206,21 @@ zx_draw_line(16, 16, 96, 64);
 нужно до 360 дополнительных байт стека. [Общая консоль](../common/include/zx/console.h) ·
 [Аппаратный текст](include/tsconf/console.h) · [Общая графика](../common/include/zx/graphics.h)
 
+Общие с BaseConf функции `zx_blit4()` и `zx_blit4_key()` копируют линейные изображения 4bpp в
+выбранную поверхность 16C. `zx_bitmap4_t` задаёт пиксели, размеры и шаг строки в байтах; старший
+полубайт соответствует левому пикселю. CPU-backend поддерживает любой ключ 0…15, обрезку знаковых
+координат по холсту 512×512 и нечётные края с сохранением соседних пикселей. W3 временно занимается
+и восстанавливается при выходе; источник, код и стек должны оставаться вне W3. Вызовы синхронны,
+допускают вложение в графическую группу, не меняют ink/paper, палитру и видимую страницу и не
+занимают DMA. [Общий API blit](../common/include/zx/blit.h)
+
+Для экрана 320×200 в режиме 16C функция `ts_video_draw_16c_tile` копирует упакованный тайл 8×8
+напрямую из физической RAM. `ts_video_fill_16c_screen`, `ts_video_copy_16c_screen` и
+`ts_video_copy_16c_tile` позволяют вести двойную буферизацию без DMA-дескрипторов в приложении.
+Начало экранной области выравнивается по восьми физическим страницам; рисование идёт в скрытую
+страницу, которую приложение показывает через `ts_video_set_page` на границе кадра.
+[Видео API 16C](include/tsconf/video.h)
+
 ## Тайлы
 
 Две карты 64×64 используют общую физическую страницу, выбранную через `ts_video_set_tile_map_page`.
@@ -188,7 +231,7 @@ zx_draw_line(16, 16, 96, 64);
 ```c
 ts_video_set_tile_map_page(0x60);
 ts_video_set_tile0_page(0x48);
-ts_memory_set_page3(0x60);
+ts_map_ram_page(ZX_WINDOW_3, 0x60);
 ts_video_write_tile((volatile void *)0xc000, 0, 3, 2, TS_TILE_ENTRY(65, 2) | TS_TILE_FLIP_X);
 ts_video_set_tile0_scroll(0, 0);
 ts_video_set_tsu_config(TS_TSU_TILE0);
@@ -245,8 +288,8 @@ API также монтирует Nemo IDE, открывает каталоги,
 Набор работает через общий раннер и ZXHost на машине **TSConf** в ZEsarUX. W1 остаётся резидентным
 для почтового ящика и данных C. Большинство кейсов выполняются из W2 и используют W3 для страниц
 фикстур. Эмулятор задаётся через `make test-tsconf ZESARUX=/path/to/zesarux`. Для одного кейса
-используйте `python3 tools/test_runner/runner.py tsconf check --case video/video`, для всего каталога
-`--case video`. [Раннер](../../tools/test_runner/README.ru.md) ·
+используйте `python3 tools/test_runner/runner.py tsconf check --case video/video`, для всего
+каталога `--case video`. [Раннер](../../tools/test_runner/README.ru.md) ·
 [Общие тесты](../common/tests/README.ru.md)
 
 Кейсы проверяют регистры, отображение RAM, растровые IRQ, DMA, SD SPI, legacy ZiFi, графику,
@@ -262,3 +305,13 @@ API также монтирует Nemo IDE, открывает каталоги,
 ZiFi32 используют фикстуры для транзакций и ответов.
 `python3 tools/test_runner/runner.py tsconf check --case fat/ts_fat` использует ROM эмулятора. Через
 `ZXEVO_TEST_ROM` можно указать другой TS-BIOS.
+
+### PCM8 / Covox
+
+`zx_covox_play(samples, count, delay)` воспроизводит resident unsigned PCM8 без изменения CPU/IFF.
+`zx_pcm8_play_banked` принимает дескриптор страницы/смещения/числа отсчётов, окно и аренду
+вызывающего кода. На TSConf доступны W2/W3: для W0/W1 нет чтения текущей страницы. Плеер переключает
+страницы через `zx_acquired_ram_set_page`, выключает INT, затем восстанавливает окно и IFF. Частоту
+CPU и кэш задаёт и восстанавливает вызывающий код. Дескриптор, аренда, код и стек должны оставаться
+вне выбранного окна. Интервал — `64 + 14*delay` тактов; delay 18 при 3,5 МГц даёт около 11076 Гц.
+`zx_covox_set_level(128)` записывает средний уровень простоя в DAC.

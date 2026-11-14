@@ -39,23 +39,48 @@ groups, pixel readback and surface dimensions. The `_op` functions take a `zx_dr
 (`ZX_DRAW_SET`, `ZX_DRAW_CLEAR` or `ZX_DRAW_XOR`). Packed drawing uses the current ink and paper.
 Each library supplies the code that accesses its surfaces. [Graphics](include/zx/graphics.h)
 
-Both archives expose PT3 and Covox in `zx/audio.h`, Kempston mouse in `zx/input.h`, PS/2 modifiers
-and scancode logging in `zx/ps2.h`, and Z80 interrupt control, HALT and frame-counter waiting in
-`zx/interrupt.h`. `zx/ide.h` provides Nemo IDE PIO on BaseConf and TSConf with `IDE_HDD`. `zx/sd.h`
-provides direct SD SPI access with platform-specific chip selection. `zx/fdd.h` defines the common
-VG93 and Beta Disk interface. `zx/rtc.h` provides clock, NVRAM, EEPROM and AVR version access. Both
-platforms use the same calendar sampler and AVR version decoder. The Kondratyev UART API is in
-`zx/uart.h`. `zx/timing.h` provides CPU clock control and `zx_frame_period()`. BaseConf reads the
-current raster from AVR, and TSConf uses its build timing. For formatted console output without CRT
-stdio, use `zx_console_printf()` from `zx/printf.h`. Each platform archive provides its own writer
-object, which the linker extracts when resolving the formatter. If an application links both
-archives, the linker selects one writer and one border implementation for that executable.
+`zx_blit4()` and `zx_blit4_key()` copy linear packed 4bpp images to BaseConf ATM320 or TSConf 16C
+surfaces. The CPU backends support clipping, odd pixel edges and any transparent index 0..15. Keep
+the source, code and stack resident; BaseConf needs both writable destination pages already mapped,
+while TSConf borrows W3 and requires the source outside it. Calls preserve the palette, drawing
+colors and displayed screen. [Shared blit API](include/zx/blit.h)
+
+Both archives expose PT3, AYFX and Covox in `zx/audio.h`, Kempston mouse in `zx/input.h`, PS/2
+modifiers and scancode logging in `zx/ps2.h`, and Z80 interrupt control, HALT and frame-counter
+waiting in `zx/interrupt.h`. `zx/ide.h` provides Nemo IDE PIO on BaseConf and TSConf with `IDE_HDD`.
+`zx/sd.h` provides direct SD SPI access with platform-specific chip selection. `zx/fdd.h` defines
+the common VG93 and Beta Disk interface. `zx/rtc.h` provides clock, NVRAM, EEPROM and AVR version
+access. Both platforms use the same calendar sampler and AVR version decoder. The Kondratyev UART
+API is in `zx/uart.h`. `zx/timing.h` provides CPU clock control and `zx_frame_period()`. BaseConf
+reads the current raster from AVR, and TSConf uses its build timing. For formatted console output
+without CRT stdio, use `zx_console_printf()` from `zx/printf.h`. Each platform archive provides its
+own writer object, which the linker extracts when resolving the formatter. If an application links
+both archives, the linker selects one writer and one border implementation for that executable.
 
 Both archives provide the RAM page pool and banked heap in `include/zx/memory.h`. Choose the paging
 backend with `bc_ram_heap_init` or `ts_ram_heap_init`, then use the shared `zx_ram_heap_*`
 operations. Allocation and free return `zx_status_t`. After either operation, call
 `zx_ram_heap_unmap()` to ensure the window has been restored. The page pool works independently of
 the heap and paging backend. [Common test scenarios](tests/README.en.md)
+
+`zx_acquire_ram(window, page, &lease)` temporarily maps a physical RAM page; use
+`zx_acquired_ram_set_page(&lease, next_page)` to advance within the same window and
+`zx_release_ram(&lease)` to restore its original mapping. TSConf leases W2/W3; BaseConf leases any
+unpinned window. `zx_pcm8_play_banked` uses this contract for consecutive pages and takes the window
+and resident lease from the caller. The caller selects and restores CPU speed and cache.
+[Memory](include/zx/memory.h) · [Audio](include/zx/audio.h)
+
+`zx_ay_select_chip(ZX_AY_CHIP_0)` selects the first TurboSound AY; `ZX_AY_CHIP_1` selects the
+second. Subsequent register accesses and PT3/AYFX output use that chip until it is changed.
+Selection does not mute/reset chips, detect hardware, create separate player states or alter IFF.
+Serialize selection together with the following AY operations against interrupt handlers. Invalid
+chip numbers return `ZX_INVALID_ARGUMENT` without writing ports.
+
+For AYFX effects, initialize a resident AFB bank with `zx_ayfx_init()`, schedule effects with
+`zx_ayfx_play(index, volume_adjustment)`, and call `zx_ayfx_frame()` at the intended frame rate.
+Serialize initialization and stop with the frame ISR; `zx_ayfx_play` protects its channel update
+internally. On a shared AY, tick PT3 before AYFX; on TurboSound, select the required chip before
+each player. `zx_ayfx_stop()` silences the selected chip. [Audio contracts](include/zx/audio.h)
 
 ## BASIC 48 startup profile
 
