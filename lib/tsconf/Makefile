@@ -89,6 +89,7 @@ $(BUILD)/tsconf.lib: Makefile $(BUILD)/sources $(OBJECTS) $(COMMON_OBJECTS)
 	$(Z80ASM) -x=$@ -mz80 $(OBJECTS) $(COMMON_OBJECTS)
 
 ZX_EXAMPLE_FLAGS = $(TSCONF_BASIC48_FLAGS)
+ZX_EXAMPLE_DIR := $(CURDIR)/examples/sdk
 ZX_EXAMPLE_DEPS := Makefile tsconf.mk $(TSCONF_CFG) $(BUILD)/tsconf.lib \
 	$(ZX_APPMAKE_BIN) $(wildcard $(TSCONF_INCLUDE)/*.h $(TSCONF_INCLUDE)/tsconf/*.h)
 include $(ZX_COMMON_ROOT)/examples.mk
@@ -105,7 +106,7 @@ else
 	rm -rf -- "$(BUILD)"
 endif
 
-FORMAT_FILES := $(wildcard *.md config/*.asm examples/*.c include/*.h include/tsconf/*.h) $(SOURCES)
-FORMAT_SUBDIRS := tests
+FORMAT_FILES := $(wildcard *.md config/*.asm examples/sdk/*.c include/*.h include/tsconf/*.h examples/*.md) $(SOURCES)
+FORMAT_SUBDIRS := examples/evosdk tests
 FORMATTER_ARGS := --dialect=z80asm
 include ../../tools/formatter/formatter.mk

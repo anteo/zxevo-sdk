@@ -17,11 +17,9 @@ static void load_palette(uint8_t saved_w3) {
     palette[INK - SKY] = TS_PALETTE_RGB555(2, 2, 7);
 
     /* Use scratch RAM behind FMAPS. Leave the BASIC palette in bank F alone. */
-    ts_memory_set_page3(SCRATCH_PAGE);
-    ts_fmaps_enable(W3);
-    ts_fmaps_write_words(TS_FMAPS_CRAM(W3) + SKY, palette, sizeof(palette) / sizeof(*palette));
-    ts_fmaps_disable();
-    ts_memory_set_page3(saved_w3);
+    ts_map_ram_page(ZX_WINDOW_3, SCRATCH_PAGE);
+    ts_video_upload_palette(ZX_WINDOW_3, SKY, palette, sizeof(palette) / sizeof(*palette));
+    ts_map_ram_page(ZX_WINDOW_3, saved_w3);
 }
 
 static zx_status_t paint_harbour(void) {
@@ -86,7 +84,7 @@ int main(void) {
         status = zx_wait_frames(basic_frames, 250);
     }
 
-    ts_memory_set_page3(saved_w3);
+    ts_map_ram_page(ZX_WINDOW_3, saved_w3);
     ts_video_set_page(5);
     ts_video_set_palette_select(15);
     ts_video_set_config(TS_VIDEO_ZX | TS_VIDEO_256X192);

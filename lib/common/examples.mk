@@ -1,6 +1,6 @@
 # Build each standalone C example with the including library's BASIC 48 profile.
 ZX_EXAMPLES_MK := $(lastword $(MAKEFILE_LIST))
-ZX_EXAMPLE_DIR := $(CURDIR)/examples
+ZX_EXAMPLE_DIR ?= $(CURDIR)/examples
 ZX_EXAMPLE_BUILD := $(CURDIR)/build/examples
 ZX_EXAMPLE_SOURCES := $(wildcard $(ZX_EXAMPLE_DIR)/*.c)
 ZX_EXAMPLE_TAPS := $(patsubst $(ZX_EXAMPLE_DIR)/%.c,$(ZX_EXAMPLE_BUILD)/%.tap,$(ZX_EXAMPLE_SOURCES))

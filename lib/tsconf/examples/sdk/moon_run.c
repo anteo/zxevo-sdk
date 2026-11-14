@@ -114,7 +114,7 @@ static void build_moon(void) {
     uint16_t stars = 0xace1;
     uint8_t row, column, tile, x;
 
-    ts_memory_set_page3(ATLAS_PAGE);
+    ts_map_ram_page(ZX_WINDOW_3, ATLAS_PAGE);
     for (tile = 0; tile < sizeof(tiles) / sizeof(*tiles); ++tile) {
         for (row = 0; row < 8; ++row) memcpy(work + 256u * row + 4 * tile, tiles[tile][row], 4);
     }
@@ -125,14 +125,14 @@ static void build_moon(void) {
             *pixels++ = (earth_pixel(x - 15, row - 15) << 4) | earth_pixel(x - 14, row - 15);
     }
 
-    ts_memory_set_page3(SHIP_PAGE);
+    ts_map_ram_page(ZX_WINDOW_3, SHIP_PAGE);
     for (row = 0; row < 16; ++row) {
         uint8_t *pixels = work + 256u * row;
         for (x = 0; x < 16; x += 2)
             *pixels++ = ((ship_art[row][x] - '0') << 4) | (ship_art[row][x + 1] - '0');
     }
 
-    ts_memory_set_page3(MAP_PAGE);
+    ts_map_ram_page(ZX_WINDOW_3, MAP_PAGE);
     memset(work, 0, 0x4000);
     for (column = 0; column < 64; ++column) {
         for (row = 0; row < 24; ++row) {
@@ -162,9 +162,7 @@ static void show_ship(uint16_t y) {
     ts_sprite_t ship = {TS_SPRITE_ACTIVE | TS_SPRITE_LEAP | (1u << 9) | y, (1u << 9) | 66u, 0};
 
     /* Slot 0 is an inactive LEAP, putting the ship above tile layer 0. */
-    ts_fmaps_enable(W3);
-    ts_fmaps_write_words(TS_FMAPS_SFILE(W3) + 1, &ship, 3);
-    ts_fmaps_disable();
+    ts_video_upload_sprites(ZX_WINDOW_3, 1, &ship, 1);
 }
 
 int main(void) {
@@ -177,13 +175,10 @@ int main(void) {
     ts_video_set_tsu_config(0);
     build_moon();
 
-    ts_memory_set_page3(SCRATCH_PAGE);
-    memset(work + 0x400, 0, TS_SPRITE_COUNT * sizeof(ts_sprite_t));
-    ts_fmaps_enable(W3);
-    ts_fmaps_write_words(TS_FMAPS_CRAM(W3), palette, sizeof(palette) / sizeof(*palette));
-    ts_fmaps_write_words(TS_FMAPS_SFILE(W3), work + 0x400, TS_SPRITE_COUNT * 3);
-    ts_fmaps_write_words(TS_FMAPS_SFILE(W3), &skip_layer, 3);
-    ts_fmaps_disable();
+    ts_map_ram_page(ZX_WINDOW_3, SCRATCH_PAGE);
+    ts_video_upload_palette(ZX_WINDOW_3, 0, palette, sizeof(palette) / sizeof(*palette));
+    ts_video_upload_sprites(ZX_WINDOW_3, 0, NULL, TS_SPRITE_COUNT);
+    ts_video_upload_sprites(ZX_WINDOW_3, 0, &skip_layer, 1);
 
     ts_video_set_tile_map_page(MAP_PAGE);
     ts_video_set_tile0_page(ATLAS_PAGE);
@@ -208,7 +203,7 @@ int main(void) {
     }
 
     ts_video_set_tsu_config(0);
-    ts_memory_set_page3(saved_w3);
+    ts_map_ram_page(ZX_WINDOW_3, saved_w3);
     ts_video_set_palette_select(15);
     ts_video_set_page(5);
     ts_video_set_scroll(0, 0);
