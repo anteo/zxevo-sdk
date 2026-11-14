@@ -1,0 +1,15 @@
+description = "PCM8 bank boundaries, caller-owned CPU/cache, IFF/lease restoration and z88dk IM2 C hook"
+cflags = ["-lzx_clib"]
+audio_capture = true
+audio_step_flush_cycles = 100000
+timeout = 45
+
+[audio_expectations.steps.banked]
+minimum_peak_to_peak = 32
+minimum_level_samples = 32
+levels_in_order = [64, 191, 128]
+
+[audio_expectations.steps.contiguous]
+minimum_peak_to_peak = 32
+minimum_level_samples = 32
+levels_in_order = [191, 64]

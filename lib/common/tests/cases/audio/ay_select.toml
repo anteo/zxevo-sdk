@@ -1,0 +1,5 @@
+description = "TurboSound chip selection, invalid arguments and selected-chip player output"
+emulator_args = ["--totalaychips", "2"]
+
+[targets.baseconf]
+profile = "no-stdio+no-primitives"

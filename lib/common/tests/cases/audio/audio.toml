@@ -1,7 +1,7 @@
 description = "AY, Covox and PT3 audio output"
 sources = ["audio_pt3_fixture.asm"]
 audio_capture = true
-audio_step_flush_cycles = 2000000
+audio_step_flush_cycles = 100000
 timeout = 30
 
 [targets.baseconf]

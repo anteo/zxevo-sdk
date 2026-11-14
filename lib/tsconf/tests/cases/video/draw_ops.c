@@ -5,7 +5,7 @@ static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 static void check_zx(void) {
     const ts_surface_t bitmap = {TS_VIDEO_ZX, 5, w3};
-    ts_memory_set_page3(5);
+    ts_map_ram_page(ZX_WINDOW_3, 5);
     ZX_ASSERT(ts_video_select_draw_surface(&bitmap) == ZX_OK);
     w3[0] = 0;
     w3[0x100] = 0;
@@ -38,12 +38,12 @@ static void check_group(void) {
     ts_window_lease_t other_lease;
     uint8_t index = 0x69;
 
-    ts_memory_set_page3(0x50);
+    ts_map_ram_page(ZX_WINDOW_3, 0x50);
     w3[0] = 0xab;
     w3[0x3f00] = 0;
-    ts_memory_set_page3(0x51);
+    ts_map_ram_page(ZX_WINDOW_3, 0x51);
     w3[0] = 0;
-    ts_memory_set_page3(0x7e);
+    ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     w3[0] = 0x69;
     ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
     zx_set_paper(7);
@@ -84,7 +84,7 @@ static void check_shapes(void) {
     const ts_surface_t canvas = {TS_VIDEO_256C, 0x40, 0};
 
     ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
-    ts_memory_set_page3(0x40);
+    ts_map_ram_page(ZX_WINDOW_3, 0x40);
     w3[0] = 0;
     w3[1] = 0xb3;
     w3[3] = 0;
@@ -94,7 +94,7 @@ static void check_shapes(void) {
     w3[10 * 512 + 15] = 0;
     w3[12 * 512 + 10] = 0;
     w3[10 * 512 + 20] = 0;
-    ts_memory_set_page3(0x7e);
+    ts_map_ram_page(ZX_WINDOW_3, 0x7e);
 
     zx_set_ink(0xf0);
     zx_draw_plot_xor(1, 0);
@@ -119,7 +119,7 @@ static void check_shapes(void) {
     zx_draw_circle(0, 0, -1);
     zx_draw_circle(32767, 32767, 4);
     ZX_ASSERT(ts_memory_get_page3() == 0x7e && w3[0] == 0x69);
-    ts_memory_set_page3(0x40);
+    ts_map_ram_page(ZX_WINDOW_3, 0x40);
     ZX_ASSERT(w3[0] == 0 && w3[1] == 0xb7 && w3[3] == 9 && w3[3 * 512] == 9);
     ZX_ASSERT(w3[10 * 512 + 5] == 0x41 && w3[10 * 512 + 15] == 0x41);
     ZX_ASSERT(w3[12 * 512 + 10] == 0x41 && w3[10 * 512 + 10] == 0);

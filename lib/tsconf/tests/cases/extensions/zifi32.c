@@ -206,7 +206,7 @@ static void check_data(void) {
     ZX_ASSERT(ts_zifi32_write_data(buffer, 5) == ZX_INVALID_ARGUMENT);
     ZX_ASSERT(ts_zifi32_write_data(buffer, 4004) == ZX_INVALID_ARGUMENT);
 
-    ts_memory_set_page3(0x30);
+    ts_map_ram_page(ZX_WINDOW_3, 0x30);
     buffer[-1] = 0xa5;
     buffer[TS_ZIFI32_MAX_DATA] = 0x5a;
     expect_frames(frames, 6);

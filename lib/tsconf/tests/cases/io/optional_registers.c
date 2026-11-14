@@ -12,7 +12,7 @@ int main(void) {
     uint32_t count = 0;
 
     zx_test_init();
-    ts_memory_set_page3(0x60);
+    ts_map_ram_page(ZX_WINDOW_3, 0x60);
     ts_fmaps_enable(0xc000);
     ZX_ASSERT(ts_copper_upload(0xc001, 0, words, 4) == ZX_INVALID_ARGUMENT);
     ZX_ASSERT(ts_copper_upload(0xc000, 253, words, 4) == ZX_INVALID_ARGUMENT);

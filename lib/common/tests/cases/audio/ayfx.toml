@@ -1,0 +1,4 @@
+description = "AFB playback: register output, volume, stop and channel replacement"
+
+[targets.baseconf]
+profile = "no-stdio+no-primitives"

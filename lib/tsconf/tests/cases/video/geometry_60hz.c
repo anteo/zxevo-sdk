@@ -30,7 +30,7 @@ int main(void) {
     ZX_ASSERT(zx_console_gotoxy(44, 29) == ZX_OK && zx_console_gotoxy(44, 30) != ZX_OK);
 
     ts_video_set_config(TS_VIDEO_256C | TS_VIDEO_320X200 | TS_VIDEO_HIDE_GFX);
-    ts_memory_set_page3(text.page);
+    ts_map_ram_page(ZX_WINDOW_3, text.page);
     ZX_ASSERT(ts_video_select_draw_surface(&text) == ZX_OK);
     ZX_ASSERT(ts_video_get_raster_size(&raster) == ZX_OK && raster.width == 320 &&
               raster.height == 200);

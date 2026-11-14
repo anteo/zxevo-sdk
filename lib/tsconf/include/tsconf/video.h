@@ -2,6 +2,7 @@
 #define TSCONF_VIDEO_H
 
 #include <stdint.h>
+#include <zx/memory.h>
 #include <zx/video.h>
 
 #define TS_VIDEO_ZX 0x00u
@@ -48,6 +49,27 @@ typedef struct {
 #define TS_SPRITE_LEAP 0x4000u   /* Y word */
 #define TS_SPRITE_FLIP 0x8000u   /* Y or X word */
 
+/* Upload count descriptors starting at first (first+count <= TS_SPRITE_COUNT).
+ * NULL source clears the selected descriptors; zero count does nothing.
+ * The first 4 KiB of window (ZX_WINDOW_0..3) are used temporarily for FMAPS.
+ * Window is a CPU window, not a physical RAM page. Map disposable writable
+ * RAM there beforehand: underlying RAM can be overwritten by these stores.
+ * Code, stack and non-NULL source must remain outside that 4 KiB aperture;
+ * source must be readable for the whole transfer without address wrap.
+ * Caller owns FMAPS (disabled on entry) and excludes NMI/DMA writers to the
+ * internal files and paging changes. INT is disabled for the upload and its
+ * previous state restored. FMAPS is disabled on return; RAM mapping is unchanged.
+ * Schedule updates during blanking or hide the sprite layer to avoid tearing.
+ * Invalid window/range returns ZX_INVALID_ARGUMENT before any hardware write. */
+zx_status_t ts_video_upload_sprites(zx_window_t window, uint8_t first, const ts_sprite_t *source,
+                                    uint8_t count);
+
+/* As ts_video_upload_sprites, but upload RGB555/VDAC palette words to CRAM.
+ * first+count <= 256; NULL source clears entries to zero (black).
+ * Count is in colors, not bytes. Schedule writes to a live palette as needed. */
+zx_status_t ts_video_upload_palette(zx_window_t window, uint8_t first, const uint16_t *source,
+                                    uint16_t count);
+
 /* Write VConfig and remember its layout for ts_video_select_draw_screen.
  * Combine the mode, raster size and layer flags. Leaves the draw target alone. */
 void ts_video_set_config(uint8_t config) __z88dk_fastcall;
@@ -55,6 +77,20 @@ void ts_video_set_config(uint8_t config) __z88dk_fastcall;
 /* Select the display's physical base page. Align it to 8 pages for
  * 16-color mode or 16 pages for 256-color mode. Leaves the draw target alone. */
 void ts_video_set_page(uint8_t page) __z88dk_fastcall;
+
+/* DMA helpers for a 320x200 16-color bitmap. Source and destination screen
+ * bases are 8-page aligned. Tile coordinates are 0..39, 0..24. Functions
+ * wait for the DMA engine and leave CPU page mappings intact. The caller
+ * keeps the destination hidden until drawing is complete. */
+zx_status_t ts_video_copy_16c_screen(uint8_t source_page, uint8_t destination_page);
+zx_status_t ts_video_copy_16c_tile(uint8_t source_page, uint8_t destination_page, uint8_t x,
+                                   uint8_t y);
+zx_status_t ts_video_fill_16c_screen(uint8_t page, uint8_t color);
+/* Source contains packed 8x8 tiles, 32 bytes per tile across consecutive
+ * physical pages. The source base may be any page; the destination is an
+ * aligned screen base. */
+zx_status_t ts_video_draw_16c_tile(uint8_t source_page, uint16_t tile, uint8_t destination_page,
+                                   uint8_t x, uint8_t y);
 
 /* Draw surface with a TS_VIDEO_* mode and raster, and its physical base page.
  * ZX and text need page mapped at a writable 16 KiB-aligned CPU address
@@ -131,8 +167,9 @@ void ts_video_set_tile1_scroll(uint16_t x, uint16_t y);
 void ts_video_write_tile(volatile void *map, uint8_t layer, uint8_t column, uint8_t row,
                          uint16_t entry);
 
-/* Map FMAPS at a 4 KiB-aligned CPU address. Use disposable backing memory
- * and keep code, data and stack clear of the aperture. */
+/* Low-level mapping at any 4 KiB-aligned CPU address, not a physical RAM page.
+ * Prefer ts_video_upload_sprites/palette with ZX_WINDOW_* for ordinary uploads.
+ * Use disposable backing memory and keep code, data and stack clear of the aperture. */
 void ts_fmaps_enable(uint16_t base) __z88dk_fastcall;
 void ts_fmaps_disable(void);
 

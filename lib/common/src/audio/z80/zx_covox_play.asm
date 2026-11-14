@@ -1,86 +1,100 @@
-; zx_status_t zx_covox_play(const uint8_t *samples, uint16_t length)
-; Playback loop adapted from z88dk libsrc/classic/games/playzb4_dac.asm,
-; based on SG C Tools 1.7, (C) 1993 Steve Goldsmith.
-; Adapted for BaseConf on 2026-11-05: fixed port, SDCC entry and status,
-; and correct handling of every nonzero 16-bit sample length.
-
 SECTION code_clib
-
 PUBLIC _zx_covox_play
+PUBLIC _zx__covox_pcm8_block
 
-defc ZX_COVOX_PORT = $00fb
-
-; Plays a packed 4-bit sample buffer through Covox, sending the high nibble
-; first and waiting until playback finishes.
+; Play unsigned PCM8 at port 00FBh and return the DAC to midpoint.
 ;
 ; Model:
 ;
-; if (!samples || !length) return INVALID_ARGUMENT;
-; for (i=0; i<length; ++i) { delay(); OUT(0x00fb,samples[i]&0xf0);
-;     delay(); OUT(0x00fb,(samples[i]<<4)&0xf0); } return OK;
+; if (!samples || !length || !delay) return INVALID_ARGUMENT;
+; pcm8_block(samples, length, delay); OUT(0x00fb,128); return OK;
 ;
-; Caller-clean pointers/length at SP+2/+4, status in HL. Sample bytes stay
-; readable for the blocking call. AF/BC/DE/HL volatile; IX/IY preserved.
-; Counted delays depend on CPU speed and interrupt latency; IFF is unchanged.
-; Length is decomposed into a first partial block and full 256-byte blocks;
-; incrementing D when E!=0 fixes the original short/non-multiple-of-256 case.
+; SDCC caller-clean: pointer SP+2, byte count SP+4, delay SP+6.
+; HL=status; AF/BC/DE/HL volatile, IX/IY preserved, IFF unchanged.
+; Samples must stay readable without wrapping the CPU address space.
 _zx_covox_play:
-        pop bc                      ; return address
-        pop hl                      ; samples
-        pop de                      ; length
-        push de
-        push hl
-        push bc
-
+        ld hl,6
+        add hl,sp
+        ld a,(hl)
+        or a
+        jr z,invalid
+        push ix
+        ld ixl,a
+        ld hl,4
+        add hl,sp
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a
         ld a,h
         or l
-        jr z,bc_covox_play_invalid
+        jr z,invalid_pop
         ld a,d
         or e
-        jr z,bc_covox_play_invalid
-
-    ; The original loop consumes E bytes, then 256 for each remaining D.
-    ; Adjust D so a short buffer does not run through the address space.
-        ld a,e
-        or a
-        jr z,bc_covox_play_ready
-        inc d
-bc_covox_play_ready:
-        ld bc,ZX_COVOX_PORT
-
-bc_covox_play_next:
-        push bc
-        ld b,31
-bc_covox_play_delay_high:
-        djnz bc_covox_play_delay_high
-        pop bc
-
-        ld a,(hl)
-        and $f0
+        jr z,invalid_pop
+        ex de,hl
+        call pcm8_loop
+        ld a,128
         out (c),a
-
-        push bc
-        ld b,31
-bc_covox_play_delay_low:
-        djnz bc_covox_play_delay_low
-        pop bc
-
-        ld a,(hl)
-        rlca
-        rlca
-        rlca
-        rlca
-        and $f0
-        out (c),a
-
-        inc hl
-        dec e
-        jr nz,bc_covox_play_next
-        dec d
-        jr nz,bc_covox_play_next
-        ld hl,0                     ; ZX_OK
+        pop ix
+        ld hl,0
+        ret
+invalid_pop:
+        pop ix
+invalid:
+        ld hl,1
         ret
 
-bc_covox_play_invalid:
-        ld hl,1                     ; ZX_INVALID_ARGUMENT
+; Internal C entry with the same arguments, trusted nonzero count/delay.
+; It deliberately emits no idle level between bank segments. IX/IY preserved.
+_zx__covox_pcm8_block:
+        ld hl,6
+        add hl,sp
+        ld a,(hl)
+        push ix
+        ld ixl,a
+        ld hl,4
+        add hl,sp
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld a,(hl)
+        inc hl
+        ld h,(hl)
+        ld l,a
+        ex de,hl
+        call pcm8_loop
+        pop ix
+        ret
+
+; HL=source, DE=nonzero sample count, IXL=delay (1..255).
+;
+; Model:
+;
+; do { OUT(0x00fb,*samples++); if (!--length) break;
+;      for (a=delay; a; --a) {} } while (1);
+;
+; Ordinary samples are spaced 64+14*delay T-states, excluding interrupt
+; latency, memory waits and interbank call/remap overhead. BC remains 00FBh.
+pcm8_loop:
+        ld bc,$00fb
+next_sample:
+        ld a,(hl)
+        out (c),a
+        inc hl
+        dec de
+        ld a,d
+        or e
+        jr z,block_done
+        ld a,ixl
+wait_sample:
+        dec a
+        jp nz,wait_sample
+        jp next_sample
+block_done:
         ret

@@ -2,6 +2,7 @@
 #define ZX_GRAPHICS_H
 
 #include <zx/video.h>
+#include <zx/blit.h>
 
 /* Values shared by the C API and the Z80 drawing backends. */
 typedef enum { ZX_DRAW_SET = 0, ZX_DRAW_CLEAR = 1, ZX_DRAW_XOR = 2 } zx_draw_op_t;

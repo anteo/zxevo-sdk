@@ -42,6 +42,27 @@ zx_status_t bc_set_atm_palette(bc_color_index_t index, bc_rgb222_t color);
  * Returns ZX_UNAVAILABLE unless RGB444 hardware mode is already enabled and
  * ZX_INVALID_ARGUMENT for out-of-range index/channels. */
 zx_status_t bc_set_atm_palette_rgb444(bc_color_index_t index, bc_rgb444_t color);
+/* Load all 16 ATM RGB222 colors, encoded as 00RRGGBB in ascending index order.
+ * Wait for the standard frame IRQ, then select each border index and write
+ * its color within the initial border interval. Restore border, BF, xx77,
+ * FDD control and enabled INT; FC/F6 border writes leave FE audio alone.
+ *
+ * Requires zx_init, known AVR window ownership (zx_avr_window_select), RGB222
+ * hardware mode and Pentagon/60Hz raster. Raster 48/128 returns ZX_UNSUPPORTED:
+ * their synchronized border cannot select consecutive entries this way.
+ * Call outside ISR with INT enabled and ONLY the standard frame IRQ active;
+ * no newirq/external IRQ/NMI. The ISR must preserve registers and return within
+ * 4096 T at 3.5MHz (1.17ms); the loader's post-HALT packet fits within another
+ * 4096 T, before the earliest active line 42. Keep CPU>=3.5MHz and serialize
+ * raster, palette, paging and AVR access throughout the call. An absent IRQ
+ * cannot time out. The routine does not install or replace an ISR.
+ *
+ * NULL, address wrap or values>63 return ZX_INVALID_ARGUMENT; disabled INT
+ * or enabled SDK newirq returns ZX_UNSAFE_CONTEXT; active video/window leases
+ * return ZX_BUSY; RGB444 returns ZX_UNAVAILABLE. AVR read errors propagate.
+ * All failure paths precede palette changes. Source is copied to a 16-byte
+ * stack buffer before waiting; code and stack must remain CPU-accessible. */
+zx_status_t bc_palette_load_rgb222(const uint8_t colors[16]) __z88dk_fastcall;
 /* Write the ULAplus mode register; pass exactly 0 to disable or 1 to enable.
  * The byte is written unchanged, without validation or video-mode selection. */
 void bc_set_ulaplus_enabled(uint8_t enabled);

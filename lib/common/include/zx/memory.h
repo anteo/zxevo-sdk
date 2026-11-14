@@ -9,6 +9,25 @@ typedef enum { ZX_WINDOW_0 = 0, ZX_WINDOW_1 = 1, ZX_WINDOW_2 = 2, ZX_WINDOW_3 = 
 
 typedef uint8_t zx_ram_page_t;
 
+/* Private storage for a temporary RAM-window mapping. Keep this object at
+ * the same resident address until zx_release_ram succeeds. */
+typedef struct {
+    uint8_t state[16];
+} zx_ram_lease_t;
+
+/* Save the current mapping and install a physical RAM page in window W0..W3.
+ * The platform may reject windows whose mapping cannot be read back or whose
+ * resident contents are pinned. TSConf supports W2/W3; BaseConf supports any
+ * unpinned window after zx_init. Code, stack, lease and needed data must stay
+ * outside the mapped window. Only one lease may be active per platform. */
+zx_status_t zx_acquire_ram(zx_window_t window, zx_ram_page_t page, zx_ram_lease_t *lease);
+/* Replace the page in the same acquired window without losing its original
+ * mapping. A foreign or inactive lease returns ZX_BUSY/ZX_INVALID_ARGUMENT. */
+zx_status_t zx_acquired_ram_set_page(zx_ram_lease_t *lease, zx_ram_page_t page);
+/* Restore the mapping saved at acquisition. Keep the lease resident and retry
+ * on a restoration error; it remains active until this returns ZX_OK. */
+zx_status_t zx_release_ram(zx_ram_lease_t *lease);
+
 #define ZX_RAM_PAGE_SIZE 0x4000u
 #define ZX_RAM_PAGE_COUNT 256u
 #define ZX_RAM_PAGE_MASK_SIZE (ZX_RAM_PAGE_COUNT / 8u)

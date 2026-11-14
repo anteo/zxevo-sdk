@@ -1,0 +1,3 @@
+description = "Standalone RGB222 loader guards, frame wait, hardware colors and state restoration"
+profile = "no-stdio+no-font8"
+sources = ["palette_load_helpers.asm"]

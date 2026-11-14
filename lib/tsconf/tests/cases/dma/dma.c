@@ -8,15 +8,15 @@ static void check_copy(void) {
     uint16_t i;
     volatile uint8_t *destination = w3 + 0x0202;
 
-    ts_memory_set_page3(0x30);
+    ts_map_ram_page(ZX_WINDOW_3, 0x30);
     for (i = 0; i < 256; ++i) {
         w3[0x3f00 + i] = (uint8_t)(i ^ 0x55);
     }
-    ts_memory_set_page3(0x31);
+    ts_map_ram_page(ZX_WINDOW_3, 0x31);
     for (i = 0; i < 768; ++i) {
         w3[i] = (uint8_t)(i ^ 0xaa);
     }
-    ts_memory_set_page3(0x50);
+    ts_map_ram_page(ZX_WINDOW_3, 0x50);
     destination[-1] = 0x19;
     destination[1023] = 0;
     destination[1024] = 0x91;
@@ -38,7 +38,7 @@ static void check_fill(void) {
     uint16_t column;
     volatile uint8_t *destination = w3 + 0x1006;
 
-    ts_memory_set_page3(0x60);
+    ts_map_ram_page(ZX_WINDOW_3, 0x60);
     w3[0x0102] = 0x34;
     w3[0x0103] = 0xc8;
     for (row = 0; row < 3; ++row) {
@@ -71,7 +71,7 @@ static void check_strided_copy(void) {
     volatile uint8_t *source = w3 + 0x32;
     volatile uint8_t *destination = w3 + 0x1004;
 
-    ts_memory_set_page3(0x60);
+    ts_map_ram_page(ZX_WINDOW_3, 0x60);
     for (row = 0; row < 3; ++row) {
         offset = 256u * row;
         source[offset] = (uint8_t)(0x10u + row);
@@ -103,7 +103,7 @@ static void check_blit(void) {
     volatile uint8_t *source = w3 + 0x2000;
     volatile uint8_t *destination = w3 + 0x2100;
 
-    ts_memory_set_page3(0x60);
+    ts_map_ram_page(ZX_WINDOW_3, 0x60);
     transfer.source.offset = 0x2000;
     transfer.source.page = 0x60;
     transfer.destination.offset = 0x2100;

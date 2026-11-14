@@ -39,12 +39,10 @@ zx_status_t ts_ram_heap_init(zx_ram_heap_t *heap, zx_ram_page_pool_t *pool,
                              zx_ram_heap_page_t *page_storage, uint16_t page_capacity,
                              zx_window_t window, ts_window_lease_t *lease);
 
-/* Write Page0..Page3. Page0 selects ROM or RAM as configured by MemConfig.
- * Keep code, data, stack and active IRQ handlers reachable across remaps. */
+/* Set the Page0 register. This is deliberately separate from RAM mapping:
+ * MemConfig determines whether W0 selects a ROM or RAM page. Keep code,
+ * data, stack and IRQ handlers outside W0 across a remap. */
 void ts_memory_set_page0(uint8_t page) __z88dk_fastcall;
-void ts_memory_set_page1(uint8_t page) __z88dk_fastcall;
-void ts_memory_set_page2(uint8_t page) __z88dk_fastcall;
-void ts_memory_set_page3(uint8_t page) __z88dk_fastcall;
 
 /* Only Page2 and Page3 provide paging register readback on stock hardware. */
 uint8_t ts_memory_get_page2(void);

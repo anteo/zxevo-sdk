@@ -22,7 +22,7 @@ static void check_sector(uint16_t destination, uint16_t file_offset) {
     ts_fat_read_sector(DATA_PAGE, destination);
     ZX_ASSERT(ts_memory_get_page2() == CALLER_PAGE);
 
-    ts_memory_set_page2(DATA_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, DATA_PAGE);
     ZX_ASSERT(buffer[-1] == 0xa5);
     for (i = 0; i < TS_FAT_SECTOR_SIZE; ++i) {
         uint16_t pos = file_offset + i;
@@ -32,7 +32,7 @@ static void check_sector(uint16_t destination, uint16_t file_offset) {
     if (destination == FIRST_OFFSET) {
         ZX_ASSERT(buffer[TS_FAT_SECTOR_SIZE] == 0xa5);
     }
-    ts_memory_set_page2(CALLER_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, CALLER_PAGE);
 }
 
 int main(void) {
@@ -40,10 +40,10 @@ int main(void) {
     zx_status_t status;
 
     zx_test_init();
-    ts_memory_set_page2(DATA_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, DATA_PAGE);
     memset(w2 + FIRST_OFFSET - 1, 0xa5, TS_FAT_SECTOR_SIZE + 2);
     memset(w2 + LAST_OFFSET - 1, 0xa5, TS_FAT_SECTOR_SIZE + 1);
-    ts_memory_set_page2(CALLER_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, CALLER_PAGE);
 
     status = ts_fat_mount_sd();
     ZX_ASSERT(status == ZX_OK);

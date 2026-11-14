@@ -21,12 +21,12 @@ static void prepare_atlases(void) {
 
     /* Tile 65 starts at atlas (8, 8), with 256 bytes per row and 2 pixels
      * per byte. Tile 0 provides a blue background on T0 and dots on T1. */
-    ts_memory_set_page3(T0_ATLAS);
+    ts_map_ram_page(ZX_WINDOW_3, T0_ATLAS);
     for (row = 0; row < 8; ++row) {
         memset(w3 + 256u * row, 0x11, 4);
         memset(w3 + TILE_OFFSET + 256u * row, 0x11, 4);
     }
-    ts_memory_set_page3(T1_ATLAS);
+    ts_map_ram_page(ZX_WINDOW_3, T1_ATLAS);
     for (row = 0; row < 8; ++row) {
         uint8_t *pixels = w3 + TILE_OFFSET + 256u * row;
         memset(w3 + 256u * row, 0, 4);
@@ -47,7 +47,7 @@ int main(void) {
     ts_video_set_tsu_config(0);
     prepare_atlases();
 
-    ts_memory_set_page3(0x70);
+    ts_map_ram_page(ZX_WINDOW_3, 0x70);
     ts_fmaps_enable(W3_BASE);
     ts_fmaps_write_words(TS_FMAPS_CRAM(W3_BASE), palette, sizeof(palette) / sizeof(*palette));
     ts_fmaps_disable();
@@ -56,7 +56,7 @@ int main(void) {
     ts_video_set_palette_select(0x90);
 
     ts_video_set_tile_map_page(MAP_PAGE);
-    ts_memory_set_page3(MAP_PAGE);
+    ts_map_ram_page(ZX_WINDOW_3, MAP_PAGE);
     memset(w3, 0, 0x4000);
     ts_video_write_tile(map, 0, 35, 1, TS_TILE_ENTRY(TILE_INDEX, 2));
     ts_video_write_tile(map, 1, 66, 98,

@@ -15,7 +15,7 @@ int main(void) {
     const ts_surface_t surface = {TS_VIDEO_ZX, 0x60, screen};
 
     zx_test_init();
-    ts_memory_set_page3(0x60);
+    ts_map_ram_page(ZX_WINDOW_3, 0x60);
     memset((void *)screen, 0, 0x1800);
     screen[0x1800] = 0xa5;
     screen[0x1aff] = 0x5a;

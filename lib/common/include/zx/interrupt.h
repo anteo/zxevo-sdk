@@ -33,4 +33,10 @@ zx_status_t zx_wait_frame(const volatile uint8_t *frame_counter) __z88dk_fastcal
  * Return the first wait error or ZX_OK after the final frame. */
 zx_status_t zx_wait_frames(const volatile uint8_t *frame_counter, uint16_t count);
 
+/* Fastcall ABI adapter for classic z88dk im2_Init (whose header omits its
+ * register calling convention). Use im2.h for ISR creation/registration.
+ * Table is 256-byte aligned, 257 resident bytes; call with IRQ disabled.
+ * This selects IM2 and leaves IFF unchanged; it does not populate the table. */
+void im2_Init_fastcall(void *table) __z88dk_fastcall;
+
 #endif

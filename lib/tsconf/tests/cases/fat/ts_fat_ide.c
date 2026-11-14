@@ -23,7 +23,7 @@ int main(void) {
 
     zx_test_init();
     zx_interrupt_enable(0);
-    ts_memory_set_page2(CALLER_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, CALLER_PAGE);
     ts_io_set_interrupt_mask(1);
     zx_test_step_begin("mount-nemo");
     ZX_ASSERT(ts_fat_mount_ide(2) == ZX_INVALID_ARGUMENT);
@@ -47,23 +47,23 @@ int main(void) {
     if (status != ZX_OK) goto finish;
 
     zx_test_step_begin("write-read-roundtrip");
-    ts_memory_set_page2(DATA_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, DATA_PAGE);
     for (i = 0; i < TS_FAT_SECTOR_SIZE; ++i) buffer[i] = pattern(i);
-    ts_memory_set_page2(CALLER_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, CALLER_PAGE);
     ts_fat_write_sector(DATA_PAGE, OFFSET);
     ZX_ASSERT(ts_memory_get_page2() == CALLER_PAGE);
 
-    ts_memory_set_page2(DATA_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, DATA_PAGE);
     for (i = 0; i < TS_FAT_SECTOR_SIZE; ++i) buffer[i] = 0;
-    ts_memory_set_page2(CALLER_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, CALLER_PAGE);
     status = ts_fat_open(&file, &size);
     ZX_ASSERT(status == ZX_OK && size == TS_FAT_SECTOR_SIZE);
     if (status != ZX_OK) goto finish;
     ts_fat_read_sector(DATA_PAGE, OFFSET);
     ZX_ASSERT(ts_memory_get_page2() == CALLER_PAGE);
-    ts_memory_set_page2(DATA_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, DATA_PAGE);
     for (i = 0; i < TS_FAT_SECTOR_SIZE; ++i) ZX_ASSERT(buffer[i] == pattern(i));
-    ts_memory_set_page2(CALLER_PAGE);
+    ts_map_ram_page(ZX_WINDOW_2, CALLER_PAGE);
     zx_test_step_marker(0);
 
     zx_test_step_begin("delete-file");

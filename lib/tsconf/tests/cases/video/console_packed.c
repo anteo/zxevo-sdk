@@ -13,7 +13,7 @@ static void check_packed16(void) {
     zx_console_size_t grid;
     uint8_t row, x;
 
-    ts_memory_set_page3(0x7e);
+    ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     screen[0] = 0x69;
     ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
     ZX_ASSERT(zx_console_set_font(&zx_font5) == ZX_OK && zx_console_get_font() == &zx_font5);
@@ -27,9 +27,9 @@ static void check_packed16(void) {
     zx_set_paper(5);
     ZX_ASSERT(zx_console_draw_op(1, 9, "A", ZX_TEXT_TRANSPARENT) == ZX_OK);
     ZX_ASSERT(ts_memory_get_page3() == 0x7e && screen[0] == 0x69);
-    ts_memory_set_page3(0x57);
+    ts_map_ram_page(ZX_WINDOW_3, 0x57);
     ZX_ASSERT(screen[0x3fff] == 0x33);
-    ts_memory_set_page3(0x51);
+    ts_map_ram_page(ZX_WINDOW_3, 0x51);
     for (row = 0; row < 8; ++row) {
         uint16_t offset = 256u * row + 3;
         for (x = 0; x < 5; ++x) {
@@ -47,7 +47,7 @@ static void check_packed256(void) {
     const ts_surface_t canvas = {TS_VIDEO_256C | TS_VIDEO_320X240, 0x40, NULL};
     uint8_t row, x;
 
-    ts_memory_set_page3(0x7e);
+    ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     zx_set_ink(0xa5);
     zx_set_paper(0xb7);
     ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
@@ -60,9 +60,9 @@ static void check_packed256(void) {
     ZX_ASSERT(zx_console_set_text_bg(ZX_TEXT_OPAQUE) == ZX_OK);
     zx_set_paper(0xb7);
     ZX_ASSERT(ts_memory_get_page3() == 0x7e && screen[0] == 0x69);
-    ts_memory_set_page3(0x4f);
+    ts_map_ram_page(ZX_WINDOW_3, 0x4f);
     ZX_ASSERT(screen[0x3fff] == 0xb7);
-    ts_memory_set_page3(0x41);
+    ts_map_ram_page(ZX_WINDOW_3, 0x41);
     for (row = 0; row < 8; ++row) {
         uint16_t offset = 512u * row + 256;
         for (x = 0; x < 8; ++x) {

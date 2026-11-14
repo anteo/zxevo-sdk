@@ -16,14 +16,14 @@ static void check_palette(void) {
     uint8_t page;
 
     ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
-    ts_memory_set_page3(0x70);
+    ts_map_ram_page(ZX_WINDOW_3, 0x70);
     backing[0] = 0x5a;
     backing[512] = 0x69;
     ts_fmaps_enable(APERTURE);
     ts_fmaps_write_words(TS_FMAPS_CRAM(APERTURE), palette, 0);
     ZX_ASSERT(backing[0] == 0x5a);
-    ts_fmaps_write_words(TS_FMAPS_CRAM(APERTURE), palette, 256);
     ts_fmaps_disable();
+    ZX_ASSERT(ts_video_upload_palette(ZX_WINDOW_3, 0, palette, 256) == ZX_OK);
     ZX_ASSERT(backing[2] == 0x1f && backing[3] == 0);
     ZX_ASSERT(backing[4] == 0 && backing[5] == 0x7c);
     ZX_ASSERT(backing[510] == 0xe0 && backing[511] == 0x03);
@@ -35,10 +35,10 @@ static void check_palette(void) {
     /* Each 256c page holds 32 rows of the 512-pixel canvas. Make a red
      * stripe in the second half of row 0. The Y offset wraps to that row. */
     for (page = 0x40; page < 0x50; ++page) {
-        ts_memory_set_page3(page);
+        ts_map_ram_page(ZX_WINDOW_3, page);
         memset(w3, 1, 0x4000);
     }
-    ts_memory_set_page3(0x40);
+    ts_map_ram_page(ZX_WINDOW_3, 0x40);
     memset(w3 + 272, 2, 32);
     ts_video_set_page(0x40);
     ts_video_set_palette_select(0);
@@ -54,18 +54,15 @@ static void check_sprite(void) {
 
     ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
     ts_video_set_scroll(0, 0);
-    ts_memory_set_page3(0x58);
+    ts_map_ram_page(ZX_WINDOW_3, 0x58);
     for (row = 0; row < 8; ++row) {
         memset(w3 + 256u * row, 0x33, 4);
     }
     ts_video_set_sprite_page(0x58);
 
-    ts_memory_set_page3(0x70);
-    memset(w3, 0, 512);
-    ts_fmaps_enable(APERTURE);
-    ts_fmaps_write_words(sfile, w3, 256);
-    ts_fmaps_write_words(sfile, &sprite, 3);
-    ts_fmaps_disable();
+    ts_map_ram_page(ZX_WINDOW_3, 0x70);
+    ZX_ASSERT(ts_video_upload_sprites(ZX_WINDOW_3, 0, NULL, TS_SPRITE_COUNT) == ZX_OK);
+    ZX_ASSERT(ts_video_upload_sprites(ZX_WINDOW_3, 0, &sprite, 1) == ZX_OK);
     ZX_ASSERT(sfile[0].y == sprite.y && sfile[0].x == sprite.x && sfile[0].tile == 0);
     ZX_ASSERT(sfile[TS_SPRITE_COUNT - 1].y == 0);
 

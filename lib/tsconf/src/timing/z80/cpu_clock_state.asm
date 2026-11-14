@@ -2,6 +2,8 @@
 SECTION data_clib
 PUBLIC ts__cpu_speed
 PUBLIC ts__cache_mask
+PUBLIC _ts__cache_mask
+defc _ts__cache_mask = ts__cache_mask
 
 ; SysConfig and CacheConfig are write-only. FFh means the SDK does not yet
 ; know the corresponding state, independently of the hardware reset values.

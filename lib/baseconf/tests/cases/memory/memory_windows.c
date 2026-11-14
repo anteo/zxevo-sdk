@@ -57,6 +57,7 @@ static void check_protection(bc_map_t map) {
 static void check_lease(bc_map_t map) {
     bc_window_lease_t lease = {0};
     bc_window_lease_t other = {0};
+    zx_ram_lease_t generic = {{0}};
     const bc_window_config_t temporary = {BC_RAM, SECOND_PAGE, 0, 0};
 
     ZX_ASSERT(bc_set_write_protection(ZX_WINDOW_2, 1) == ZX_OK);
@@ -82,6 +83,12 @@ static void check_lease(bc_map_t map) {
     ZX_ASSERT(*first_byte == 0x63);
     ZX_ASSERT(bc_window_release(&other) == ZX_OK);
     ZX_ASSERT(bc_set_write_protection(ZX_WINDOW_2, 0) == ZX_OK);
+    ZX_ASSERT(zx_acquire_ram(ZX_WINDOW_2, SECOND_PAGE, &generic) == ZX_OK);
+    ZX_ASSERT(window_matches(map, SECOND_PAGE, 0));
+    ZX_ASSERT(zx_acquired_ram_set_page(&generic, FIRST_PAGE) == ZX_OK);
+    ZX_ASSERT(window_matches(map, FIRST_PAGE, 0));
+    ZX_ASSERT(zx_release_ram(&generic) == ZX_OK);
+    ZX_ASSERT(window_matches(map, FIRST_PAGE, 0));
     zx_test_step_marker("lease");
 }
 

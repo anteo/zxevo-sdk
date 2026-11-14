@@ -24,10 +24,10 @@ int main(void) {
     ZX_ASSERT(ts_map_ram_page(ZX_WINDOW_3, 0x81) == ZX_OK);
     *w3 = 0x5a;
     ZX_ASSERT(ts_memory_get_page3() == 0x81);
-    ts_memory_set_page3(0x01);
+    ts_map_ram_page(ZX_WINDOW_3, 0x01);
     *w3 = 0xa5;
     ZX_ASSERT(ts_memory_get_page3() == 0x01);
-    ts_memory_set_page3(0x81);
+    ts_map_ram_page(ZX_WINDOW_3, 0x81);
     ZX_ASSERT(*w3 == 0x5a);
     ZX_ASSERT(ts_memory_get_page2() == page2);
     zx_test_step_marker("w3-pages");
@@ -52,7 +52,7 @@ int main(void) {
     *w1 = 0;
     status = ts_map_ram_page(ZX_WINDOW_1, 0x81);
     alias = *w1;
-    ts_memory_set_page1(TS_TEST_DATA_PAGE);
+    ts_map_ram_page(ZX_WINDOW_1, TS_TEST_DATA_PAGE);
     ZX_ASSERT(status == ZX_OK && alias == 0x5a);
     zx_test_step_marker("w1-page-alias");
 

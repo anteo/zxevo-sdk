@@ -14,7 +14,7 @@ static void check_zx(void) {
     const uint8_t *narrow_a = zx_font5_data['A' - 32];
     uint8_t row;
 
-    ts_memory_set_page3(0x60);
+    ts_map_ram_page(ZX_WINDOW_3, 0x60);
     memset((void *)screen, 0, 0x1b00);
     ts_video_set_page(0x60);
     ts_video_set_config(TS_VIDEO_ZX | TS_VIDEO_256X192 | TS_VIDEO_HIDE_TSU);
@@ -78,11 +78,11 @@ static void check_zx(void) {
 }
 
 static void check_text(void) {
-    ts_memory_set_page3(0x71);
+    ts_map_ram_page(ZX_WINDOW_3, 0x71);
     memset((void *)screen, 0, 2048);
     ts_console_load_text_font(screen);
     ZX_ASSERT(!memcmp((const void *)(screen + 'A' * 8), font_8x8_zx_system['A' - 32], 8));
-    ts_memory_set_page3(0x70);
+    ts_map_ram_page(ZX_WINDOW_3, 0x70);
     memset((void *)screen, 0, 0x4000);
     ZX_ASSERT(ts_video_set_mode(TS_VIDEO_TEXT | TS_VIDEO_320X240 | TS_VIDEO_HIDE_TSU, 0x70,
                                 screen) == ZX_OK);
@@ -119,7 +119,7 @@ static void check_text(void) {
 static void check_offscreen(void) {
     ts_surface_t surface = {TS_VIDEO_ZX, 0x61, screen};
 
-    ts_memory_set_page3(0x61);
+    ts_map_ram_page(ZX_WINDOW_3, 0x61);
     memset((void *)screen, 0, 0x1b00);
     zx_set_ink(15);
     zx_set_paper(0);
@@ -146,7 +146,7 @@ int main(void) {
     ZX_ASSERT(zx_show_screen(ZX_SCREEN_0) == ZX_NOT_INITIALIZED);
     ZX_ASSERT(ts_video_select_draw_screen(0x60, screen) == ZX_NOT_INITIALIZED);
     ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
-    ts_memory_set_page3(0x72);
+    ts_map_ram_page(ZX_WINDOW_3, 0x72);
     ts_fmaps_enable(SCREEN_BASE);
     ts_fmaps_write_words(TS_FMAPS_CRAM(SCREEN_BASE), palette, 16);
     ts_fmaps_disable();
