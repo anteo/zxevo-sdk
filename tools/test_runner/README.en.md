@@ -54,7 +54,9 @@ are appended in order, including repetitions, and later layers can override mapp
 Set `boot_pc` in a profile to stop the ROM at a Z80 address before the runner loads the case. With
 `boot_pc`, `boot_cycles` is a positive limit for the ZRCP `run` command, counted in its
 instruction-loop iterations. Reaching the limit without the address fails the run. Profiles that
-omit `boot_pc` use the fixed startup run.
+omit `boot_pc` use the fixed startup run. C suites default to 500,000 iterations;
+the TS-BIOS profile allows 1,000,000 while waiting for ROM PC `02B0h`, and the BaseConf
+`ers-rom` profile allows 2,000,000 while waiting for ROM PC `6155h`.
 
 Reference lookup starts in the case's reference directory, then follows the layer order. The full
 run name is checked last. For `stdio+60hz`, the profile directories are `default/`, `stdio/`,

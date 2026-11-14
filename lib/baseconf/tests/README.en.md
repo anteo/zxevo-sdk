@@ -344,7 +344,8 @@ Exit codes: `0` — PASS, `1` — FAIL or build error, `2` — emulator/ZRCP err
 ### Determinism
 
 - machine `BaseConf`, `--realvideo`, `--vo null`;
-- 2,000,000 boot cycles, with keyboard input opt-in per test;
+- 500,000 startup iterations by default; `ers-rom` stops at ROM PC `6155h` with a
+  2,000,000-iteration limit;
 - `DI`, border 0; scenes without FLASH/ULAPlus/RTC/PS2/UART;
 - screenshot 200,000 cycles after `DONE`;
 - full-frame comparison unless case metadata specifies a region;

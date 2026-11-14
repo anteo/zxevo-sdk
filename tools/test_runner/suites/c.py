@@ -298,7 +298,7 @@ class CTestSuite(TestSuite):
                     raise FrameworkError("DATA image size does not match the map")
                 blocks.append(self.block("DATA", data_org, layout["data_page"], 1,
                                          "data", data_bin.name, data_len))
-            launch = LaunchConfig(profile.get("boot_cycles", 2_000_000),
+            launch = LaunchConfig(profile.get("boot_cycles", 500_000),
                                   tuple(self.launch_ports(profile, layout)), profile.get("boot_pc"))
             manifest = {
                 "protocol": protocol,

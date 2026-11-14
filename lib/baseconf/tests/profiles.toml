@@ -58,6 +58,8 @@ mirror_resident_map = true
 parent = "default"
 description = "Run with the service ROM in W0 and the test in RAM window 2"
 use_test_rom = true
+boot_cycles = 2_000_000 # Upper bound while IDE-backed service ROM starts.
+boot_pc = 0x6155 # Service ROM idle HALT after initialization, with or without IDE.
 
 [profiles.ers-rom.layout]
 code_org = 0x8000

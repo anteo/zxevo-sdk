@@ -27,6 +27,8 @@ make_args = ["TSCONF_VIDEO_60HZ=1"]
 parent = "default"
 description = "TS-BIOS in W0, W2 available to the ROM, code and stack in W3"
 use_test_rom = true
+boot_cycles = 1_000_000 # Includes copying the NMI service bank to RAM.
+boot_pc = 0x02b0 # TS-BIOS S_MAIN, after drawing the setup menu
 
 [profiles.ts-bios.layout]
   rom_bank = 0x00
