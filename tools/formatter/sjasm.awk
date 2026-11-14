@@ -61,12 +61,22 @@ function normalize_hex(s,    i, j, ch, quote, escaped, prev, nextchar, digits, o
 }
 
 function indent_statement() {
-    return "        "
+    return sprintf("%*s", 8 * (block_depth + 1), "")
 }
 
-function format_asm_line(raw,    code, name, rest, directive, operands, label, local) {
+function block_action(code) {
+    code = tolower(code)
+    if (code ~ /^(macro|if|ifn|ifdef|ifndef|ifused|ifnused|dup|rept|while)[ \t]/) return "open"
+    if (code == "else" || code ~ /^elseif[ \t]/) return "branch"
+    if (code ~ /^(endm|endif|edup|endr|endw)$/) return "close"
+    return ""
+}
+
+function format_asm_line(raw, is_block_directive,    code, name, rest, directive, operands, label) {
     code = split_comment(raw)
     if (code == "") return (comment != "" ? comment : "")
+    if (is_block_directive)
+        return indent_statement() normalize_hex(code) (comment != "" ? " " comment : "")
 
     if (match(code, /^[.@$A-Za-z_][[:alnum:]_.@$]*/)) {
         name = substr(code, 1, RLENGTH)
@@ -98,10 +108,11 @@ function format_asm_line(raw,    code, name, rest, directive, operands, label, l
         code = label (rest != "" ? " " rest : "")
     } else if (code ~ /^[ \t]*[A-Za-z_.$@][[:alnum:]_.@$]*[ \t]*$/) {
         label = trim(code)
-        if (tolower(label) !~ /^(ccf|cpl|daa|di|ei|exx|halt|ldd|lddr|ldi|ldir|neg|nop|otdr|otir|outd|outi|reti|retn|rlca|rla|rrca|rra|rrd|rld|scf|ret|else|endif|endr|endm)$/)
-            code = label
-        else
+        if ((block_depth > 0 && raw ~ /^[ \t]/) ||
+            tolower(label) ~ /^(ccf|cpl|daa|di|ei|exx|halt|ldd|lddr|ldi|ldir|neg|nop|otdr|otir|outd|outi|reti|retn|rlca|rla|rrca|rra|rrd|rld|scf|ret)$/)
             code = indent_statement() trim(code)
+        else
+            code = label
     } else {
         code = indent_statement() trim(code)
     }
@@ -126,12 +137,13 @@ END {
             pending_blank--
         }
         if (raw ~ /^[ \t]*;/) {
-            print raw
+            print (block_depth > 0 ? indent_statement() trim(raw) : raw)
             continue
         }
         comment = ""
         code = split_comment(raw)
-        if (code ~ /^[.@$A-Za-z_][[:alnum:]_.@$]*[ \t]*:?[ \t]*$/ && i < NR) {
+        action = block_action(code)
+        if (action == "" && code ~ /^[.@$A-Za-z_][[:alnum:]_.@$]*[ \t]*:?[ \t]*$/ && i < NR) {
             saved = comment
             next_comment = ""
             next_code = split_comment(lines[i + 1])
@@ -151,6 +163,10 @@ END {
             }
             comment = saved
         }
-        print format_asm_line(raw)
+        dedent = block_depth > 0 && (action == "close" || action == "branch")
+        block_depth -= dedent
+        print format_asm_line(raw, action != "")
+        if (action == "open" || (action == "branch" && dedent))
+            block_depth++
     }
 }
