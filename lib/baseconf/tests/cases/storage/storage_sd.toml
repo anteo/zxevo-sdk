@@ -1,0 +1,7 @@
+description = "SD SPI transaction, MBR read, and block write/read on a disposable image"
+profile = "no-stdio+no-font8"
+
+[emulator_images.mmc]
+fixture = "ers-fat16"
+filename = "sd.img"
+size_sectors = 32_768

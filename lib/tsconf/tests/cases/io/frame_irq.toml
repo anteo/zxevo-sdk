@@ -1,0 +1,6 @@
+description = "Nominal frame period, raster compare and frame wait with line IRQs"
+
+[emulator_steps.frame-compare.tsconf_registers]
+22 = 223
+23 = 63
+24 = 241

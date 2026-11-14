@@ -1,4 +1,0 @@
-{
-  "description": "Reject a failed readback probe before changing the selected backend or cache",
-  "profiles": ["no-stdio"]
-}

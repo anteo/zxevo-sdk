@@ -1,4 +1,0 @@
-{
-  "description": "Dual BaseConf memory maps, inactive-map updates, and pinned-window safety",
-  "profiles": ["no-stdio", "memory-maps"]
-}

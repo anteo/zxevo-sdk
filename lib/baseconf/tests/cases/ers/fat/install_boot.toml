@@ -1,0 +1,8 @@
+description = "Install the ERS FAT boot helper and verify the copied FAT32 state"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

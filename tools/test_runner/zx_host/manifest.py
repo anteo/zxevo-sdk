@@ -8,12 +8,16 @@ from typing import Optional
 class LaunchConfig:
     boot_cycles: int
     ports: tuple
+    boot_pc: Optional[int] = None
 
     def to_dict(self):
-        return {
+        launch = {
             "boot_cycles": self.boot_cycles,
             "ports": [list(port_write) for port_write in self.ports],
         }
+        if self.boot_pc is not None:
+            launch["boot_pc"] = self.boot_pc
+        return launch
 
 
 @dataclass(frozen=True)

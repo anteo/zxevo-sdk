@@ -1,0 +1,9 @@
+description = "Mount an existing TRD from IMAGE.MNT and leave the missing entry unmounted"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072
+mount_list = ["E:/DOCS/DISK.TRD C:", "E:/DOCS/MISSING.TRD D:"]

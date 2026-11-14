@@ -1,0 +1,2 @@
+description = "Absolute and relative cursor drawing with the pen up and down"
+profile = "no-stdio+no-font8"

@@ -1,9 +1,0 @@
-{
-  "description": "Move the ERS FAT directory cursor, enter a subdirectory and return to its parent",
-  "profiles": ["no-stdio", "ers-rom"],
-  "emulator_images": {
-    "generator": "../../../tools/test_runner/fixtures/create_device_images.py",
-    "ide": "hdd.img"
-  },
-  "timeout": 45
-}

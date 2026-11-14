@@ -1,5 +1,0 @@
-{
-  "description": "Check ERS profile availability and service version",
-  "profiles": ["no-stdio", "ers-rom"],
-  "timeout": 30
-}

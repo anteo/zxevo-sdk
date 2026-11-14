@@ -1,0 +1,13 @@
+description = "Discover the test SD and Nemo IDE images and their FAT volumes"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.mmc]
+fixture = "ers-fat16"
+filename = "sd.img"
+size_sectors = 32_768
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

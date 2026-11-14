@@ -1,4 +1,0 @@
-{
-  "description": "BaseConf FDD overlay mask, access guard, and drive/system port",
-  "profiles": ["no-stdio", "no-font8"]
-}

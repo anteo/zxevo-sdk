@@ -1,0 +1,8 @@
+description = "Filter the ERS FAT file list and sort the unfiltered entries"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

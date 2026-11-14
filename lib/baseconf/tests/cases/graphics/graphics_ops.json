@@ -1,4 +1,0 @@
-{
-  "description": "CLEAR and XOR on filled graphics primitives and their neighboring pixels",
-  "profiles": ["no-stdio", "no-font8"]
-}

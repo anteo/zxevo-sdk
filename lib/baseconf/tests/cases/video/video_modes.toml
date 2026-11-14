@@ -1,0 +1,2 @@
+description = "Live video-mode readback, geometry, and both screen descriptors"
+profile = "no-stdio+no-font8"

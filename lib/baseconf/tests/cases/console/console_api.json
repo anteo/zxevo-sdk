@@ -1,5 +1,0 @@
-{
-  "description": "Direct BaseConf console and text API checks",
-  "profiles": ["no-stdio", "no-primitives", "no-font8"],
-  "timeout": 30
-}

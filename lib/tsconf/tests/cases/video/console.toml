@@ -1,0 +1,2 @@
+description = "Console output, fonts and clearing in ZX and native text"
+profile = "stdio"

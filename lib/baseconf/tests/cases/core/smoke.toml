@@ -1,0 +1,3 @@
+description = "framework self-check: two screenshots, text and data channels"
+profile = "no-stdio"
+timeout = 30

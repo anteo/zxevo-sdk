@@ -1,0 +1,8 @@
+description = "Load two TAP data blocks through the ERS BASIC hooks and rewind to the first"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

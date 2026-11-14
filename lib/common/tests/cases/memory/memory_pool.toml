@@ -1,0 +1,5 @@
+description = "RAM page pool and banked heap with the target paging backend"
+timeout = 30
+
+[targets.baseconf]
+profile = "no-stdio"

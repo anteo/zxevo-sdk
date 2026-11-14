@@ -1,0 +1,2 @@
+description = "BaseConf software NMI and execution traps"
+profile = "no-stdio+no-font8"

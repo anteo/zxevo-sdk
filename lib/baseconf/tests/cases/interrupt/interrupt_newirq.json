@@ -1,4 +1,0 @@
-{
-  "description": "newirq requests are rejected before the controller is enabled",
-  "profiles": ["no-stdio", "no-font8"]
-}

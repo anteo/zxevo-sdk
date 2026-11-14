@@ -25,12 +25,14 @@ int main(void) {
     zx_interrupt_enable(0);
     ts_memory_set_page2(CALLER_PAGE);
     ts_io_set_interrupt_mask(1);
+    zx_test_step_begin("mount-nemo");
     ZX_ASSERT(ts_fat_mount_ide(2) == ZX_INVALID_ARGUMENT);
     status = ts_fat_mount_ide(TS_FAT_IDE_MASTER);
     ZX_ASSERT(status == ZX_OK && ts_memory_get_page2() == CALLER_PAGE);
-    zx_test_step_marker("mount-nemo");
+    zx_test_step_marker(0);
     if (status != ZX_OK) goto finish;
 
+    zx_test_step_begin("create-file");
     status = ts_fat_create_directory(folder.name);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) goto finish;
@@ -41,9 +43,10 @@ int main(void) {
     ZX_ASSERT(ts_fat_create_file(&file, 0) == ZX_INVALID_ARGUMENT);
     status = ts_fat_create_file(&file, TS_FAT_SECTOR_SIZE);
     ZX_ASSERT(status == ZX_OK && ts_memory_get_page2() == CALLER_PAGE);
-    zx_test_step_marker("create-file");
+    zx_test_step_marker(0);
     if (status != ZX_OK) goto finish;
 
+    zx_test_step_begin("write-read-roundtrip");
     ts_memory_set_page2(DATA_PAGE);
     for (i = 0; i < TS_FAT_SECTOR_SIZE; ++i) buffer[i] = pattern(i);
     ts_memory_set_page2(CALLER_PAGE);
@@ -61,14 +64,15 @@ int main(void) {
     ts_memory_set_page2(DATA_PAGE);
     for (i = 0; i < TS_FAT_SECTOR_SIZE; ++i) ZX_ASSERT(buffer[i] == pattern(i));
     ts_memory_set_page2(CALLER_PAGE);
-    zx_test_step_marker("write-read-roundtrip");
+    zx_test_step_marker(0);
 
+    zx_test_step_begin("delete-file");
     ZX_ASSERT(ts_fat_delete_file(&folder) == ZX_INVALID_ARGUMENT);
     ZX_ASSERT(ts_fat_delete_file(&file) == ZX_OK);
     ZX_ASSERT(ts_fat_open(&file, &size) == ZX_IO_ERROR);
     ts_fat_set_root();
     ZX_ASSERT(ts_memory_get_page2() == CALLER_PAGE);
-    zx_test_step_marker("delete-file");
+    zx_test_step_marker(0);
 
 finish:
     ts_io_set_interrupt_mask(0);

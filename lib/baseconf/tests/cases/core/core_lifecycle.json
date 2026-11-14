@@ -1,4 +1,0 @@
-{
-  "description": "Init and shutdown preserve hardware paging and defer shutdown during leases",
-  "profiles": ["no-stdio", "no-font8"]
-}

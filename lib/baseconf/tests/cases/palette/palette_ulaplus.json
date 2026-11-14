@@ -1,5 +1,0 @@
-{
-  "description": "ULAplus register writes, readback, and mode restrictions",
-  "profiles": ["no-stdio", "no-font8"],
-  "emulator_args": ["--enableulaplus"]
-}

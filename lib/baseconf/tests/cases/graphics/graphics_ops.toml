@@ -1,0 +1,2 @@
+description = "CLEAR and XOR on filled graphics primitives and their neighboring pixels"
+profile = "no-stdio+no-font8"

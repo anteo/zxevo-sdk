@@ -1,0 +1,2 @@
+description = "The graphics API rejects a mode whose primitive backend was excluded"
+profile = "no-stdio+no-font8+no-primitives"

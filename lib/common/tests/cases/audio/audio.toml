@@ -1,0 +1,20 @@
+description = "AY, Covox and PT3 audio output"
+sources = ["audio_pt3_fixture.asm"]
+audio_capture = true
+audio_step_flush_cycles = 2000000
+timeout = 30
+
+[targets.baseconf]
+profile = "no-stdio+no-primitives"
+
+[audio_expectations]
+minimum_level_samples = 1000
+
+[audio_expectations.steps.ay]
+minimum_peak_to_peak = 16
+
+[audio_expectations.steps.covox]
+range = [80, 175]
+
+[audio_expectations.steps.pt3]
+minimum_peak_to_peak = 16

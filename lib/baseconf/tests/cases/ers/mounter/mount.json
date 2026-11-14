@@ -1,9 +1,0 @@
-{
-  "description": "Read and write a mounted TRD sector on the FAT HDD and verify it after remounting",
-  "profiles": ["no-stdio", "ers-rom"],
-  "emulator_images": {
-    "generator": "../../../tools/test_runner/fixtures/create_device_images.py",
-    "ide": "hdd.img"
-  },
-  "timeout": 45
-}

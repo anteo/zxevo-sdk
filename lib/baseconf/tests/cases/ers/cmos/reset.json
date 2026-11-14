@@ -1,5 +1,0 @@
-{
-  "description": "Verify ERS CMOS defaults and restore the original settings",
-  "profiles": ["no-stdio", "ers-rom"],
-  "timeout": 30
-}

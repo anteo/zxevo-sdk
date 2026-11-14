@@ -1,7 +1,0 @@
-{
-  "description": "RAM page pool and banked heap with the target paging backend",
-  "targets": {
-    "baseconf": {"profiles": ["no-stdio"]}
-  },
-  "timeout": 30
-}

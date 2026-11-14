@@ -3,7 +3,7 @@ import json
 import os
 import time
 
-from tools.zesarux.runner import ZesaruxRunner
+from tools.zesarux.runner import ZesaruxRunner, breakpoint, registers
 
 from .protocol import ZXHostProtocol
 
@@ -66,6 +66,33 @@ class ZXHostSession:
                    for block in self.manifest.get("blocks", [])):
             raise ValueError("manifest has no bootstrap block on the mailbox source page")
 
+    def _boot(self, launch):
+        limit = launch.get("boot_cycles", 0)
+        address = launch.get("boot_pc")
+        if address is None:
+            self.remote.run_cycles(limit)
+            return
+        if type(address) is not int or not 0 <= address <= 0xFFFF:
+            raise ValueError("boot_pc must be a 16-bit Z80 address")
+        if type(limit) is not int or limit <= 0:
+            raise ValueError("boot_pc requires a positive boot_cycles limit")
+
+        pc, _ = registers(self.remote)
+        if pc == address:
+            return
+
+        self.remote.command("enable-breakpoints")
+        try:
+            breakpoint(self.remote, 1, address)
+            self.remote.run_cycles(limit)
+            pc, _ = registers(self.remote)
+        finally:
+            self.remote.command("disable-breakpoints")
+        if pc != address:
+            raise RuntimeError(
+                f"ROM did not reach boot_pc {address:04X}h before the boot_cycles limit of {limit:,} (PC={pc:04X}h)"
+            )
+
     def start(self, command, args=(0, 0), *, prepare=None):
         """Boot, optionally prepare the machine, load the blocks and set PC."""
         if self.remote is not None:
@@ -77,7 +104,7 @@ class ZXHostSession:
             self.remote = self.runner.remote
             self.remote.enter_cpu_step()
             launch = self.manifest.get("launch", {})
-            self.remote.run_cycles(launch.get("boot_cycles", 0))
+            self._boot(launch)
             if prepare is not None:
                 prepare(self.remote)
             for address, value in launch.get("ports", []):
@@ -90,16 +117,22 @@ class ZXHostSession:
                     raise ValueError(f"manifest length does not match block file: {binary}")
                 self.remote.write_port(hex(block["port"]), str(block["raw_page"]))
                 self.remote.load_binary(binary, block["address"], block["length"])
-            self.sequence = next_sequence
             # A target with runtime_memory starts with this request on its
             # bootstrap page and is responsible for moving it before use.
-            self.protocol.prepare_request(self.remote, command, args, self.sequence)
+            self.submit(command, args)
             self.remote.set_register(f"SP={self.manifest['stack']:04X}H")
             self.remote.set_register(f"PC={self.manifest['entry']:04X}H")
         except Exception:
             self.close()
             raise
         return self
+
+    def submit(self, command, args=(0, 0)):
+        """Publish a new request for the current target."""
+        self._require_running()
+        next_sequence = (self.sequence + 1) & 0xFF
+        self.protocol.prepare_request(self.remote, command, args, next_sequence)
+        self.sequence = next_sequence
 
     def run_cycles(self, cycles):
         self._require_running()

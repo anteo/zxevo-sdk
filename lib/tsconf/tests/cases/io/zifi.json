@@ -1,7 +1,0 @@
-{
-  "description": "ZiFi nonblocking FIFO exchange with the host UART bridge",
-  "emulator_steps": {
-    "ready": {"uart": {"send": [0, 255, 13, 128]}},
-    "transmit": {"uart": {"expect": [85, 170, 10, 0, 255]}}
-  }
-}

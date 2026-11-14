@@ -1,0 +1,74 @@
+[profiles.default]
+description = "shared runner layout and standard library build settings"
+cflags = []
+defines = []
+
+[profiles.default.layout]
+code_org = 0x0100
+data_org = 0x6800
+bss_org = 0x7000
+stack_org = 0x7e00
+code_page = 0x20
+data_page = 0x21
+pinned = 3
+scratch = 3
+
+[profiles.default.library]
+build_dir = "build/tests"
+make_targets = ["all"]
+
+[profiles.stdio]
+parent = "default"
+description = "Enable classic z88dk stdio through the BaseConf console hook"
+cflags = ["-pragma-define:CRT_ENABLE_STDIO=1"]
+
+[profiles.no-stdio]
+parent = "default"
+description = "Disable CRT stdio and its console hook"
+cflags = ["-pragma-define:CRT_ENABLE_STDIO=0"]
+
+[profiles.no-font8]
+parent = "default"
+description = "Omit the library's default 8x8 font"
+
+[profiles.no-font8.library]
+make_args = ["BASECONF_CONSOLE_NO_DEFAULT_FONT=1"]
+
+[profiles.no-primitives]
+parent = "default"
+description = "Omit all graphics primitive backends"
+
+[profiles.no-primitives.library]
+make_args = ["BASECONF_VIDEO_PRIMITIVE_MODES=NONE"]
+
+[profiles.multicolor-text]
+parent = "default"
+description = "Enable bitmap text in Multicolor and graphics primitives in standard ZX"
+
+[profiles.multicolor-text.library]
+build_dir = "build/tests-multicolor-text"
+make_args = ["BASECONF_VIDEO_TEXT_MODES=ZX_MULTICOLOR", "BASECONF_VIDEO_PRIMITIVE_MODES=ZX_256"]
+
+[profiles.memory-maps]
+parent = "default"
+description = "Mirror the resident code and data windows in both BaseConf memory maps"
+mirror_resident_map = true
+
+[profiles.ers-rom]
+parent = "default"
+description = "Run with the service ROM in W0 and the test in RAM window 2"
+use_test_rom = true
+
+[profiles.ers-rom.layout]
+code_org = 0x8000
+stack_org = 0xbff0
+code_window = 2
+rom_bank = 0x03
+pinned = 7
+
+[profiles.zx-screen-w1]
+parent = "default"
+description = "Keep the ZX screen page mapped at 0x4000 for ERS window routines"
+
+[profiles.zx-screen-w1.layout]
+data_page = 0x05

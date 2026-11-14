@@ -1,0 +1,2 @@
+description = "Physical RAM mapping, write protection, and temporary window leases"
+profile = "no-stdio"

@@ -247,7 +247,7 @@ aligned bulk transfers. The caller serializes SPI use across these devices and S
 The suite uses the shared test harness and ZXHost on ZEsarUX's **TSConf** machine. It leaves W1
 resident for the mailbox and C data, runs most cases from W2 and uses W3 for their banked fixtures.
 Select an emulator with `make test-tsconf ZESARUX=/path/to/zesarux`. To run one case, use
-`python3 lib/tsconf/tests/run.py check --case video/video` from the repository root. Use
+`python3 tools/test_runner/runner.py tsconf check --case video/video` from the repository root. Use
 `--case video` to select the entire category.
 [Shared test harness](../../tools/test_runner/README.en.md) ·
 [Common tests on both machines](../common/tests/README.en.md)
@@ -263,5 +263,5 @@ The TS-FAT cases run code and stack in W3 with TS-BIOS in W0. The SD case checks
 navigation. The Nemo IDE case exercises creation, writing and deletion. ZEsarUX implements IDE DMA
 writes and omits RAM-to-SPI DMA, so the TS-FAT write case uses IDE. Copper and FDR cases check the
 register and memory interface. The AVR contract, FT812 and ZiFi32 cases use device or SPI fixtures
-for transactions and responses. Run `python3 lib/tsconf/tests/run.py check --case fat/ts_fat` to use
+for transactions and responses. Run `python3 tools/test_runner/runner.py tsconf check --case fat/ts_fat` to use
 the ROM provided by the emulator. Set `ZXEVO_TEST_ROM` to select a specific TS-BIOS ROM.

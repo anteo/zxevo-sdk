@@ -1,0 +1,2 @@
+description = "RTC BCD date/time, NVRAM write and restoration, and AVR extension readback"
+profile = "no-stdio+no-font8"

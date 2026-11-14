@@ -1,0 +1,2 @@
+description = "Read an existing ROM bank through a protected Flash mapping"
+profile = "no-stdio+ers-rom"

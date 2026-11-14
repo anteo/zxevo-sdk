@@ -1,0 +1,2 @@
+description = "BaseConf FDD overlay mask, access guard, and drive/system port"
+profile = "no-stdio+no-font8"

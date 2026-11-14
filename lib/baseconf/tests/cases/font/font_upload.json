@@ -1,4 +1,0 @@
-{
-  "description": "Hardware font upload, visible glyph replacement, and preservation of destination RAM",
-  "profiles": ["no-stdio", "no-font8"]
-}

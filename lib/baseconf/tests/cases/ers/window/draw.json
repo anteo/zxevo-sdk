@@ -1,4 +1,0 @@
-{
-  "description": "Draw a framed ZX window with descriptor text, then print a control string and a character",
-  "profiles": ["no-stdio", "ers-rom", "zx-screen-w1"]
-}

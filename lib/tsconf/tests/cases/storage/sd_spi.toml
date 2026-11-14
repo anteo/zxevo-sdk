@@ -1,0 +1,6 @@
+description = "Direct SD1 SPI initialization, register reads and sector I/O"
+
+[emulator_images.mmc]
+fixture = "ers-fat16"
+filename = "sd.img"
+size_sectors = 32_768

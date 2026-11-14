@@ -1,5 +1,0 @@
-{
-  "description": "framework self-check: two screenshots, text and data channels",
-  "profiles": ["no-stdio"],
-  "timeout": 30
-}

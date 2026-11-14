@@ -1,0 +1,8 @@
+description = "Move the ERS FAT directory cursor, enter a subdirectory and return to its parent"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

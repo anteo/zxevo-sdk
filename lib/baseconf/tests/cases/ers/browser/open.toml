@@ -1,0 +1,24 @@
+description = "Verify that the NMI lock prevents opening the ERS file browser"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072
+
+[emulator_steps.nmi_locked]
+nmi = true
+settle = 8000000
+before_shot_keys = "f;w10"
+shot = true
+region = [40, 144, 480, 344]
+keys = "0"
+
+[emulator_steps.nmi_unlocked]
+nmi = true
+settle = 8000000
+before_shot_keys = "f;w20"
+shot = true
+region = [40, 88, 480, 400]
+keys = "break;w10;0"

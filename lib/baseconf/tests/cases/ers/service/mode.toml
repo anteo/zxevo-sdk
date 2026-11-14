@@ -1,0 +1,2 @@
+description = "Switch between ZX and Evolution text modes and verify video and CPU clock readback"
+profile = "no-stdio+ers-rom"

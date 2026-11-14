@@ -1,0 +1,4 @@
+description = "Z80 maskable interrupt state and HALT wakeup"
+
+[targets.baseconf]
+profile = "no-stdio+no-font8"

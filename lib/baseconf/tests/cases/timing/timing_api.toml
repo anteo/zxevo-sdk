@@ -1,0 +1,2 @@
+description = "CPU turbo settings and frame period reported through the AVR"
+profile = "no-stdio+no-font8"

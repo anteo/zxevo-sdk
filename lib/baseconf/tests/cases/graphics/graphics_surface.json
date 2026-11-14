@@ -1,4 +1,0 @@
-{
-  "description": "Draw to independent buffers and formats, and reject unavailable or text surfaces",
-  "profiles": ["no-stdio", "no-font8"]
-}

@@ -1,0 +1,3 @@
+description = "Pixel API and SET/CLEAR/XOR graphics primitives; CRT stdio disabled"
+profile = "no-stdio+no-font8"
+timeout = 60

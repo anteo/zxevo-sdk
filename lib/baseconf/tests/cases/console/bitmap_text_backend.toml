@@ -1,0 +1,2 @@
+description = "Reject an excluded bitmap text backend and refresh availability when changing surface or font"
+profile = "no-stdio+multicolor-text"

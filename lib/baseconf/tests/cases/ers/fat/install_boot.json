@@ -1,9 +1,0 @@
-{
-  "description": "Install the ERS FAT boot helper and verify the copied FAT32 state",
-  "profiles": ["no-stdio", "ers-rom"],
-  "emulator_images": {
-    "generator": "../../../tools/test_runner/fixtures/create_device_images.py",
-    "ide": "hdd.img"
-  },
-  "timeout": 45
-}

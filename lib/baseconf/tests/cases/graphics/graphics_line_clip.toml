@@ -1,0 +1,3 @@
+description = "Bresenham clipping across the full signed coordinate range"
+profile = "no-stdio+no-font8"
+timeout = 60

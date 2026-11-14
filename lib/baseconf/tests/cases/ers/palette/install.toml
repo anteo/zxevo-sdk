@@ -1,0 +1,2 @@
+description = "Install an ATM palette through ERS, read back all 16 colors and draw their swatches"
+profile = "no-stdio+ers-rom"

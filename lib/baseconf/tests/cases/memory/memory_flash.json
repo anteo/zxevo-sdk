@@ -1,4 +1,0 @@
-{
-  "description": "Read an existing ROM bank through a protected Flash mapping",
-  "profiles": ["no-stdio", "ers-rom"]
-}

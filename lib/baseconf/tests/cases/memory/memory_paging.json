@@ -1,4 +1,0 @@
-{
-  "description": "Paging snapshots, BD and BE readback, resync, and 128K/1024K bank substitution",
-  "profiles": ["no-stdio"]
-}

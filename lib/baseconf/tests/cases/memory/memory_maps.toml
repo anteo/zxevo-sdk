@@ -1,0 +1,2 @@
+description = "Dual BaseConf memory maps, inactive-map updates, and pinned-window safety"
+profile = "no-stdio+memory-maps"

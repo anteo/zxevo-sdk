@@ -1,4 +1,0 @@
-{
-  "description": "Absolute and relative cursor drawing with the pen up and down",
-  "profiles": ["no-stdio", "no-font8"]
-}

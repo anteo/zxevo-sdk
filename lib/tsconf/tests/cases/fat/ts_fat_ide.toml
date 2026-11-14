@@ -1,0 +1,7 @@
+description = "TS-BIOS Nemo IDE mount, directory and file creation, WRITE512 and deletion"
+profile = "ts-bios"
+
+[emulator_images.ide]
+fixture = "ts-fat32"
+filename = "ts-fat.img"
+size_sectors = 68_642

@@ -245,7 +245,7 @@ API также монтирует Nemo IDE, открывает каталоги,
 Набор работает через общий раннер и ZXHost на машине **TSConf** в ZEsarUX. W1 остаётся резидентным
 для почтового ящика и данных C. Большинство кейсов выполняются из W2 и используют W3 для страниц
 фикстур. Эмулятор задаётся через `make test-tsconf ZESARUX=/path/to/zesarux`. Для одного кейса
-используйте `python3 lib/tsconf/tests/run.py check --case video/video`, для всего каталога
+используйте `python3 tools/test_runner/runner.py tsconf check --case video/video`, для всего каталога
 `--case video`. [Раннер](../../tools/test_runner/README.ru.md) ·
 [Общие тесты](../common/tests/README.ru.md)
 
@@ -260,5 +260,5 @@ API также монтирует Nemo IDE, открывает каталоги,
 навигацию. Nemo IDE проверяет создание, запись и удаление. ZEsarUX реализует запись IDE DMA, поэтому
 этот кейс использует IDE. Copper и FDR проверяются на уровне памяти и регистров. Кейсы AVR, FT812 и
 ZiFi32 используют фикстуры для транзакций и ответов.
-`python3 lib/tsconf/tests/run.py check --case fat/ts_fat` использует ROM эмулятора. Через
+`python3 tools/test_runner/runner.py tsconf check --case fat/ts_fat` использует ROM эмулятора. Через
 `ZXEVO_TEST_ROM` можно указать другой TS-BIOS.

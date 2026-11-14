@@ -1,0 +1,7 @@
+description = "TS-BIOS SD mount, fragmented reads, seek/skip and directory navigation"
+profile = "ts-bios"
+
+[emulator_images.mmc]
+fixture = "ts-fat32"
+filename = "ts-fat.img"
+size_sectors = 68_642

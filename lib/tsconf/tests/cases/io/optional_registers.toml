@@ -1,0 +1,13 @@
+description = "Copper upload and control, and FDR register ABI using emulator shadows"
+
+[emulator_steps.copper-start.tsconf_registers]
+14 = 252
+
+[emulator_steps.copper-stop.tsconf_registers]
+14 = 255
+
+[emulator_steps.capture-on.tsconf_registers]
+30 = 1
+
+[emulator_steps.capture-off.tsconf_registers]
+30 = 0

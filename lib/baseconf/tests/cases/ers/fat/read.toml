@@ -1,0 +1,8 @@
+description = "Open a FAT file through ERS, read its contents and stop at end of file"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

@@ -1,0 +1,35 @@
+[profiles.default]
+description = "Test code and stack in W2, ZXHost and data in W1, scratch in W3"
+
+[profiles.default.layout]
+code_org = 0x8000
+code_window = 2
+data_org = 0x6800
+bss_org = 0x7000
+stack_org = 0xbff0
+code_page = 0x22
+data_page = 0x21
+
+[profiles.stdio]
+parent = "default"
+description = "Enable classic z88dk stdio through the TSConf console hook"
+cflags = ["-pragma-define:CRT_ENABLE_STDIO=1"]
+
+[profiles.60hz]
+parent = "default"
+description = "Build TSConf software geometry for 60 Hz"
+
+[profiles.60hz.library]
+build_dir = "build/tests-60hz"
+make_args = ["TSCONF_VIDEO_60HZ=1"]
+
+[profiles.ts-bios]
+parent = "default"
+description = "TS-BIOS in W0, W2 available to the ROM, code and stack in W3"
+use_test_rom = true
+
+[profiles.ts-bios.layout]
+  rom_bank = 0x00
+code_org = 0xc000
+code_window = 3
+stack_org = 0xfff0

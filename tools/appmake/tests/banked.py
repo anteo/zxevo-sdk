@@ -5,7 +5,8 @@ import os
 import socket
 from pathlib import Path
 
-from tools.test_runner.runner import console_label, map_symbol, parse_map
+from tools.test_runner.compiler import map_symbol, parse_map
+from tools.test_runner.support import console_label
 from tools.zesarux.runner import ZesaruxRunner, breakpoint, default_emulator, registers, return_site
 from tools.zesarux.tap_runner import run_to_tap_entry, send_key_script
 

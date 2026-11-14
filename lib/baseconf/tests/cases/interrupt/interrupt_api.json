@@ -1,4 +1,0 @@
-{
-  "description": "BaseConf software NMI and execution traps",
-  "profiles": ["no-stdio", "no-font8"]
-}

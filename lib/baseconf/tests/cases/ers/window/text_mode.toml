@@ -1,0 +1,2 @@
+description = "Draw, print and scroll an ERS window in Evolution 80x25 text mode"
+profile = "no-stdio+ers-rom"

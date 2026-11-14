@@ -1,0 +1,2 @@
+description = "Console output, fonts and clearing in 16c and 256c"
+profile = "stdio"

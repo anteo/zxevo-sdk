@@ -24,11 +24,11 @@ files sit beside their case and use the file stem.
 make -C lib/baseconf/tests test            # build and check all cases
 make -C lib/baseconf/tests shots           # write expected files (PASS only)
 make -C lib/baseconf/tests framework-list  # list cases and expected files
-python3 lib/baseconf/tests/run.py check --case core/helpers
-python3 lib/baseconf/tests/run.py check --case core
+python3 tools/test_runner/runner.py baseconf check --case core/helpers
+python3 tools/test_runner/runner.py baseconf check --case core
 ```
 
-Requirements: `zcc`, `z88dk-z80asm`, ZEsarUX with ZRCP, Python 3. Set `ZESARUX` for the executable
+Requirements: `zcc`, `z88dk-z80asm`, ZEsarUX with ZRCP, Python 3.11 or newer. Set `ZESARUX` for the executable
 and `ZXEVO_TEST_ROM` for a specific ROM in the `ers-rom` profile. Otherwise the profile uses the
 emulator's own ROM.
 
@@ -36,34 +36,32 @@ emulator's own ROM.
 
 ```
 lib/baseconf/tests/
-  run.py                 BaseConf compiler and paging adapter
-  profiles.json          BaseConf settings and composable build layers
+  profiles.toml          BaseConf settings and composable build layers
   Makefile               console TAP and test runner targets
   cases/
     core/smoke.c                    framework self-check
-    core/smoke.json                 optional case metadata
-    core/smoke.01_zx256.png         expected file for step 1
+    core/smoke.toml                 optional case metadata
+    core/smoke/smoke.01_zx256.png   expected file for step 1
     console/baseconf_printf.c       console package case
     graphics/graphics_primitives.c  graphics package case
   support/
     bc_case.h            BaseConf case initialization
     bc_case.c            BaseConf library initialization
     mmap.inc             DATA/BSS layout
-  build/<package>/<case>/   build, manifest, map (ignored)
-  out/<package>/            actual files, diff, report, log
-    core/smoke.01_zx256.png
-    core/smoke.report.json
-    core/smoke.zesarux.log
+  build/                          binaries, manifests, maps and results
+    core/smoke/no-stdio/smoke.01_zx256.png
+    core/smoke/no-stdio/smoke.report.json
+    core/smoke/no-stdio/smoke.zesarux.log
 ```
 
 ### Runner pipeline
 
-1. Finds `cases/**/*.c` and reads the matching `.json` file beside each case.
+1. Finds `cases/**/*.c` and reads the matching `.toml` file beside each case.
 2. Builds the case for each profile with `zcc`:
    - classic + SDCC, `+config/baseconf.cfg`, `-SO3 -m`;
    - `CRT_ORG_CODE=0x0100`, `CRT_ORG_DATA=0x6800`, `CRT_ORG_BSS=0x7000`, `REGISTER_SP=0x7E00`;
-   - case sources, `support/bc_case.c`, `lib/test_support/src/zx_test.c` and
-     `lib/test_support/src/zx_host.c`;
+   - case sources, `support/bc_case.c`, `lib/test_support/c/zx_test.c` and
+     `lib/test_support/c/zx_host.c`;
    - `zx_host_config.h` is generated from `lib/test_support/protocol.json`.
 3. Reads `.map` and validates addresses and sizes.
 4. Writes `manifest.json` and the `code0`, `code1`, `DATA`, `vectors` images.
@@ -78,8 +76,8 @@ lib/baseconf/tests/
    - on the `DATA` flag, reads `DATA <addr> <len> <kind>` and the memory;
    - on the `SHOT` flag, advances 200,000 cycles and saves the screen;
    - on the `MORE` flag, sends the next request; otherwise ends the session.
-7. Compares the outputs with the expected files next to the case and writes
-   `out/<package>/<case>.report.json`.
+7. Compares the outputs with the case's expected files and writes
+   `build/<package>/<case>/<profile>/<case>.report.json`.
 
 ### Memory map
 
@@ -99,7 +97,7 @@ lib/baseconf/tests/
 | BSS             | `7000–…`        | end + 1 KiB ≤ `7E00`       |
 | stack           | `7E00` downward | —                          |
 
-`run.py` checks these bounds from `.map` and stops the build on violation. Large initialized tables
+The shared runner checks these bounds from `.map` and stops the build on violation. Large initialized tables
 go in `const` (rodata), or `data_org`/`bss_org` are raised in the profile.
 
 In this layout W0 is mapped as RAM. Tests run with `BC_ERS_NONE`; interrupts are disabled and
@@ -203,29 +201,29 @@ The text buffer is 512 bytes and truncates on overflow.
 
 ### Case metadata
 
-`cases/<package>/<name>.json` (optional):
+`cases/<package>/<name>.toml` (optional):
 
-```json
-{
-  "description": "classic printf/gotoxy",
-  "profiles": ["no-font8"],
-  "timeout": 45,
-  "defines": ["SOME_PARAMETER=1"],
-  "sources": ["extra.c"]
-}
+```toml
+description = "classic printf/gotoxy"
+profile = "stdio+no-font8"
+timeout = 45
+defines = ["SOME_PARAMETER=1"]
+sources = ["extra.c"]
 ```
 
-- `profiles` — profile layers to merge for this case; omitted means use `default` only.
+- `profile` selects a single run. Use `profiles = ["stdio+no-font8", "stdio"]` for two runs.
+  Omitting both fields selects `default`.
 - `timeout` — seconds per step; default 30.
 - `defines` — additional `-D` options.
 - `sources` — additional files relative to the case source file.
 
 ### Profiles
 
-`default` is always applied first and holds shared settings such as memory layout and the library
-build directory. The names in a case's `profiles` array are then merged in order into one build
-configuration. The CRT leaves stdio off by default. Cases that use standard streams or `printf()`
-select the `stdio` layer.
+`[profiles.default]` holds shared settings such as memory layout and the library build directory.
+The BaseConf layers inherit them through `parent = "default"`. For each run, the runner applies
+the parents once, then merges the layers separated by `+` in order.
+The CRT leaves stdio off by default. Cases that use standard streams or `printf()` select the
+`stdio` layer.
 
 | Layer           | Setting                               | Effect                                     |
 | --------------- | ------------------------------------- | ------------------------------------------ |
@@ -285,34 +283,35 @@ The screenshot is taken after `DONE`, when the test has stopped drawing.
 
 ### Expected files and names
 
-Expected files live beside the case source and use its filename stem:
+Shared references live in the case's directory and use its filename stem.
+Put individual overrides under the profile directory.
 
 ```
-cases/<package>/<case>.<NN>_<tag>.<ext>
+cases/<package>/<case>/<case>.<NN>_<tag>.<ext>
+cases/<package>/<case>/<profile>/<case>.<NN>_<tag>.<ext>
 ```
 
 - `NN` — step number, starting at 1.
 - `tag` is derived from the step name, lowercased, with runs of non-ASCII-alphanumeric characters
   replaced by hyphens and a 40-character limit. Missing or empty names use `out`.
-- `ext` — `.png`, `.txt` or `.bin` for the channel.
-- Actual files live in the matching `out/<package>/` directory with the same name.
-- Build artifacts live in `build/<package>/<case>/`; report and log live in `out/<package>/`.
-  Profile selection affects the build and run, not test or artifact names.
+- `ext` is `.png`, `.txt`, `.bin`, or `.toml` for the channel.
+- Build artifacts, actual files, reports and logs live in `build/<package>/<case>/<profile>/`.
 
 Example for `core/smoke.c`:
 
 ```
-cases/core/smoke.01_zx256.png
-cases/core/smoke.02_out.txt
-cases/core/smoke.03_atm640.png
-cases/core/smoke.04_out.txt
+cases/core/smoke/smoke.01_zx256.png
+cases/core/smoke/smoke.02_out.txt
+cases/core/smoke/smoke.03_atm640.png
+cases/core/smoke/smoke.04_out.txt
 ```
 
-- `make ... shots` (`run.py check --update`) writes expected files on PASS.
-- On PASS, `--update` removes expected files of this case/profile that no longer have a step.
-- `make ... test` (`run.py check`) compares:
-  - PNG: differing pixel count, first difference coordinate, `out/<package>/<name>.diff.png`;
-  - text: unified diff in `out/<package>/<stem>.diff.txt`;
+- `make ... shots` (`runner.py baseconf check --update`) writes expected files on PASS.
+- The first profile updates shared files and any of its own overrides. Other profiles record
+  overrides for changed or additional outputs. See [C case profiles and references](../../../tools/test_runner/README.en.md#c-case-profiles-and-references).
+- `make ... test` (`runner.py baseconf check`) compares:
+  - PNG: differing pixel count, first difference coordinate, `<name>.diff.png` in the profile's output directory;
+  - text: unified diff in `<stem>.diff.txt` in the same directory;
   - binary: first differing offset and a hex window.
 - An expected file without a produced output is an error; remove the file manually or through
   `--update` on PASS.
@@ -320,24 +319,23 @@ cases/core/smoke.04_out.txt
 ### CLI
 
 ```sh
-python3 lib/baseconf/tests/run.py list [--case PATH]
-python3 lib/baseconf/tests/run.py build [--case PATH] [--profile NAME]
-python3 lib/baseconf/tests/run.py check [--case PATH] [--filter REGEX]
+python3 tools/test_runner/runner.py baseconf list [--case PATH]
+python3 tools/test_runner/runner.py baseconf build [--case PATH] [--profile NAME]
+python3 tools/test_runner/runner.py baseconf check [--case PATH] [--filter REGEX]
                                        [--update] [--no-build] [--fail-fast]
                                        [--timeout SEC] [--port N] [--zesarux PATH] [--verbose]
-python3 lib/baseconf/tests/run.py clean [--case PATH]
+python3 tools/test_runner/runner.py baseconf clean [--case PATH]
 ```
 
 - `check` is the default command.
-- `--update` writes expected files next to the case and removes stale ones (PASS only).
-- `--no-build` reuses the last `build/<package>/<case>/manifest.json` for that case.
+- `--update` writes expected files and removes stale ones for the selected run (PASS only).
+- `--no-build` reuses `build/<package>/<case>/<profile>/manifest.json`.
 - `--fail-fast` stops after the first case that reports a result mismatch.
 - `--case` takes a path relative to `cases/`. Use `core/helpers` for one case or `core` for all
   cases under that directory. A unique file stem such as `helpers` also works. Repeat `--case` to
   combine selections.
-- `--profile` is repeatable and selects cases that use any named layer. Each selected case keeps its
-  complete profile.
-- `clean` removes generated files in `build/` and `out/` and local Python caches. With `--case`, it
+- `--profile` is repeatable and selects full run names such as `no-stdio+no-font8`.
+- `clean` removes generated files in `build/` and local Python caches. With `--case`, it
   removes only the selected cases' generated files.
 
 Exit codes: `0` — PASS, `1` — FAIL or build error, `2` — emulator/ZRCP error.
@@ -349,7 +347,7 @@ Exit codes: `0` — PASS, `1` — FAIL or build error, `2` — emulator/ZRCP err
 - `DI`, border 0; scenes without FLASH/ULAPlus/RTC/PS2/UART;
 - screenshot 200,000 cycles after `DONE`;
 - full-frame comparison unless case metadata specifies a region;
-- emulator log in `out/<package>/<case>.zesarux.log`.
+- emulator log in `build/<package>/<case>/<profile>/<case>.zesarux.log`.
 
 ### Limitations
 
@@ -360,7 +358,7 @@ Exit codes: `0` — PASS, `1` — FAIL or build error, `2` — emulator/ZRCP err
 - Flash programming, paged AVR EEPROM and `newirq` sources require hardware support beyond this
   emulator. The RTC clock case checks BCD and the PS/2 case checks make and break codes.
 
-Cases can pass extra ZEsarUX command-line options as an `emulator_args` array in their JSON
+Cases can pass extra ZEsarUX command-line options as an `emulator_args` array in their TOML
 metadata. Interactive cases can use `emulator_steps`. Each key names a target marker. After resuming
 that marker, the runner can generate `nmi`, run `settle` instructions, send `before_shot_keys`,
 capture a `shot`, then send `keys`. Key scripts accept names and chords such as `f;break;0`. An

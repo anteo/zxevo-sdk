@@ -1,0 +1,3 @@
+description = "Horizontal and upward graphics scrolling functions"
+profile = "no-stdio+no-font8"
+timeout = 60

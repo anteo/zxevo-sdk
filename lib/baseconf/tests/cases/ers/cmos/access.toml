@@ -1,0 +1,3 @@
+description = "Read, write, and restore an ERS CMOS setting"
+profile = "no-stdio+ers-rom"
+timeout = 30

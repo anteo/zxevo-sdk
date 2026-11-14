@@ -1,0 +1,2 @@
+description = "Clipped and empty fills, inclusive area clears, and outline-only erasure"
+profile = "no-stdio+no-font8"

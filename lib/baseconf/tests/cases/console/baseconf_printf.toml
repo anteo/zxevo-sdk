@@ -1,0 +1,3 @@
+description = "BaseConf zx_console_printf and console APIs with CRT stdio disabled"
+profile = "no-stdio"
+timeout = 60

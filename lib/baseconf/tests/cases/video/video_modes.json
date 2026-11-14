@@ -1,4 +1,0 @@
-{
-  "description": "Live video-mode readback, geometry, and both screen descriptors",
-  "profiles": ["no-stdio", "no-font8"]
-}

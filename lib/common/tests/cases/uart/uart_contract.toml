@@ -1,0 +1,10 @@
+description = "Kondratyev UART arguments and host PTY exchange on BaseConf"
+
+[targets.baseconf]
+profile = "no-stdio+no-font8"
+
+[targets.baseconf.emulator_steps.ready.uart]
+send = [0, 255, 13, 10, 128, 19, 17, 195]
+
+[targets.baseconf.emulator_steps.transmit.uart]
+expect = [85, 170, 10, 13, 0, 255]

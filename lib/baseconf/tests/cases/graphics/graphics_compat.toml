@@ -1,0 +1,2 @@
+description = "z88dk point and wide-circle operations, XOR areas, and cursor erase/XOR"
+profile = "no-stdio+no-font8"

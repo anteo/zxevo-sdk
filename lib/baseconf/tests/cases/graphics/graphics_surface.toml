@@ -1,0 +1,2 @@
+description = "Draw to independent buffers and formats, and reject unavailable or text surfaces"
+profile = "no-stdio+no-font8"

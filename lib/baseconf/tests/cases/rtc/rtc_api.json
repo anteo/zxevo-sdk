@@ -1,4 +1,0 @@
-{
-  "description": "RTC BCD date/time, NVRAM write and restoration, and AVR extension readback",
-  "profiles": ["no-stdio", "no-font8"]
-}

@@ -1,0 +1,20 @@
+description = "TSConf CPU clock, cache flags and invalid SysConfig arguments"
+
+[emulator_steps.7mhz-cache]
+tsconf_sysconfig = 5
+
+[emulator_steps.14mhz-cache]
+tsconf_sysconfig = 6
+
+[emulator_steps.invalid]
+tsconf_sysconfig = 6
+
+[emulator_steps.7mhz-mixed-cache.tsconf_registers]
+20 = 1
+2b = 5
+
+[emulator_steps.14mhz-uncached]
+tsconf_sysconfig = 2
+
+[emulator_steps."3.5mhz-uncached"]
+tsconf_sysconfig = 0

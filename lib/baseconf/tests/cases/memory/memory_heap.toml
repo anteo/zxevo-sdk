@@ -1,0 +1,2 @@
+description = "Banked heap growth, isolated data, busy operations, and reuse through W3"
+profile = "no-stdio"

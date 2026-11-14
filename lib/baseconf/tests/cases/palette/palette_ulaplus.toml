@@ -1,0 +1,3 @@
+description = "ULAplus register writes, readback, and mode restrictions"
+profile = "no-stdio+no-font8"
+emulator_args = ["--enableulaplus"]

@@ -1,0 +1,18 @@
+description = "Kempston button input, FDDVirt selection and VG93 register roundtrips"
+emulator_args = ["--joystickemulated", "Kempston"]
+
+[emulator_images.trd]
+fixture = "trd"
+filename = "disk.trd"
+
+[emulator_steps.joystick-idle]
+joystick = 17
+
+[emulator_steps.ports-open.tsconf_registers]
+29 = 128
+
+[emulator_steps.ports-closed]
+joystick = 0
+
+[emulator_steps.ports-closed.tsconf_registers]
+29 = 0

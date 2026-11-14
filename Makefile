@@ -19,18 +19,18 @@ examples-tsconf: appmake
 	$(MAKE) -C lib/tsconf examples
 
 test:
-	$(MAKE) test-baseconf
-	$(MAKE) test-tsconf
-	$(MAKE) test-common
+	@$(MAKE) --no-print-directory test-baseconf
+	@$(MAKE) --no-print-directory test-tsconf
+	@$(MAKE) --no-print-directory test-common
 
 test-baseconf:
-	$(MAKE) -C lib/baseconf/tests test
+	@$(MAKE) --no-print-directory -C lib/baseconf/tests test
 
 test-tsconf:
-	$(MAKE) -C lib/tsconf/tests test
+	@$(MAKE) --no-print-directory -C lib/tsconf/tests test
 
 test-common:
-	$(MAKE) -C lib/common/tests test
+	@$(MAKE) --no-print-directory -C lib/common/tests test
 
 test-appmake:
 	@mkdir -p tools/appmake/build/tests

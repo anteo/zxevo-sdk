@@ -1,0 +1,8 @@
+description = "Load a TRD from the FAT HDD into the ERS RAM disk and verify its source entry"
+profile = "no-stdio+ers-rom"
+timeout = 45
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072

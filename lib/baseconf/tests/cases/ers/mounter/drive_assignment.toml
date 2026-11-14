@@ -1,0 +1,2 @@
+description = "Change real and virtual drive assignments without changing SD or IDE settings"
+profile = "no-stdio+ers-rom"

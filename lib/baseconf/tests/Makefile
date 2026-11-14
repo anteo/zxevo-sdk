@@ -2,6 +2,7 @@
 ROOT := ../../..
 include ../baseconf.mk
 PYTHON ?= python3
+TEST_RUNNER := $(ROOT)/tools/test_runner/runner.py
 INSTRUCTIONS ?= 50000000
 BUILD := build
 TEST_MODE ?= 4
@@ -43,7 +44,7 @@ help:
 	  '  framework-clean  Remove test build and output directories' \
 	  '  clean            Remove build/' \
 	  '  TEST_MODE, TEST_FONT, TEST_SCROLL and INSTRUCTIONS configure the console probe.' \
-	  'Run $(PYTHON) run.py check --case core/helpers to select a case.' \
+	  'Run $(PYTHON) $(TEST_RUNNER) baseconf check --case core/helpers to select a case.' \
 	  'See README.en.md for profiles and emulator options.'
 
 ensure-baseconf:
@@ -80,19 +81,19 @@ test: framework-check
 shots: framework-update
 
 framework-list:
-	$(PYTHON) run.py list
+	$(PYTHON) $(TEST_RUNNER) baseconf list
 
 framework-build:
-	$(PYTHON) run.py build
+	@$(PYTHON) $(TEST_RUNNER) baseconf build
 
 framework-check:
-	$(PYTHON) run.py check
+	@$(PYTHON) $(TEST_RUNNER) baseconf check
 
 framework-update:
-	$(PYTHON) run.py check --update
+	$(PYTHON) $(TEST_RUNNER) baseconf check --update
 
 framework-clean:
-	$(PYTHON) -B run.py clean
+	$(PYTHON) -B $(TEST_RUNNER) baseconf clean
 
 FORMAT_FILES := $(wildcard *.c *.h *.asm *.inc *.md) \
 	$(shell find cases support -type f \( -name '*.c' -o -name '*.h' -o -name '*.asm' -o -name '*.inc' -o -name '*.md' \))

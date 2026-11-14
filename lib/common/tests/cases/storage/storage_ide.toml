@@ -1,0 +1,9 @@
+description = "Nemo IDE MBR read and sector roundtrips through block and word APIs"
+
+[targets.baseconf]
+profile = "no-stdio+no-font8"
+
+[emulator_images.ide]
+fixture = "ers-fat32"
+filename = "hdd.img"
+size_sectors = 131_072
