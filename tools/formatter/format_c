@@ -35,8 +35,8 @@ Options:
 
 Directories are expanded to their immediate *.c and *.h children; explicit
 file arguments are processed regardless of extension. Files are rewritten only
-when their formatted content differs. SDCC inline assembly blocks beginning
-with __asm on their own line keep their original instruction lines.
+when their formatted content differs. SDCC inline assembly blocks using
+__asm/__endasm or #asm/#endasm keep their original instruction lines.
 EOF
 }
 
@@ -120,9 +120,11 @@ format_file() {
     awk -v marker="$marker" '
         !block && /^[[:space:]]*(\/\/|\/\*)[[:space:]]*clang-format off/ { disabled = 1 }
         !block && /^[[:space:]]*(\/\/|\/\*)[[:space:]]*clang-format on/ { disabled = 0 }
-        { end_asm = /(^|[[:space:]])__endasm[[:space:]]*;/ }
+        { end_asm = /(^|[[:space:]])__endasm[[:space:]]*;/ ||
+                    /^[[:space:]]*#[[:space:]]*endasm([[:space:]]|$)/ }
         !disabled && (/^[[:space:]]*__asm[[:space:]]*$/ ||
-                      (/^[[:space:]]*__asm[[:space:]]/ && end_asm)) { block = 1 }
+                      (/^[[:space:]]*__asm[[:space:]]/ && end_asm) ||
+                      /^[[:space:]]*#[[:space:]]*asm([[:space:]]|$)/) { block = 1 }
         block {
             assembly = assembly $0 "\n"
             if (end_asm) {
