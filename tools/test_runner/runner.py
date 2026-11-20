@@ -2,14 +2,19 @@
 """Run the SDK library suites or an external assembly test suite."""
 
 import argparse
+import sqlite3
 import sys
 import tomllib
+from contextlib import closing
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from tools.test_runner.discovery import discover_suites
 from tools.test_runner.emulator import find_zesarux
+from tools.test_runner.history import (
+    HISTORY_PATH, load_failures, open_history, record_outcome,
+)
 from tools.test_runner.suites.asm import AsmTestSuite
 from tools.test_runner.suites.base import CheckSummary
 from tools.test_runner.support import FrameworkError, console_label
@@ -40,7 +45,10 @@ def parse_suite_args(suite, argv):
     parser = argparse.ArgumentParser(prog=f"{Path(sys.argv[0]).name} {suite}")
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("list", parents=[common], help="list discovered cases")
-    subparsers.add_parser("check", parents=[common], help="run cases and compare results")
+    check = subparsers.add_parser("check", parents=[common], help="run cases and compare results")
+    if suite != "asm":
+        check.add_argument("--rerun-failed", action="store_true",
+                           help="run only previously failed cases in their recorded profiles")
     if suite != "all":
         subparsers.add_parser("build", parents=[common], help="prepare cases and manifests")
         subparsers.add_parser("clean", parents=[common], help="remove build outputs and local Python caches")
@@ -49,16 +57,31 @@ def parse_suite_args(suite, argv):
     return parser.parse_args(argv)
 
 
+def select_recorded_runs(name, suite, runs, recorded):
+    selected = []
+    for case_path, meta, profiles in runs:
+        case = suite.case_relative_path(case_path).as_posix()
+        profiles = [profile for profile in profiles
+                    if (name, suite.machine, case, profile["name"]) in recorded]
+        if profiles:
+            selected.append((case_path, meta, profiles))
+    return selected
+
+
 def run_combined(args, selected):
     """Plan every matching case before running any machine."""
+    rerun_failed = args.command == "check" and args.rerun_failed
+    recorded = load_failures() if rerun_failed else None
     missing = set(args.case or ())
     plan = []
     for name, suite in selected:
         unmatched = set()
         runs = suite.enumerate_runs(args, suite.load_profiles(), unmatched=unmatched)
         missing.intersection_update(unmatched)
+        if recorded is not None:
+            runs = select_recorded_runs(name, suite, runs, recorded)
         if runs:
-            plan.append((f"{name}/{suite.machine}", suite, runs))
+            plan.append((name, suite, runs))
     if missing:
         selector = next(case for case in args.case if case in missing)
         raise FrameworkError(f"unknown case or directory {selector!r}; use 'list' to see cases")
@@ -66,24 +89,40 @@ def run_combined(args, selected):
     if args.command == "list":
         if not plan:
             print("no cases")
-        for label, suite, runs in plan:
-            print(label, flush=True)
+        for name, suite, runs in plan:
+            print(f"{name}/{suite.machine}", flush=True)
             suite.list_runs(runs)
         return 0
 
     summary = CheckSummary()
-    if plan:
+    if not plan:
+        if rerun_failed:
+            print("No recorded failures match the selection.")
+    else:
         zesarux = find_zesarux(args.zesarux)
-        for label, suite, runs in plan:
-            print(label, flush=True)
-            try:
-                suite.check_runs(args, runs, zesarux, summary, label_prefix=f"{label}/")
-            except (FrameworkError, OSError, tomllib.TOMLDecodeError) as error:
-                summary.suite_errors += 1
-                summary.failed_runs.append(f"{label} (suite error)")
-                print(f"{console_label('error', stream=sys.stderr)}: {label}: {error}", file=sys.stderr)
-            if args.fail_fast and summary.exit_code:
-                break
+        try:
+            with closing(open_history()) as history:
+                for name, suite, runs in plan:
+                    label = f"{name}/{suite.machine}"
+                    print(label, flush=True)
+
+                    def record(key, failed):
+                        record_outcome(history, (name, suite.machine, *key), failed)
+
+                    try:
+                        suite.check_runs(args, runs, zesarux, summary, label_prefix=f"{label}/",
+                                         record_outcome=record)
+                    except (FrameworkError, OSError, tomllib.TOMLDecodeError) as error:
+                        summary.suite_errors += 1
+                        summary.failed_runs.append(f"{label} (suite error)")
+                        print(f"{console_label('error', stream=sys.stderr)}: {label}: {error}",
+                              file=sys.stderr)
+                    if args.fail_fast and summary.exit_code:
+                        break
+        except sqlite3.Error as error:
+            summary.suite_errors += 1
+            print(f"{console_label('error', stream=sys.stderr)}: {HISTORY_PATH}: {error}",
+                  file=sys.stderr)
     summary.print_report(args.update)
     return summary.exit_code
 
@@ -96,7 +135,7 @@ def main():
 
     try:
         return run_suite(parser, entry)
-    except (FrameworkError, OSError, tomllib.TOMLDecodeError) as error:
+    except (FrameworkError, OSError, sqlite3.Error, tomllib.TOMLDecodeError) as error:
         print(f"{console_label('error', stream=sys.stderr)}: {error}", file=sys.stderr)
         return 2
 
@@ -120,10 +159,10 @@ def run_suite(parser, entry):
         return run_combined(args, [(name, suite) for name in names for suite in suites[name]])
 
     targets = suites[entry.suite]
+    if args.command == "check" or (args.command == "list" and len(targets) > 1):
+        return run_combined(args, [(entry.suite, suite) for suite in targets])
     if len(targets) == 1:
         return targets[0].run(args)
-    if args.command in {"check", "list"}:
-        return run_combined(args, [(entry.suite, suite) for suite in targets])
 
     status = 0
     for suite in targets:

@@ -33,6 +33,12 @@ make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 example `make test SUITE=tsconf CASE=storage`. Use
 `python3 tools/test_runner/runner.py all list` to list matches without running them.
 
+Use `--fail-fast` (or `make test FAIL_FAST=1`) to stop at the first failure. To rerun
+recorded SDK failures, use `python3 tools/test_runner/runner.py all check --rerun-failed`
+or `make test RERUN_FAILED=1`. The local database at `build/test-runner/failed.sqlite3`
+records the suite, machine, case path and profile. A passing run clears its entry.
+Filters and early stops leave unattempted entries available for another rerun.
+
 The runner recursively discovers `suite.toml` under `lib/`. Each manifest names its suite and
 lists `[[targets]]` with an adapter and machine. It uses `profiles.toml` next to the manifest
 unless the target supplies a different path. Each machine resolves its profiles independently.

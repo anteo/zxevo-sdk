@@ -31,6 +31,13 @@ make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 добавьте `SUITE`, например `make test SUITE=tsconf CASE=storage`. Команда
 `python3 tools/test_runner/runner.py all list` выводит совпадения без запуска.
 
+Флаг `--fail-fast` или `make test FAIL_FAST=1` останавливает прогон на первом падении.
+Чтобы повторить упавшие тесты SDK, используйте
+`python3 tools/test_runner/runner.py all check --rerun-failed` или `make test RERUN_FAILED=1`.
+Локальная база `build/test-runner/failed.sqlite3` хранит набор, машину, путь кейса и профиль.
+Успешный прогон удаляет соответствующую запись. Фильтры и досрочная остановка сохраняют записи
+для тестов, до которых прогон ещё не дошёл.
+
 Раннер рекурсивно ищет `suite.toml` в `lib/`. Манифест задаёт имя набора и список
 `[[targets]]` с адаптером и машиной. По умолчанию профили читаются из соседнего `profiles.toml`.
 При необходимости машина указывает свой путь к профилям и подбирает их независимо от других машин.

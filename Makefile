@@ -32,7 +32,9 @@ examples-xnx: appmake
 test: export ZX_TEST_SUITE := $(strip $(SUITE))
 test: export ZX_TEST_CASE := $(strip $(CASE))
 test:
-	@$(PYTHON) tools/test_runner/runner.py "$$ZX_TEST_SUITE" check $(if $(strip $(CASE)),--case "$$ZX_TEST_CASE")
+	@$(PYTHON) tools/test_runner/runner.py "$$ZX_TEST_SUITE" check \
+		$(if $(strip $(CASE)),--case "$$ZX_TEST_CASE") \
+		$(if $(filter 1,$(FAIL_FAST)),--fail-fast) $(if $(filter 1,$(RERUN_FAILED)),--rerun-failed)
 
 test-appmake:
 	@mkdir -p tools/appmake/build/tests

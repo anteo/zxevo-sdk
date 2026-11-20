@@ -13,7 +13,9 @@ all: test
 
 test build list shots:
 	@$(PYTHON) "$(TEST_RUNNER_DIR)/runner.py" $(TEST_SUITE) \
-		$(if $(filter test shots,$@),check,$@) $(if $(filter shots,$@),--update) $(CASE_ARG)
+		$(if $(filter test shots,$@),check,$@) $(if $(filter shots,$@),--update) $(CASE_ARG) \
+		$(if $(and $(filter test,$@),$(filter 1,$(FAIL_FAST))),--fail-fast) \
+		$(if $(and $(filter test,$@),$(filter 1,$(RERUN_FAILED))),--rerun-failed)
 
 clean:
 	@$(PYTHON) -B "$(TEST_RUNNER_DIR)/runner.py" $(TEST_SUITE) clean
@@ -27,7 +29,8 @@ help:
 	  '  shots   Update reference outputs from passing tests' \
 	  '  clean   Remove test build outputs and Python caches' \
 	  '  format  Format test sources and documentation' \
-	  'Pass CASE=<group or case> to test, build, list or shots.'
+	  'Pass CASE=<group or case> to test, build, list or shots.' \
+	  'Pass FAIL_FAST=1 or RERUN_FAILED=1 to test.'
 
 FORMAT_FILES := $(wildcard *.md) \
 	$(shell find cases $(wildcard support) -type f \( -name '*.c' -o -name '*.h' -o -name '*.asm' -o -name '*.inc' -o -name '*.md' \))

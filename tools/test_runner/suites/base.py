@@ -242,7 +242,7 @@ class TestSuite:
         summary.print_report(args.update)
         return summary.exit_code
 
-    def check_runs(self, args, runs, zesarux, summary, *, label_prefix=None):
+    def check_runs(self, args, runs, zesarux, summary, *, label_prefix=None, record_outcome=None):
         prefix = self.case_prefix if label_prefix is None else label_prefix
         for case_path, meta, chosen in runs:
             for profile in chosen:
@@ -251,7 +251,10 @@ class TestSuite:
                 run_dir = self.run_directory(relative_case, profile)
                 directories = self.expected_directories(case_path, profile)
                 shared_dir, specific_dir = directories[0], directories[-1]
-                label = f"{prefix}{relative_case.as_posix()} [{profile['name']}]"
+                case_path_label = relative_case.as_posix()
+                label = f"{prefix}{case_path_label} [{profile['name']}]"
+                run_key = (case_path_label, profile["name"])
+
                 try:
                     if args.no_build:
                         manifest_path = run_dir / "manifest.json"
@@ -265,6 +268,8 @@ class TestSuite:
                     print(f"{console_label('BUILD FAIL')} {label}: {error}")
                     summary.build_failures += 1
                     summary.failed_runs.append(f"{label} (build failure)")
+                    if record_outcome is not None:
+                        record_outcome(run_key, True)
                     if args.fail_fast:
                         break
                     continue
@@ -282,6 +287,8 @@ class TestSuite:
                     print(f"{console_label('FAIL')} {label}: test timeout: {error}")
                     summary.failures += 1
                     summary.failed_runs.append(f"{label} (timeout)")
+                    if record_outcome is not None:
+                        record_outcome(run_key, True)
                     if args.fail_fast:
                         break
                     continue
@@ -289,6 +296,8 @@ class TestSuite:
                     print(f"{console_label('FAIL')} {label}: emulator error: {error}")
                     summary.errors += 1
                     summary.failed_runs.append(f"{label} (emulator error)")
+                    if record_outcome is not None:
+                        record_outcome(run_key, True)
                     if args.fail_fast:
                         break
                     continue
@@ -385,6 +394,8 @@ class TestSuite:
                 }
                 report_path = run_dir / f"{output_prefix(name, profile['name'])}report.json"
                 report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+                if record_outcome is not None:
+                    record_outcome(run_key, bool(case_failures))
                 if case_failures:
                     summary.failures += 1
                     summary.failed_runs.append(label)
