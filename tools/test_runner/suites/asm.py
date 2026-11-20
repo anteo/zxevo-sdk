@@ -6,6 +6,7 @@ import re
 import shlex
 import subprocess
 
+from ..fixtures.images import prepare_images
 from ..support import PAGE_SIZE, PROTOCOL_FILE, TEST_SUPPORT, FrameworkError
 from ..zx_host.generate_header import generate_header
 from ..zx_host.manifest import BlockRecord, LaunchConfig, ZXHostManifestBuilder
@@ -97,6 +98,9 @@ class AsmTestSuite(TestSuite):
         return patched.resolve()
 
     def compile_case(self, case_path, meta, profile, verbose=False):
+        emulator_args = meta.get("emulator_args", [])
+        if not isinstance(emulator_args, list) or any(not isinstance(arg, str) for arg in emulator_args):
+            raise FrameworkError("case emulator_args must be a list of strings")
         relative_case = self.case_relative_path(case_path)
         output = self.run_directory(relative_case, profile)
         binary = output / "test.bin"
@@ -126,6 +130,17 @@ class AsmTestSuite(TestSuite):
             if "rom_patch" in meta:
                 rom = self.patched_rom(meta["rom_patch"], case_path, output, verbose)
             manifest["romfile"] = str(rom)
+            if emulator_args:
+                manifest["emulator_args"] = emulator_args
+            images = prepare_images(output / "emulator_images", meta.get("emulator_images", {}))
+            if images:
+                manifest["emulator_images"] = {
+                    device: str(path.relative_to(output)) for device, path in images.items()
+                }
+                manifest["emulator_images_initially_present"] = {
+                    device: settings.get("initially_present", True)
+                    for device, settings in meta["emulator_images"].items()
+                }
             manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         except (OSError, ValueError) as error:
             raise FrameworkError(str(error)) from error

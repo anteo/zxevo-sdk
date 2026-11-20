@@ -317,6 +317,10 @@ class CTestSuite(TestSuite):
                     device: path.relative_to(out_dir).as_posix()
                     for device, path in emulator_images.items()
                 }
+                manifest["emulator_images_initially_present"] = {
+                    device: settings.get("initially_present", True)
+                    for device, settings in meta["emulator_images"].items()
+                }
             manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
             stamp.write_text(fingerprint + "\n", encoding="utf-8")
         return manifest_path, binary.stat().st_size

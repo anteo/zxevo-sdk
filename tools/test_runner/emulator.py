@@ -113,6 +113,12 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
                       uart_bridge=None):
     output_dir.mkdir(parents=True, exist_ok=True)
     for name, action in (emulator_steps or {}).items():
+        if "mmc_present" in action and type(action["mmc_present"]) is not bool:
+            raise FrameworkError(f"emulator_steps.{name}.mmc_present must be a boolean")
+        if "mmc2_present" in action and type(action["mmc2_present"]) is not bool:
+            raise FrameworkError(f"emulator_steps.{name}.mmc2_present must be a boolean")
+        if "neogs_present" in action and type(action["neogs_present"]) is not bool:
+            raise FrameworkError(f"emulator_steps.{name}.neogs_present must be a boolean")
         if "reset" in action and action["reset"] not in ("soft", "hard"):
             raise FrameworkError(f"emulator_steps.{name}.reset must be soft or hard")
         if "reset_keys" in action:
@@ -128,16 +134,29 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
         extra_args.extend(("--uartbridge-file", uart_bridge[1]))
     manifest_path = Path(manifest_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    extra_args.extend(manifest.get("emulator_args", []))
+    for arg in manifest.get("emulator_args", []):
+        expanded = os.path.expandvars(arg)
+        if expanded == arg and arg.startswith("${") and arg.endswith("}"):
+            raise FrameworkError(f"missing environment variable for emulator argument {arg}")
+        extra_args.append(expanded)
     if manifest.get("romfile"):
         extra_args.extend(("--romfile", manifest["romfile"]))
     emulator_images = manifest.get("emulator_images", {})
-    for device in ("mmc", "ide", "trd"):
+    image_presence = manifest.get("emulator_images_initially_present", {})
+    for device in ("mmc", "mmc2", "neogs", "ide", "trd"):
         filename = emulator_images.get(device)
         if filename:
             image = (manifest_path.parent / filename).resolve()
-            extra_args.extend((f"--{device}-file", str(image), f"--enable-{device}",
-                               f"--{device}-no-persistent-writes"))
+            if device == "neogs":
+                if image_presence.get(device, True):
+                    extra_args.extend(("--neogs-sd-file", str(image)))
+                continue
+            cli_device = "mmc" if device == "mmc2" else device
+            suffix = "-2" if device == "mmc2" else ""
+            extra_args.extend((f"--{cli_device}-file{suffix}", str(image),
+                               f"--{cli_device}-no-persistent-writes{suffix}"))
+            if image_presence.get(device, True):
+                extra_args.append(f"--enable-{cli_device}{suffix}")
     if audio_capture:
         audio_raw_path.unlink(missing_ok=True)
         extra_args.extend(("--enableaudiodac", "--audiodactype", "Covox Pentagon",
@@ -223,6 +242,21 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
                     step_error = check_tsconf_sysconfig(session.remote, action["tsconf_sysconfig"])
                 if step_error is None and "tsconf_registers" in action:
                     step_error = check_tsconf_registers(session.remote, action["tsconf_registers"])
+                if step_error is None and "mmc_present" in action:
+                    command = "mmc-enable 0" if action["mmc_present"] else "mmc-disable 0"
+                    response = session.remote.command(command).strip()
+                    if not response.startswith("OK."):
+                        step_error = f"{command}: {response}"
+                if step_error is None and "mmc2_present" in action:
+                    command = "mmc-enable 1" if action["mmc2_present"] else "mmc-disable 1"
+                    response = session.remote.command(command).strip()
+                    if not response.startswith("OK."):
+                        step_error = f"{command}: {response}"
+                if step_error is None and "neogs_present" in action:
+                    command = "neogs-sd-insert" if action["neogs_present"] else "neogs-sd-eject"
+                    response = session.remote.command(command).strip()
+                    if not response.startswith("OK."):
+                        step_error = f"{command}: {response}"
             if step_error:
                 step_status = "FAIL"
                 step_errors.append(f"step {step + 1} {name}: {step_error}")
@@ -302,7 +336,7 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
                 session.reset(action["reset"], command=0, args=(active_step, 0), held_keys=held_keys)
             else:
                 session.submit(command=0)
-            if action.keys() - {"uart", "tsconf_sysconfig", "tsconf_registers", "reset", "reset_keys"}:
+            if action.keys() - {"uart", "tsconf_sysconfig", "tsconf_registers", "mmc_present", "mmc2_present", "neogs_present", "reset", "reset_keys"}:
                 if action.get("nmi"):
                     session.remote.command("generate-nmi")
                 if "joystick" in action:

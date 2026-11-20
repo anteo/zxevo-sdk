@@ -17,13 +17,16 @@ def prepare_images(directory, config):
     images = {}
     filenames = set()
     for device, settings in config.items():
-        if device not in {"mmc", "ide", "trd"}:
+        if device not in {"mmc", "mmc2", "neogs", "ide", "trd"}:
             raise FrameworkError(f"unknown emulator_images device: {device!r}")
         if not isinstance(settings, dict):
             raise FrameworkError(f"emulator_images.{device} must be a table")
         options = settings.copy()
         fixture = options.pop("fixture", None)
         filename = options.pop("filename", None)
+        initially_present = options.pop("initially_present", True)
+        if type(initially_present) is not bool:
+            raise FrameworkError(f"emulator_images.{device}.initially_present must be a boolean")
         if not isinstance(fixture, str) or fixture not in FIXTURE_WRITERS:
             raise FrameworkError(f"emulator_images.{device}: unknown fixture {fixture!r}")
         if (not isinstance(filename, str) or filename in {"", ".", ".."}

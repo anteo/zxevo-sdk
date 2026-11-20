@@ -114,7 +114,15 @@ holds keys while the ROM boots.
 
 ### Emulator storage images
 
-Declare each device the C case needs in its TOML. The runner creates the image under the run's
+Set `mmc_present = false` under `[emulator_steps.<step>]` to eject SD1 after
+that step, or `mmc_present = true` to reinsert its configured image. The runner
+uses ZRCP `mmc-disable 0` and `mmc-enable 0` while the CPU is paused.
+For the second slot, use `mmc2_present`; the runner sends `mmc-disable 1`
+and `mmc-enable 1`.
+This requires ZEsarUX support for these commands. Both C and ASM cases can
+provide emulator launch options in the TOML `emulator_args` array of strings.
+
+Declare each device the C or ASM case needs in its TOML. The runner creates the image under the run's
 `build/.../<profile>/emulator_images/` directory and attaches it to ZEsarUX with persistent writes
 disabled. Image paths in `manifest.json` are relative to the manifest's directory.
 
@@ -126,11 +134,14 @@ size_sectors = 131_072
 mount_list = ["E:/DOCS/DISK.TRD C:"]
 ```
 
-The device keys are `mmc` for SD, `ide` for HDD and `trd` for a Beta Disk image. `ers-fat16`
+The device keys are `mmc` for SD1, `mmc2` for SD2, `ide` for HDD and `trd` for a Beta Disk image. `ers-fat16`
 contains the ERS SD files, `ers-fat32` contains the ERS HDD files, and `ts-fat32` contains the
 fragmented file and nested directory used by TS-FAT. For FAT fixtures, `size_sectors` gives the size
 of the entire image in 512-byte sectors. The optional `mount_list` writes the listed lines to
 `IMAGE.MNT` on `ers-fat32`. The `trd` fixture has a fixed 640 KiB layout and takes only a filename.
+
+To test insertion after boot, set `initially_present = false` in the image
+table and enable the card with `mmc_present = true` or `mmc2_present = true` in a step.
 
 ## ZXHost target runtime and mailbox
 
