@@ -196,6 +196,7 @@ class TestSuite:
         failures = 0
         errors = 0
         build_failures = 0
+        failed_runs = []
         total_outputs = 0
         runs = self.enumerate_runs(args, profiles)
         zesarux = find_zesarux(args.zesarux)
@@ -219,6 +220,7 @@ class TestSuite:
                         print()
                     print(f"{console_label('BUILD FAIL')} {label}: {error}")
                     build_failures += 1
+                    failed_runs.append(f"{label} (build failure)")
                     if args.fail_fast:
                         break
                     continue
@@ -235,12 +237,14 @@ class TestSuite:
                 except TimeoutError as error:
                     print(f"{console_label('FAIL')} {label}: test timeout: {error}")
                     failures += 1
+                    failed_runs.append(f"{label} (timeout)")
                     if args.fail_fast:
                         break
                     continue
                 except (OSError, ValueError, RuntimeError) as error:
                     print(f"{console_label('FAIL')} {label}: emulator error: {error}")
                     errors += 1
+                    failed_runs.append(f"{label} (emulator error)")
                     if args.fail_fast:
                         break
                     continue
@@ -339,6 +343,7 @@ class TestSuite:
                 report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
                 if case_failures:
                     failures += 1
+                    failed_runs.append(label)
                     print(f"{console_label('FAIL')} {label}")
                     for line in case_failures:
                         if (result.get("completion_failure_inline") and
@@ -355,9 +360,18 @@ class TestSuite:
                 break
         if args.update:
             print(f"updated {total_outputs} output(s)")
-        summary = f"Tests: {started} run, {passed} passed, {failures + errors} failed"
+        if failed_runs:
+            print(f"\n{console_label('Failed tests:', style='FAIL')}")
+            for label in failed_runs:
+                print(console_label(f"  - {label}", style="FAIL"))
+        failed = failures + errors
+        passed_text = console_label(f"{passed} passed", style="PASS")
+        failed_text = f"{failed} failed"
+        if failed:
+            failed_text = console_label(failed_text, style="FAIL")
+        summary = f"{console_label('Total')}: {started} run, {passed_text}, {failed_text}"
         if build_failures:
-            summary += f", {build_failures} build failure(s)"
+            summary += ", " + console_label(f"{build_failures} build failure(s)", style="FAIL")
         print(f"\n{summary}", flush=True)
         if errors:
             return 2

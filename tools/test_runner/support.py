@@ -19,6 +19,7 @@ LABEL_COLORS = {
     "PASS": "1;32",
     "FAIL": "1;31",
     "SKIP": "1;33",
+    "Total": "1;36",
     "error": "1;31",
 }
 
@@ -27,11 +28,11 @@ def interactive_console(stream):
     return stream.isatty() and os.environ.get("TERM") != "dumb"
 
 
-def console_label(label, width=0, *, stream=None):
+def console_label(label, width=0, *, style=None, stream=None):
     if stream is None:
         stream = sys.stdout
     padded_label = label.ljust(width)
-    color = LABEL_COLORS.get(label)
+    color = LABEL_COLORS.get(style if style is not None else label)
     if color and interactive_console(stream) and not os.environ.get("NO_COLOR"):
         return f"\033[{color}m{padded_label}\033[0m"
     return padded_label
