@@ -394,9 +394,9 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
                         f"audio segment is too short ({len(segment)} bytes)")
                 elif step_expectations:
                     error = check_audio_expectations(segment, {
-                        **step_expectations,
                         "minimum_level_samples": (audio_expectations or {}).get(
                             "minimum_level_samples", 1),
+                        **step_expectations,
                     })
                     if error:
                         audio_errors.append(f"step {checkpoint['step'] + 1} {checkpoint['name']}: {error}")
