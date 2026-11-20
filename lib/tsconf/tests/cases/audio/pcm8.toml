@@ -1,7 +1,8 @@
 description = "PCM8 bank boundaries, caller-owned CPU/cache, IFF/lease restoration and z88dk IM2 C hook"
 cflags = ["-lzx_clib"]
 audio_capture = true
-audio_step_flush_cycles = 100000
+# Let ZEsarUX write at least two 100 ms blocks at the test's 14 MHz CPU speed.
+audio_step_flush_cycles = 800000
 timeout = 45
 
 [audio_expectations.steps.banked]
