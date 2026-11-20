@@ -1,7 +1,8 @@
-; Set up the test with maskable interrupts disabled. Clobbers AF, BC, DE and HL.
+; Set up the test with maskable interrupts disabled. Host ARG0 is the first
+; step number (zero at launch, next step after reset). Clobbers AF, BC, DE, HL.
 zx_test_init:
         di
-        xor a
+        ld a, (ZX_HOST_HEADER_ADDRESS + ZX_HOST_FIELD_ARG0)
         ld (zx_test_step_number), a
         jp zx_host_init
 

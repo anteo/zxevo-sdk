@@ -103,6 +103,15 @@ keys are hexadecimal `xxAF` register indices and its values are bytes. The runne
 emulator's readback while the target is stopped at that step. A `joystick` byte sets the input
 before advancing the next step.
 
+An ASM case can set `reset = "soft"` or `reset = "hard"` in an
+`[emulator_steps.<step>]` table. After collecting the step output, the runner
+resets the same emulator, runs the ROM to the profile's boot point and
+reloads the test. The new entry receives the next zero-based step number
+in ZXHost `ARG0`. The initial launch receives zero. Use that number to
+dispatch to the matching part of the case. The emulator and attached
+images stay in the same session. An optional `reset_keys = ["symbol-shift"]`
+holds keys while the ROM boots.
+
 ### Emulator storage images
 
 Declare each device the C case needs in its TOML. The runner creates the image under the run's

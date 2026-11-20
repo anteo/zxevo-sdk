@@ -3,13 +3,15 @@ import json
 import os
 import time
 
-from tools.zesarux.runner import ZesaruxRunner, breakpoint, registers
+from tools.zesarux.runner import ZesaruxRunner, breakpoint, keyboard_matrix, registers
 
 from .protocol import ZXHostProtocol
 
 
 class ZXHostSession:
     """Talk to a ZXHost target; ZesaruxRunner supplies emulator transport."""
+
+    RESET_COMMANDS = {"soft": "reset-cpu", "hard": "hard-reset-cpu"}
 
     def __init__(self, manifest_path, zesarux, machine=None, port=10040,
                  video_output="null", audio_output="null", zoom=1,
@@ -107,25 +109,43 @@ class ZXHostSession:
             self._boot(launch)
             if prepare is not None:
                 prepare(self.remote)
-            for address, value in launch.get("ports", []):
-                self.remote.write_port(hex(address), hex(value))
-            for block in self.manifest["blocks"]:
-                binary = os.path.join(self.base_dir, block["filename"])
-                if not os.path.isfile(binary):
-                    raise ValueError(f"manifest block file is missing: {binary}")
-                if os.path.getsize(binary) != block["length"]:
-                    raise ValueError(f"manifest length does not match block file: {binary}")
-                self.remote.write_port(hex(block["port"]), str(block["raw_page"]))
-                self.remote.load_binary(binary, block["address"], block["length"])
-            # A target with runtime_memory starts with this request on its
-            # bootstrap page and is responsible for moving it before use.
-            self.submit(command, args)
-            self.remote.set_register(f"SP={self.manifest['stack']:04X}H")
-            self.remote.set_register(f"PC={self.manifest['entry']:04X}H")
+            self._load_target(launch, command, args)
         except Exception:
             self.close()
             raise
         return self
+
+    def _load_target(self, launch, command, args):
+        for address, value in launch.get("ports", []):
+            self.remote.write_port(hex(address), hex(value))
+        for block in self.manifest["blocks"]:
+            binary = os.path.join(self.base_dir, block["filename"])
+            if not os.path.isfile(binary):
+                raise ValueError(f"manifest block file is missing: {binary}")
+            if os.path.getsize(binary) != block["length"]:
+                raise ValueError(f"manifest length does not match block file: {binary}")
+            self.remote.write_port(hex(block["port"]), str(block["raw_page"]))
+            self.remote.load_binary(binary, block["address"], block["length"])
+        # A target with runtime_memory starts with this request on its
+        # bootstrap page and is responsible for moving it before use.
+        self.submit(command, args)
+        self.remote.set_register(f"SP={self.manifest['stack']:04X}H")
+        self.remote.set_register(f"PC={self.manifest['entry']:04X}H")
+
+    def reset(self, kind, command, args=(0, 0), *, held_keys=()):
+        """Reboot in place, then reload the test at its manifest entry point."""
+        self._require_running()
+        self.protocol.validate_request(command, args, (self.sequence + 1) & 0xFF)
+        launch = self.manifest.get("launch", {})
+        self.remote.command(self.RESET_COMMANDS[kind])
+        if held_keys:
+            self.remote.command(f"set-ui-io-ports {keyboard_matrix(held_keys)}")
+        try:
+            self._boot(launch)
+        finally:
+            if held_keys:
+                self.remote.command(f"set-ui-io-ports {keyboard_matrix([])}")
+        self._load_target(launch, command, args)
 
     def submit(self, command, args=(0, 0)):
         """Publish a new request for the current target."""

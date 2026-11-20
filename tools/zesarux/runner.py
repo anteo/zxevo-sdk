@@ -337,6 +337,8 @@ def breakpoint(remote, index, pc, sp=None):
 
 # ZX keyboard matrix: key name -> (row, bit) pairs, bit 0 means pressed.
 ZX_KEYS = {
+    "caps-shift": [(0, 0)],
+    "symbol-shift": [(7, 1)],
     "up": [(4, 3)],
     "down": [(4, 4)],
     "enter": [(6, 0)],

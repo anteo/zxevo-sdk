@@ -9,7 +9,7 @@ import time
 from contextlib import ExitStack
 from pathlib import Path
 
-from tools.zesarux.runner import default_emulator
+from tools.zesarux.runner import ZX_KEYS, default_emulator
 from tools.zesarux.tap_runner import send_key_script
 
 from .audio import check_audio_expectations, preserve_partial_audio, write_audio_wav
@@ -112,6 +112,14 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
                       audio_step_flush_cycles=0, emulator_steps=None,
                       uart_bridge=None):
     output_dir.mkdir(parents=True, exist_ok=True)
+    for name, action in (emulator_steps or {}).items():
+        if "reset" in action and action["reset"] not in ("soft", "hard"):
+            raise FrameworkError(f"emulator_steps.{name}.reset must be soft or hard")
+        if "reset_keys" in action:
+            keys = action["reset_keys"]
+            if "reset" not in action or not isinstance(keys, list) or any(
+                    not isinstance(key, str) or key not in ZX_KEYS for key in keys):
+                raise FrameworkError(f"emulator_steps.{name}.reset_keys must list known keys for a reset")
     audio_raw_path = output_dir / f"{case_name}.rwa" if audio_capture else None
     extra_args = ["--hardware-debug-ports", "--realvideo"]
     if emulator_steps:
@@ -281,14 +289,20 @@ def _run_session_once(manifest_path, case_name, profile_name, zesarux, port, tim
                     for line in log.splitlines()[1:]:
                         if line.strip():
                             print(f"      {line}")
+            if "reset" in action and not more:
+                raise FrameworkError(f"step {name!r} must allow continuation for reset")
             if not more:
                 break
             active_step = step + 1
             active_step_name = (audio_step_names[active_step]
                                 if active_step < len(audio_step_names)
                                 else f"step{active_step}")
-            session.submit(command=0)
-            if action.keys() - {"uart", "tsconf_sysconfig", "tsconf_registers"}:
+            if "reset" in action:
+                held_keys = [position for key in action.get("reset_keys", ()) for position in ZX_KEYS[key]]
+                session.reset(action["reset"], command=0, args=(active_step, 0), held_keys=held_keys)
+            else:
+                session.submit(command=0)
+            if action.keys() - {"uart", "tsconf_sysconfig", "tsconf_registers", "reset", "reset_keys"}:
                 if action.get("nmi"):
                     session.remote.command("generate-nmi")
                 if "joystick" in action:
