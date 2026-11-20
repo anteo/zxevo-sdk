@@ -20,7 +20,7 @@ adapters and keeps build and result directories separate by machine.
 
 ## Running the suites
 
-From the SDK root, run `make test` to run the BaseConf, TSConf, and common suites. The runner needs
+From the SDK root, run `make test` to discover suites and run them with one combined report. The runner needs
 Python 3.11 or newer and ZEsarUX with ZRCP. Set `ZESARUX` to select the executable, or let the
 runner find it on `PATH` or in a standard installation directory. Set `ZXEVO_TEST_ROM` to override
 the ROM used by the `ers-rom` and `ts-bios` profiles.
@@ -29,7 +29,15 @@ the ROM used by the `ers-rom` and `ts-bios` profiles.
 make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 ```
 
-Use `make test-baseconf`, `make test-tsconf`, or `make test-common` to run a single suite. Binaries,
+`CASE` selects a case or directory across all suites. Add `SUITE` to restrict the search, for
+example `make test SUITE=tsconf CASE=storage`. Use
+`python3 tools/test_runner/runner.py all list` to list matches without running them.
+
+The runner recursively discovers `suite.toml` under `lib/`. Each manifest names its suite and
+lists `[[targets]]` with an adapter and machine. It uses `profiles.toml` next to the manifest
+unless the target supplies a different path. Each machine resolves its profiles independently.
+
+Binaries,
 manifests, reports and captures go to `tests/build/` under the corresponding library. The common
 suite adds machine-specific subdirectories. Run `make clean` from the SDK root to remove build and
 test outputs and Python caches. [BaseConf tests](../../lib/baseconf/tests/README.en.md) ·

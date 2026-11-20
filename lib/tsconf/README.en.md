@@ -14,7 +14,7 @@ API. [Public header](include/tsconf.h)
 ```sh
 make tsconf-lib
 make examples-tsconf
-make test-tsconf
+make test SUITE=tsconf
 ```
 
 ## Building applications
@@ -290,7 +290,7 @@ aligned bulk transfers. The caller serializes SPI use across these devices and S
 
 The suite uses the shared test harness and ZXHost on ZEsarUX's **TSConf** machine. It leaves W1
 resident for the mailbox and C data, runs most cases from W2 and uses W3 for their banked fixtures.
-Select an emulator with `make test-tsconf ZESARUX=/path/to/zesarux`. To run one case, use
+Select an emulator with `make test SUITE=tsconf ZESARUX=/path/to/zesarux`. To run one case, use
 `python3 tools/test_runner/runner.py tsconf check --case video/video` from the repository root. Use
 `--case video` to select the entire category.
 [Shared test harness](../../tools/test_runner/README.en.md) ·

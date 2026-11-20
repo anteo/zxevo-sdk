@@ -3,13 +3,16 @@
 
 import argparse
 import sys
+import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from tools.test_runner.discovery import discover_suites
+from tools.test_runner.emulator import find_zesarux
 from tools.test_runner.suites.asm import AsmTestSuite
-from tools.test_runner.suites.baseconf import BASECONF, BaseConfSuite
-from tools.test_runner.suites.tsconf import TSCONF, TSConfSuite
+from tools.test_runner.suites.base import CheckSummary
+from tools.test_runner.support import FrameworkError, console_label
 
 
 def parse_suite_args(suite, argv):
@@ -37,37 +40,93 @@ def parse_suite_args(suite, argv):
     parser = argparse.ArgumentParser(prog=f"{Path(sys.argv[0]).name} {suite}")
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("list", parents=[common], help="list discovered cases")
-    subparsers.add_parser("build", parents=[common], help="prepare cases and manifests")
     subparsers.add_parser("check", parents=[common], help="run cases and compare results")
-    subparsers.add_parser("clean", parents=[common], help="remove build outputs and local Python caches")
+    if suite != "all":
+        subparsers.add_parser("build", parents=[common], help="prepare cases and manifests")
+        subparsers.add_parser("clean", parents=[common], help="remove build outputs and local Python caches")
     if not argv or argv[0].startswith("-"):
         argv = ["check", *argv]
     return parser.parse_args(argv)
 
 
+def run_combined(args, selected):
+    """Plan every matching case before running any machine."""
+    missing = set(args.case or ())
+    plan = []
+    for name, suite in selected:
+        unmatched = set()
+        runs = suite.enumerate_runs(args, suite.load_profiles(), unmatched=unmatched)
+        missing.intersection_update(unmatched)
+        if runs:
+            plan.append((f"{name}/{suite.machine}", suite, runs))
+    if missing:
+        selector = next(case for case in args.case if case in missing)
+        raise FrameworkError(f"unknown case or directory {selector!r}; use 'list' to see cases")
+
+    if args.command == "list":
+        if not plan:
+            print("no cases")
+        for label, suite, runs in plan:
+            print(label, flush=True)
+            suite.list_runs(runs)
+        return 0
+
+    summary = CheckSummary()
+    if plan:
+        zesarux = find_zesarux(args.zesarux)
+        for label, suite, runs in plan:
+            print(label, flush=True)
+            try:
+                suite.check_runs(args, runs, zesarux, summary, label_prefix=f"{label}/")
+            except (FrameworkError, OSError, tomllib.TOMLDecodeError) as error:
+                summary.suite_errors += 1
+                summary.failed_runs.append(f"{label} (suite error)")
+                print(f"{console_label('error', stream=sys.stderr)}: {label}: {error}", file=sys.stderr)
+            if args.fail_fast and summary.exit_code:
+                break
+    summary.print_report(args.update)
+    return summary.exit_code
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("suite", choices=("baseconf", "tsconf", "common", "asm"))
+    parser.add_argument("suite", help="SDK suite name, all, or asm")
     parser.add_argument("suite_args", nargs=argparse.REMAINDER)
     entry = parser.parse_args()
-    args = parse_suite_args(entry.suite, entry.suite_args)
 
+    try:
+        return run_suite(parser, entry)
+    except (FrameworkError, OSError, tomllib.TOMLDecodeError) as error:
+        print(f"{console_label('error', stream=sys.stderr)}: {error}", file=sys.stderr)
+        return 2
+
+
+def run_suite(parser, entry):
     if entry.suite == "asm":
+        args = parse_suite_args("asm", entry.suite_args)
         suite = AsmTestSuite(args.suite_dir, args.build_dir, args.rom, args.rom_symbols,
                              sjasmplus=args.sjasmplus, include_dirs=args.include_dir)
         return suite.run(args)
-    if entry.suite == "baseconf":
-        return BaseConfSuite(BASECONF / "tests", "BaseConf").run(args)
-    if entry.suite == "tsconf":
-        return TSConfSuite(TSCONF / "tests", "TSConf").run(args)
 
-    common = BASECONF.parent / "common/tests"
-    suites = (
-        BaseConfSuite(BASECONF / "tests", "BaseConf", common_tests=common),
-        TSConfSuite(TSCONF / "tests", "TSConf", common_tests=common),
-    )
+    suites = discover_suites()
+    if entry.suite != "all" and entry.suite not in suites:
+        choices = ", ".join(("all", *suites, "asm"))
+        parser.error(f"unknown suite {entry.suite!r}; choose from {choices}")
+    if entry.suite == "all" and not suites:
+        raise FrameworkError("no SDK test suite manifests found")
+    args = parse_suite_args(entry.suite, entry.suite_args)
+    if entry.suite == "all":
+        names = sorted(suites, key=lambda name: (len(suites[name]) > 1, name))
+        return run_combined(args, [(name, suite) for name in names for suite in suites[name]])
+
+    targets = suites[entry.suite]
+    if len(targets) == 1:
+        return targets[0].run(args)
+    if args.command in {"check", "list"}:
+        return run_combined(args, [(entry.suite, suite) for suite in targets])
+
     status = 0
-    for suite in suites:
+    for suite in targets:
         print(suite.machine, flush=True)
         status = max(status, suite.run(args))
     return status

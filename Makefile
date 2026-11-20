@@ -1,6 +1,10 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf examples-evosdk examples-xnx test test-baseconf test-tsconf test-common test-appmake release clean
+.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf examples-evosdk examples-xnx test test-appmake release clean
+
+PYTHON ?= python3
+SUITE ?= all
+CASE ?=
 
 all: baseconf-lib tsconf-lib
 
@@ -25,21 +29,10 @@ examples-evosdk: appmake
 examples-xnx: appmake
 	$(MAKE) -C lib/tsconf/examples/evosdk/xnx all
 
+test: export ZX_TEST_SUITE := $(strip $(SUITE))
+test: export ZX_TEST_CASE := $(strip $(CASE))
 test:
-	@status=0; \
-	for suite in test-baseconf test-tsconf test-common; do \
-		$(MAKE) --no-print-directory "$$suite" || status=1; \
-	done; \
-	exit $$status
-
-test-baseconf:
-	@$(MAKE) --no-print-directory -C lib/baseconf/tests test
-
-test-tsconf:
-	@$(MAKE) --no-print-directory -C lib/tsconf/tests test
-
-test-common:
-	@$(MAKE) --no-print-directory -C lib/common/tests test
+	@$(PYTHON) tools/test_runner/runner.py "$$ZX_TEST_SUITE" check $(if $(strip $(CASE)),--case "$$ZX_TEST_CASE")
 
 test-appmake:
 	@mkdir -p tools/appmake/build/tests

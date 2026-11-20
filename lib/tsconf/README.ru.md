@@ -14,7 +14,7 @@
 ```sh
 make tsconf-lib
 make examples-tsconf
-make test-tsconf
+make test SUITE=tsconf
 ```
 
 ## Сборка приложений
@@ -292,7 +292,7 @@ API также монтирует Nemo IDE, открывает каталоги,
 
 Набор работает через общий раннер и ZXHost на машине **TSConf** в ZEsarUX. W1 остаётся резидентным
 для почтового ящика и данных C. Большинство кейсов выполняются из W2 и используют W3 для страниц
-фикстур. Эмулятор задаётся через `make test-tsconf ZESARUX=/path/to/zesarux`. Для одного кейса
+фикстур. Эмулятор задаётся через `make test SUITE=tsconf ZESARUX=/path/to/zesarux`. Для одного кейса
 используйте `python3 tools/test_runner/runner.py tsconf check --case video/video`, для всего
 каталога `--case video`. [Раннер](../../tools/test_runner/README.ru.md) ·
 [Общие тесты](../common/tests/README.ru.md)

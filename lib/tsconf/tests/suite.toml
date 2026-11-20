@@ -1,0 +1,5 @@
+name = "tsconf"
+
+[[targets]]
+adapter = "tsconf"
+machine = "TSConf"

@@ -1,0 +1,11 @@
+name = "common"
+
+[[targets]]
+adapter = "baseconf"
+machine = "BaseConf"
+profiles = "../../baseconf/tests/profiles.toml"
+
+[[targets]]
+adapter = "tsconf"
+machine = "TSConf"
+profiles = "../../tsconf/tests/profiles.toml"

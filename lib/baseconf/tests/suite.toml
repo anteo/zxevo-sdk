@@ -1,0 +1,5 @@
+name = "baseconf"
+
+[[targets]]
+adapter = "baseconf"
+machine = "BaseConf"

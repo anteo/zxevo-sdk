@@ -5,6 +5,7 @@ import re
 import shutil
 import sys
 import tomllib
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..comparison import compare_data_files, compare_screenshots, expected_files, output_prefix, write_expected
@@ -13,21 +14,58 @@ from ..profiles import case_profile_names, profile_layers
 from ..support import FrameworkError, TestFailure, console_label
 
 
+@dataclass
+class CheckSummary:
+    started: int = 0
+    passed: int = 0
+    failures: int = 0
+    errors: int = 0
+    build_failures: int = 0
+    suite_errors: int = 0
+    total_outputs: int = 0
+    failed_runs: list[str] = field(default_factory=list)
+
+    @property
+    def exit_code(self):
+        if self.errors or self.suite_errors:
+            return 2
+        return 1 if self.failures or self.build_failures else 0
+
+    def print_report(self, update):
+        if update:
+            print(f"updated {self.total_outputs} output(s)")
+        if self.failed_runs:
+            print(f"\n{console_label('Failed tests:', style='FAIL')}")
+            for label in self.failed_runs:
+                print(console_label(f"  - {label}", style="FAIL"))
+        failed = self.failures + self.errors
+        passed_text = console_label(f"{self.passed} passed", style="PASS")
+        failed_text = f"{failed} failed"
+        if failed:
+            failed_text = console_label(failed_text, style="FAIL")
+        summary = f"{console_label('Total')}: {self.started} run, {passed_text}, {failed_text}"
+        if self.build_failures:
+            summary += ", " + console_label(f"{self.build_failures} build failure(s)", style="FAIL")
+        if self.suite_errors:
+            summary += ", " + console_label(f"{self.suite_errors} suite error(s)", style="FAIL")
+        print(f"\n{summary}", flush=True)
+
+
 class TestSuite:
     """Run a suite with target-specific compiler options and mapper writes."""
 
     case_source_pattern = "*.c"
     default_profile = None
 
-    def __init__(self, tests, machine, *, common_tests=None):
-        self.tests = common_tests if common_tests is not None else tests
+    def __init__(self, tests, machine, *, profiles_file=None, per_machine=False):
+        self.tests = tests
         self.machine = machine
-        self.case_prefix = f"{machine}/" if common_tests is not None else ""
-        self.cases = self.tests / "cases"
-        self.build_dir = self.tests / "build"
-        if common_tests is not None:
+        self.case_prefix = f"{machine}/" if per_machine else ""
+        self.cases = tests / "cases"
+        self.build_dir = tests / "build"
+        if per_machine:
             self.build_dir /= machine.lower()
-        self.profiles_file = tests / "profiles.toml"
+        self.profiles_file = profiles_file if profiles_file is not None else tests / "profiles.toml"
 
     def compile_case(self, case_path, meta, profile, verbose=False):
         """Return the launch manifest path and the assembled code size."""
@@ -66,7 +104,7 @@ class TestSuite:
     def case_relative_path(self, path):
         return path.relative_to(self.cases).with_suffix("")
 
-    def select_case_paths(self, selected, filter_re):
+    def select_case_paths(self, selected, filter_re, *, unmatched=None):
         paths = {self.case_relative_path(path).as_posix(): path
                  for path in sorted(self.cases.rglob(self.case_source_pattern)) if not path.name.startswith("_")}
         matched = set()
@@ -80,6 +118,9 @@ class TestSuite:
                 matched.update(descendants)
                 continue
             names = [name for name in paths if Path(name).name == selector]
+            if not names and unmatched is not None:
+                unmatched.add(selector)
+                continue
             if not names:
                 raise FrameworkError(f"unknown case or directory {selector!r}; use 'list' to see cases")
             if len(names) > 1:
@@ -89,9 +130,9 @@ class TestSuite:
         return [path for path in paths.values() if (not selected or path in matched)
                 and (not filter_re or filter_re.search(self.case_relative_path(path).name))]
 
-    def discover_cases(self, selected, filter_re):
+    def discover_cases(self, selected, filter_re, *, unmatched=None):
         cases = []
-        for path in self.select_case_paths(selected, filter_re):
+        for path in self.select_case_paths(selected, filter_re, unmatched=unmatched):
             meta = {}
             meta_path = path.with_suffix(".toml")
             if meta_path.is_file():
@@ -136,9 +177,10 @@ class TestSuite:
     def expected_outputs(self, directories, case_name):
         return {path.name: path for directory in directories for path in expected_files(directory, case_name)}
 
-    def enumerate_runs(self, args, profiles):
+    def enumerate_runs(self, args, profiles, *, unmatched=None):
         runs = []
-        for case_path, meta in self.discover_cases(args.case, args.filter and re.compile(args.filter)):
+        filter_re = args.filter and re.compile(args.filter)
+        for case_path, meta in self.discover_cases(args.case, filter_re, unmatched=unmatched):
             chosen = self.profiles_for_case(meta, profiles, set(args.profile or []))
             if not chosen:
                 continue
@@ -147,10 +189,13 @@ class TestSuite:
 
 
     def command_list(self, args, profiles):
-        runs = self.enumerate_runs(args, profiles)
+        self.list_runs(self.enumerate_runs(args, profiles))
+        return 0
+
+    def list_runs(self, runs):
         if not runs:
             print("no cases")
-            return 0
+            return
         for case_path, meta, chosen in runs:
             shots = 0
             relative_case = self.case_relative_path(case_path)
@@ -161,7 +206,6 @@ class TestSuite:
             name = self.case_prefix + relative_case.as_posix()
             print(f"{name:32s} profiles={','.join(p['name'] for p in chosen):24s} "
                   f"expected={shots:2d} {description}".rstrip())
-        return 0
 
 
     def command_build(self, args, profiles):
@@ -191,15 +235,15 @@ class TestSuite:
 
 
     def command_check(self, args, profiles):
-        started = 0
-        passed = 0
-        failures = 0
-        errors = 0
-        build_failures = 0
-        failed_runs = []
-        total_outputs = 0
+        summary = CheckSummary()
         runs = self.enumerate_runs(args, profiles)
-        zesarux = find_zesarux(args.zesarux)
+        if runs:
+            self.check_runs(args, runs, find_zesarux(args.zesarux), summary)
+        summary.print_report(args.update)
+        return summary.exit_code
+
+    def check_runs(self, args, runs, zesarux, summary, *, label_prefix=None):
+        prefix = self.case_prefix if label_prefix is None else label_prefix
         for case_path, meta, chosen in runs:
             for profile in chosen:
                 relative_case = self.case_relative_path(case_path)
@@ -207,7 +251,7 @@ class TestSuite:
                 run_dir = self.run_directory(relative_case, profile)
                 directories = self.expected_directories(case_path, profile)
                 shared_dir, specific_dir = directories[0], directories[-1]
-                label = f"{self.case_prefix}{relative_case.as_posix()} [{profile['name']}]"
+                label = f"{prefix}{relative_case.as_posix()} [{profile['name']}]"
                 try:
                     if args.no_build:
                         manifest_path = run_dir / "manifest.json"
@@ -219,13 +263,13 @@ class TestSuite:
                     if not args.no_build:
                         print()
                     print(f"{console_label('BUILD FAIL')} {label}: {error}")
-                    build_failures += 1
-                    failed_runs.append(f"{label} (build failure)")
+                    summary.build_failures += 1
+                    summary.failed_runs.append(f"{label} (build failure)")
                     if args.fail_fast:
                         break
                     continue
                 timeout = args.timeout or meta.get("timeout", 30)
-                started += 1
+                summary.started += 1
                 print(f"{console_label('RUN', 6)}{label}", flush=True)
                 try:
                     result = run_session(manifest_path, name, profile["name"],
@@ -236,15 +280,15 @@ class TestSuite:
                                          meta.get("emulator_steps"))
                 except TimeoutError as error:
                     print(f"{console_label('FAIL')} {label}: test timeout: {error}")
-                    failures += 1
-                    failed_runs.append(f"{label} (timeout)")
+                    summary.failures += 1
+                    summary.failed_runs.append(f"{label} (timeout)")
                     if args.fail_fast:
                         break
                     continue
                 except (OSError, ValueError, RuntimeError) as error:
                     print(f"{console_label('FAIL')} {label}: emulator error: {error}")
-                    errors += 1
-                    failed_runs.append(f"{label} (emulator error)")
+                    summary.errors += 1
+                    summary.failed_runs.append(f"{label} (emulator error)")
                     if args.fail_fast:
                         break
                     continue
@@ -259,7 +303,7 @@ class TestSuite:
                     case_failures.append("target reported FAIL; expected files were not updated")
                 produced = set()
                 for step, step_title, actual in result["shots"]:
-                    total_outputs += 1
+                    summary.total_outputs += 1
                     produced.add(actual.name)
                     if do_update:
                         write_expected(actual, shared_dir, specific_dir, update_shared, inherited.get(actual.name))
@@ -281,7 +325,7 @@ class TestSuite:
                             f"{actual.name}: {count} pixel(s) differ ({where}); "
                             f"see {run_dir / (actual.stem + '.diff.png')}")
                 for step, step_title, actual, kind in result["data"]:
-                    total_outputs += 1
+                    summary.total_outputs += 1
                     produced.add(actual.name)
                     if do_update:
                         write_expected(actual, shared_dir, specific_dir, update_shared, inherited.get(actual.name))
@@ -342,8 +386,8 @@ class TestSuite:
                 report_path = run_dir / f"{output_prefix(name, profile['name'])}report.json"
                 report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
                 if case_failures:
-                    failures += 1
-                    failed_runs.append(label)
+                    summary.failures += 1
+                    summary.failed_runs.append(label)
                     print(f"{console_label('FAIL')} {label}")
                     for line in case_failures:
                         if (result.get("completion_failure_inline") and
@@ -353,26 +397,8 @@ class TestSuite:
                     if args.fail_fast:
                         break
                 else:
-                    passed += 1
+                    summary.passed += 1
                     skip_text = f" ({result['skips']} skipped step(s))" if result["skips"] else ""
                     print(f"{console_label('PASS', 6)}{label}{skip_text}")
-            if args.fail_fast and (failures or errors or build_failures):
+            if args.fail_fast and summary.exit_code:
                 break
-        if args.update:
-            print(f"updated {total_outputs} output(s)")
-        if failed_runs:
-            print(f"\n{console_label('Failed tests:', style='FAIL')}")
-            for label in failed_runs:
-                print(console_label(f"  - {label}", style="FAIL"))
-        failed = failures + errors
-        passed_text = console_label(f"{passed} passed", style="PASS")
-        failed_text = f"{failed} failed"
-        if failed:
-            failed_text = console_label(failed_text, style="FAIL")
-        summary = f"{console_label('Total')}: {started} run, {passed_text}, {failed_text}"
-        if build_failures:
-            summary += ", " + console_label(f"{build_failures} build failure(s)", style="FAIL")
-        print(f"\n{summary}", flush=True)
-        if errors:
-            return 2
-        return 1 if failures or build_failures else 0
