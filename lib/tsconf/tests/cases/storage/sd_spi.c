@@ -46,9 +46,7 @@ int main(void) {
     /* LBA 1 is outside the partition on this disposable image. */
     for (i = 0; i < sizeof(sector); ++i) sector[i] = pattern(i);
     status = zx_sd_write_sector(card.type, 1, sector, 128);
-    /* ZEsarUX can leave the CMD24 acceptance byte on MISO indefinitely.
-     * A timeout must still release the bus. Verify the actual sector either way. */
-    ZX_ASSERT(status == ZX_OK || status == ZX_TIMEOUT);
+    ZX_ASSERT(status == ZX_OK);
     for (i = 0; i < sizeof(sector); ++i) sector[i] = 0;
     status = zx_sd_read_sector(card.type, 1, sector, 128);
     ZX_ASSERT(status == ZX_OK);
