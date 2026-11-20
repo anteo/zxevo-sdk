@@ -7,7 +7,7 @@ static void check_reinitialize(void) {
     bc_window_config_t config = {BC_RAM, 53, 0, 0};
     bc_window_lease_t lease = {0};
     bc_map_t map = bc_get_active_map();
-    uint8_t page_register = (uint8_t)(4u * map + ZX_WINDOW_3);
+    uint8_t page_register = (uint8_t)(4u * map + 3u);
 
     ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_3, 52) == ZX_OK);
     *probe = 0xa9;
@@ -40,7 +40,7 @@ static void check_busy_shutdown(void) {
         ZX_ASSERT(bc_get_paging_state(&snapshot) == ZX_OK);
         ZX_ASSERT(bc_window_release(&lease) == ZX_OK);
     }
-    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
+    ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
     status = zx_graphics_begin();
     ZX_ASSERT(status == ZX_OK);
     if (status == ZX_OK) {

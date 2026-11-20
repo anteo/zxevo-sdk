@@ -8,7 +8,7 @@
  * ZX uses a 256x192 bitmap. In 16c/256c the console occupies the selected
  * raster at canvas origin, independently of the hardware scroll offsets.
  * Bitmap columns are pixel width divided by font advance, capped at 255.
- * Native text uses the font in page surface.page ^ 1 and a grid of 64x24, 80x25,
+ * Native text uses the font in page surface.page0 ^ 1 and a grid of 64x24, 80x25,
  * 80x30 or 90x36 cells according to the raster. A library built with
  * TSCONF_VIDEO_60HZ=1 uses 30 instead of 36 rows. Keep ZX/native text
  * mapped. Packed drawing borrows and restores W3 outside an explicit

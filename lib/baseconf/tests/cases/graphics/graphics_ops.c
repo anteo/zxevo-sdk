@@ -113,7 +113,7 @@ static uint8_t pixels_match(uint16_t left, uint16_t top, const char *pixels, uin
 static void check_mode(bc_video_mode_t mode, const char *name) {
     uint8_t i;
     int left;
-    zx_status_t status = zx_set_video_mode(mode);
+    zx_status_t status = bc_case_select_video_mode(mode);
     uint8_t packed = mode == BC_VIDEO_PENTAGON_256 || mode == BC_VIDEO_ATM_320;
     uint8_t toggled = packed ? INITIAL_INK ^ DRAW_INK : INITIAL_PAPER;
     uint8_t cleared = packed ? DRAW_PAPER : INITIAL_PAPER;

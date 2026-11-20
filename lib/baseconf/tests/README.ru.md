@@ -70,7 +70,7 @@ CRT вызывает `zx_init()` до входа в кейс. `bc_case_init()` �
 int main(void) {
     if (bc_case_init() == ZX_OK) {
         ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-        if (zx_set_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
+        if (bc_case_select_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
             zx_set_ink(7);
             ZX_ASSERT(zx_console_clear() == ZX_OK);
             zx_draw_line(0, 0, 639, 199);

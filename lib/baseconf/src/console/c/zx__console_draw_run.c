@@ -6,7 +6,7 @@
 zx_status_t zx__console_draw_run(uint8_t column, uint8_t row, const char *text, uint8_t length,
                                  zx_text_bg_t background) {
 #ifdef BASECONF_VIDEO_TEXT_HARDWARE
-    bc_surface_t surface = bc_video_draw_surface_state;
+    bc__draw_surface_t surface = bc_video_draw_surface_state;
 
     if (surface.mode >= BC_VIDEO_ATM_TEXT_80) {
         zx_status_t status;

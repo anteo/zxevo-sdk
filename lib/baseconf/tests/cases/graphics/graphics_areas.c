@@ -27,7 +27,7 @@ static uint8_t areas_match(uint8_t cleared) {
 }
 
 static void check_mode(bc_video_mode_t mode, const char *tag, uint8_t cleared) {
-    zx_status_t status = zx_set_video_mode(mode);
+    zx_status_t status = bc_case_select_video_mode(mode);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) {
         zx_test_step_marker(tag);

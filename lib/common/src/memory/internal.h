@@ -3,6 +3,10 @@
 
 #include <zx/memory.h>
 
+#define ZX__WINDOW_VALID(window) (((uintptr_t)(window) & ~(uintptr_t)0xc000u) == 0)
+#define ZX__WINDOW_INDEX(window) ((uint8_t)((uintptr_t)(window) >> 14))
+#define ZX__WINDOW_ADDRESS(index) ((zx_window_t)((uintptr_t)(index) << 14))
+
 #define ZX_RAM_HEAP_PAGE_FREE 0u
 #define ZX_RAM_HEAP_PAGE_READY 1u
 

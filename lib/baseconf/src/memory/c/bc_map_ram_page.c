@@ -4,7 +4,7 @@
 
 zx_status_t bc_map_ram_page(zx_window_t window, zx_ram_page_t page) {
     bc_window_config_t c;
-    if (window > ZX_WINDOW_3) return ZX_INVALID_ARGUMENT;
+    if (!ZX__WINDOW_VALID(window)) return ZX_INVALID_ARGUMENT;
     c.kind = BC_RAM;
     c.physical_page = page;
     c.substitute_from_7ffd_or_dos = 0;

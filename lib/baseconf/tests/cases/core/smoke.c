@@ -12,7 +12,7 @@
 
 #include "bc_case.h"
 
-static const bc_surface_t surfaces[] = {
+static const uint8_t surfaces[][3] = {
     {BC_VIDEO_ZX_256, 5, 5},      {BC_VIDEO_ZX_MULTICOLOR, 5, 5}, {BC_VIDEO_PENTAGON_256, 4, 5},
     {BC_VIDEO_ATM_320, 1, 5},     {BC_VIDEO_ATM_640, 1, 5},       {BC_VIDEO_ATM_TEXT_80, 1, 5},
     {BC_VIDEO_EVO_TEXT_80, 8, 8},
@@ -25,7 +25,7 @@ int main(void) {
         return 0;
     }
     ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-    status = zx_set_video_mode(BC_VIDEO_ZX_256);
+    status = bc_case_select_video_mode(BC_VIDEO_ZX_256);
     if (status == ZX_OK) {
         zx_set_ink(6);
         zx_set_paper(0);
@@ -40,7 +40,7 @@ int main(void) {
         zx_test_step_skip("zx256", "video mode unavailable");
         zx_test_step_skip("text", "video mode unavailable");
     }
-    status = zx_set_video_mode(BC_VIDEO_ATM_640);
+    status = bc_case_select_video_mode(BC_VIDEO_ATM_640);
     if (status == ZX_OK) {
         zx_set_ink(6);
         zx_set_paper(0);

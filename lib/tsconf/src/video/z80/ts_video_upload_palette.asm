@@ -5,20 +5,27 @@ EXTERN ts__fmaps_upload
 
 ; Upload or clear a contiguous range of CRAM colors.
 ;
-; if (window>3 || count>256 || first+count>256) return INVALID_ARGUMENT;
+; if (!aligned(window) || count>256 || first+count>256) return INVALID_ARGUMENT;
 ; if (!count) return OK;
 ; return fmaps_upload(window,2*first,source,2*count);
 ;
-; SDCC caller-clean: window SP+2, first SP+3, source SP+4, count SP+6.
+; SDCC caller-clean: window address SP+2, first SP+4, source SP+5, count SP+7.
 ; Status L; AF/BC/DE/HL volatile, IX/IY preserved. No persistent frame.
 ; See public header for aperture residency, writable backing RAM and ownership.
 _ts_video_upload_palette:
         ld hl,2
         add hl,sp
         ld a,(hl)
-        cp 4
-        jr nc,@invalid
-        ld b,a                       ; window
+        or a
+        jr nz,@invalid
+        inc hl
+        ld a,(hl)
+        and 3fh
+        jr nz,@invalid
+        ld a,(hl)
+        rlca
+        rlca
+        ld b,a                       ; window index
         inc hl
         ld c,(hl)                    ; first color
         inc hl

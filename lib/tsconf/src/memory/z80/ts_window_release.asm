@@ -21,7 +21,7 @@ _ts_window_release:
         ld a,d
         or e
         jr z,@invalid
-        ld hl,2
+        ld hl,3
         add hl,de
         ld a,(hl)
         or a
@@ -34,7 +34,9 @@ _ts_window_release:
         dec hl
         ld e,(hl)                    ; previous_page
         dec hl
-        ld a,(hl)                    ; window
+        ld a,(hl)                    ; window high byte
+        rlca
+        rlca
         add a,10h
         ld b,a
         ld c,0afh

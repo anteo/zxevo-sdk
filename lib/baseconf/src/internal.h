@@ -14,6 +14,14 @@
 #endif
 #endif
 
+/* Compact layout used by the drawing and hardware-text assembly routines.
+ * Single-page surfaces repeat the physical page in both slots. */
+typedef struct {
+    bc_video_mode_t mode;
+    zx_ram_page_t page0;
+    zx_ram_page_t page1;
+} bc__draw_surface_t;
+
 zx_status_t bc__mem_write_eff7(uint8_t value);
 void bc__console_set_geometry(uint8_t columns, uint8_t rows);
 /* Every successful begin owns one nesting level and needs a matching end. */
@@ -25,7 +33,7 @@ zx_status_t bc__video_sync_cache(void);
  * lease; SET/CLEAR/XOR change pixel data while preserving attributes. */
 void bc__video_hline(int x0, int x1, int y, uint8_t operation);
 void bc__video_vline(int x, int y0, int y1, uint8_t operation);
-extern bc_surface_t bc_video_draw_surface_state;
+extern bc__draw_surface_t bc_video_draw_surface_state;
 extern uint8_t bc_video_operation_depth;
 extern uint16_t bc_video_page0_base, bc_video_page1_base;
 zx_status_t bc__video_clear(void);
@@ -40,9 +48,9 @@ zx_status_t bc__video_scroll_up8(void);
  * Bitmap attributes move only for an eight-pixel shift. Exposed packed pixels
  * use paper; exposed bitmap bits are zero. */
 void bc__video_scroll_horizontal(uint8_t pixels, uint8_t right);
-void bc__video_scroll_text_rows(bc_video_mode_t mode, bc_surface_t surface, uint8_t row_count,
+void bc__video_scroll_text_rows(bc_video_mode_t mode, bc__draw_surface_t surface, uint8_t row_count,
                                 uint8_t columns);
-void bc__video_clear_text_row(bc_video_mode_t mode, bc_surface_t surface, uint8_t row,
+void bc__video_clear_text_row(bc_video_mode_t mode, bc__draw_surface_t surface, uint8_t row,
                               uint8_t columns, uint8_t attribute);
 
 #endif

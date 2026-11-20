@@ -75,18 +75,19 @@ static zx_status_t draw_station(void) {
     return zx_console_draw_op(2, 22, "23:48  LAST TRAIN TO THE COAST", ZX_TEXT_TRANSPARENT);
 }
 
-/* BASIC 48 can leave 7FFD locked. Unlock only around the screen select. */
-static zx_status_t select_screen(zx_screen_t screen) {
+/* BASIC 48 can leave 7FFD locked. Unlock only around the display change. */
+static zx_status_t show_surface(const zx_video_surface_t *surface) {
     uint8_t paging = bc_readback_register(0x0a);
     zx_status_t status, restore;
 
-    if (BC_PAGING_SCREEN(paging) == screen) return ZX_OK;
-    if (!BC_PAGING_IS_LOCKED_128K(paging) || !(bc_readback_register(0x0b) & 4u))
-        return bc_select_screen(screen);
+    if (bc_screen_surface((bc_video_mode_t)surface->mode, BC_PAGING_SCREEN(paging)).page0 ==
+            surface->page0 ||
+        !BC_PAGING_IS_LOCKED_128K(paging) || !(bc_readback_register(0x0b) & 4u))
+        return zx_display_surface(surface);
 
     status = bc_set_addressing(BC_ADDRESSING_1024K);
     if (status != ZX_OK) return status;
-    status = bc_select_screen(screen);
+    status = zx_display_surface(surface);
     restore = bc_set_addressing(BC_ADDRESSING_128K);
     return restore != ZX_OK ? restore : status;
 }
@@ -96,7 +97,11 @@ static zx_status_t select_screen(zx_screen_t screen) {
  * maps BASIC's system variables and caller stack. */
 zx_status_t night_train_paint(void) {
     bc_window_config_t saved_w1, saved_w2, saved_w3;
-    bc_surface_t surface = bc_screen_surface(BC_VIDEO_ATM_320, ZX_SCREEN_1);
+    const zx_video_surface_t screen = {
+        .mode = BC_VIDEO_ATM_320,
+        .page0 = 3,
+        .page1 = 7,
+    };
     bc_map_t map = bc_get_active_map();
     uint8_t pins = bc_get_pinned_windows();
     zx_status_t status, w1_status, w3_status;
@@ -108,17 +113,14 @@ zx_status_t night_train_paint(void) {
     status = bc_get_window_config(map, ZX_WINDOW_3, &saved_w3);
     if (status != ZX_OK) return status;
     if (saved_w1.kind != BC_RAM || saved_w1.physical_page != 5 ||
-        saved_w2.physical_page == surface.page0 || saved_w2.physical_page == surface.page1 ||
-        saved_w3.physical_page == surface.page0 || saved_w3.physical_page == surface.page1)
+        saved_w2.physical_page == screen.page0 || saved_w2.physical_page == screen.page1 ||
+        saved_w3.physical_page == screen.page0 || saved_w3.physical_page == screen.page1)
         return ZX_UNSAFE_CONTEXT;
 
-    bc_set_pinned_windows((1u << ZX_WINDOW_0) | (1u << ZX_WINDOW_2));
-    status = bc_map_ram_page(ZX_WINDOW_1, surface.page0);
-    if (status == ZX_OK) status = bc_map_ram_page(ZX_WINDOW_3, surface.page1);
-    if (status == ZX_OK) status = bc_select_draw_surface(&surface);
+    bc_set_pinned_windows(ZX_WINDOW_MASK(ZX_WINDOW_0) | ZX_WINDOW_MASK(ZX_WINDOW_2));
+    status = zx_draw_surface(&screen, ZX_WINDOW_1, ZX_WINDOW_3);
     if (status == ZX_OK) status = draw_station();
-    if (status == ZX_OK) status = select_screen(ZX_SCREEN_1);
-    if (status == ZX_OK) status = zx_set_video_mode(BC_VIDEO_ATM_320);
+    if (status == ZX_OK) status = show_surface(&screen);
 
     w1_status = bc_configure_window(map, ZX_WINDOW_1, &saved_w1);
     w3_status = bc_configure_window(map, ZX_WINDOW_3, &saved_w3);
@@ -147,6 +149,10 @@ static zx_status_t paint_on_private_stack(void) __naked {
 /* clang-format on */
 
 int main(void) {
+    const zx_video_surface_t basic_screen = {
+        .mode = ZX_VIDEO_ZX_256,
+        .page0 = 5,
+    };
     uint8_t irq, border;
     zx_status_t status, restore;
 
@@ -161,8 +167,8 @@ int main(void) {
     if (status == ZX_OK) status = zx_wait_frames(basic_frames, 250);
 
     irq = zx_interrupt_save_disable();
-    restore = select_screen(ZX_SCREEN_0);
-    if (restore == ZX_OK) restore = zx_set_video_mode(BC_VIDEO_ZX_256);
+    restore = show_surface(&basic_screen);
+    if (restore == ZX_OK) restore = zx_draw_surface(&basic_screen, ZX_WINDOW_1, NULL);
     zx_set_border_color(border);
     zx_interrupt_restore(irq);
     return restore != ZX_OK ? restore : status;

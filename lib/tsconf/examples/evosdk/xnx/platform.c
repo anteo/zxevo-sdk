@@ -158,11 +158,15 @@ static void copy_changed_tiles(uint8_t source, uint8_t destination) {
 void xnx_present(void) {
     xnx_frame();
     if (draw_dirty) {
+        const zx_video_surface_t draw = {
+            .mode = TS_VIDEO_16C_320X200,
+            .page0 = displayed_page,
+        };
         uint8_t old_display = displayed_page;
         displayed_page = draw_page;
         draw_page = old_display;
-        ts_video_show_page(displayed_page);
-        ts_video_select_draw_screen(draw_page, 0);
+        zx_display_page(displayed_page);
+        zx_draw_surface(&draw, NULL, NULL);
         if (copy_whole_screen)
             ts_video_copy_16c_screen(displayed_page, draw_page);
         else
@@ -263,7 +267,14 @@ static void frame_hook(void) {
 }
 
 void xnx_init(void) {
-    static const ts_surface_t surface = {TS_VIDEO_16C_320X200, SCREEN_BACK, 0};
+    static const zx_video_surface_t surface = {
+        .mode = TS_VIDEO_16C_320X200,
+        .page0 = SCREEN_BACK,
+    };
+    static const zx_video_surface_t front = {
+        .mode = TS_VIDEO_16C_320X200,
+        .page0 = SCREEN_FRONT,
+    };
     tile_buffer = (uint8_t *)(((uint16_t)tile_storage + 1u) & 0xfffeu);
     ts_set_cpu_speed_and_cache(ZX_CPU_14_MHZ, 0);
     ts_fdd_set_config(0);
@@ -277,11 +288,11 @@ void xnx_init(void) {
     ts_map_ram_page(ZX_WINDOW_3, SCRATCH);
     ts_video_upload_sprites(ZX_WINDOW_3, 0, NULL, TS_SPRITE_COUNT);
     ts_video_set_sprite_page(SPRITES);
-    ts_video_select_draw_surface(&surface);
+    zx_draw_surface(&surface, NULL, NULL);
     xnx_clear(0);
     displayed_page = SCREEN_BACK;
     draw_page = SCREEN_FRONT;
-    ts_video_select_draw_screen(draw_page, 0);
+    zx_draw_surface(&front, NULL, NULL);
     ts_video_copy_16c_screen(displayed_page, draw_page);
     draw_dirty = 0;
     copy_whole_screen = 0;
@@ -293,8 +304,7 @@ void xnx_init(void) {
     zx_pt3_mute();
     zx_ay_select_chip(ZX_AY_CHIP_0);
     zx_ayfx_init(sound_effects);
-    ts_video_show_page(displayed_page);
-    zx_set_video_mode(TS_VIDEO_16C_320X200);
+    zx_display_surface(&surface);
     /* The B9B9 ISR and BE00..BF00 vectors stay outside the linked BSS. The
      * SPG loader stub is at BC80 and the initial stack starts at BDB0. */
     memset((void *)0xbe00, 0xb9, 257);

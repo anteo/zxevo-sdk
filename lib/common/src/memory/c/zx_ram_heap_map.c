@@ -4,7 +4,7 @@ zx_status_t zx_ram_heap_map(zx_ram_heap_t *heap, zx_ram_heap_ptr_t pointer, void
     uint16_t i;
 
     if (!heap || !heap->pool || !heap->pages || !address || pointer.offset >= ZX_RAM_PAGE_SIZE ||
-        heap->window < ZX_WINDOW_1 || heap->window > ZX_WINDOW_3)
+        heap->window == ZX_WINDOW_0 || !ZX__WINDOW_VALID(heap->window))
         return ZX_INVALID_ARGUMENT;
     if (heap->mapping_state != ZX_RAM_HEAP_UNMAPPED) return ZX_BUSY;
 

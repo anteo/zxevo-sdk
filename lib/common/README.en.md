@@ -20,9 +20,9 @@ Both libraries expose the built-in bitmap fonts as `zx_font8` and `zx_font5`. `z
 defines the descriptor and exposes the narrow glyph table as `zx_font5_data`.
 
 The SDK CRT calls `zx_init()` before `main()` and `zx_shutdown()` on exit. To manage both calls
-explicitly, build with `-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0`. Select the draw screen with
-`zx_select_draw_screen()` and the displayed screen with `zx_show_screen()` when using the standard
-ZX bitmap layout. The console API uses the same cell coordinates and `zx_status_t` results on both
+explicitly, build with `-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0`. Use `zx_draw_surface()` to choose the draw target,
+`zx_display_surface()` to configure and show a surface, and `zx_display_page()` to switch the
+visible page in the current mode. The console API uses the same cell coordinates and `zx_status_t` results on both
 machines. Use `zx_console_putc()` and `zx_console_puts()` to write at the cursor, or
 `zx_console_draw()` to draw at a cell without moving the cursor. A positioned run stops at the right
 edge or the first byte below 32. [Initialization](include/zx/init.h) · [Video](include/zx/video.h) ·

@@ -1,13 +1,13 @@
 #ifndef BASECONF_CONSOLE_INTERNAL_H
 #define BASECONF_CONSOLE_INTERNAL_H
 
-#include <baseconf.h>
+#include "../internal.h"
 #include <baseconf/video.h>
 #include <baseconf/font.h>
 
 uint8_t bc__console_is_text_mode(bc_video_mode_t mode);
 void bc__console_graphics_cell_write(uint8_t column, uint8_t row, uint8_t character);
-void bc__console_cell_write(bc_video_mode_t mode, bc_surface_t surface, uint8_t x, uint8_t y,
+void bc__console_cell_write(bc_video_mode_t mode, bc__draw_surface_t surface, uint8_t x, uint8_t y,
                             uint8_t character);
 void bc__console_scroll(void);
 

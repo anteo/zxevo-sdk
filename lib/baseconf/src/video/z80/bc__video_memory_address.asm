@@ -8,7 +8,7 @@ EXTERN _bc_video_page0_base
 EXTERN _bc_video_page1_base
 
 ; Register ABI: A = page, DE = offset. Return HL = address, CF = unavailable.
-; Preserve C/DE/IX/IY. SDCC bc_surface_t is { mode:8, page0:8, page1:8 }.
+; Preserve C/DE/IX/IY. SDCC bc__draw_surface_t is { mode:8, page0:8, page1:8 }.
 ;
 ; Resolves a selected surface page and byte offset to a CPU address,
 ; reporting when no matching page is available.

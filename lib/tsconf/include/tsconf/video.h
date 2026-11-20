@@ -90,13 +90,6 @@ zx_status_t ts_video_upload_sprites(zx_window_t window, uint8_t first, const ts_
 zx_status_t ts_video_upload_palette(zx_window_t window, uint8_t first, const uint16_t *source,
                                     uint16_t count);
 
-/* Show a physical RAM page in the current display layout. Packed 16-color
- * and 256-color pages must be aligned to 8 and 16 pages respectively.
- * Returns ZX_INVALID_ARGUMENT for misalignment, ZX_NOT_INITIALIZED until
- * the SDK sets a mode, and ZX_BUSY during a graphics group.
- * The draw target and CPU mappings are unchanged. */
-zx_status_t ts_video_show_page(uint8_t page) __z88dk_fastcall;
-
 /* DMA helpers for a 320x200 16-color bitmap. Source and destination screen
  * bases are 8-page aligned. Tile coordinates are 0..39, 0..24. Functions
  * wait for the DMA engine and leave CPU page mappings intact. The caller
@@ -111,16 +104,10 @@ zx_status_t ts_video_fill_16c_screen(uint8_t page, uint8_t color);
 zx_status_t ts_video_draw_16c_tile(uint8_t source_page, uint16_t tile, uint8_t destination_page,
                                    uint8_t x, uint8_t y);
 
-/* Draw surface with a TS_VIDEO_* mode and raster, and its physical base page.
- * ZX and text need page mapped at a writable 16 KiB-aligned CPU address
- * (base). Packed drawing uses the physical page and borrows W3. For that
- * layout, base is unused and page must be aligned as for ts_video_show_page. */
-typedef struct {
-    uint16_t config;
-    uint8_t page;
-    volatile void *base;
-} ts_surface_t;
-
+/* Shared surface operations use page0 as the physical base and require
+ * page1 == 0. For ZX and text, pass one CPU window address for drawing.
+ * For packed modes, pass NULL for both windows. The physical base must be
+ * aligned to 8 pages for 16 colors and 16 pages for 256 colors. */
 /* Report the native TSConf raster area in pixels for the last VConfig set
  * by this library. Hardware text doubles the horizontal pixel count.
  * With TSCONF_VIDEO_60HZ=1 at library build time, 360x288 has 240 lines.
@@ -128,20 +115,6 @@ typedef struct {
  * VConfig. Leave the output untouched on error. Blanking and scrolling do
  * not change the size. */
 zx_status_t ts_video_get_raster_size(zx_video_size_t *size) __z88dk_fastcall;
-
-/* Copy a draw surface for console and graphics output. This can have a
- * different layout or page from the display. Only the mode and raster bits
- * of config are used. Leaves video registers and CPU mappings alone.
- * Return ZX_INVALID_ARGUMENT for NULL, an invalid mode number or invalid
- * alignment, ZX_UNSUPPORTED for an excluded mode or ZX_BUSY while a
- * graphics group is open. */
-zx_status_t ts_video_select_draw_surface(const ts_surface_t *surface) __z88dk_fastcall;
-
-/* Select a draw page using the current display layout. Same page/base
- * requirements as ts_surface_t. Leaves
- * video registers and CPU mappings alone. Return ZX_NOT_INITIALIZED if
- * VConfig is unknown, or the draw-surface selection status. */
-zx_status_t ts_video_select_draw_screen(uint8_t page, volatile void *base);
 
 /* Write PalSel. Bits 3:0 select the graphics palette bank. Bits 5:4
  * and 7:6 select the palette groups for tile layers 0 and 1. */

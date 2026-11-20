@@ -1,18 +1,17 @@
 #include "../internal.h"
+#include "../../memory/internal.h"
 
-zx_status_t bc__video_find_page_windows(bc_map_t map, const bc_surface_t *surface,
-                                        uint8_t stop_on_error, zx_window_t windows[2]) {
+zx_status_t bc__video_find_page_windows(bc_map_t map, const bc__draw_surface_t *surface,
+                                        zx_window_t windows[2]) {
     bc_window_config_t config;
-    zx_window_t window;
+    uint8_t index;
 
     windows[0] = ZX_WINDOW_0;
     windows[1] = ZX_WINDOW_0;
-    for (window = ZX_WINDOW_1; window <= ZX_WINDOW_3; ++window) {
+    for (index = 1; index < 4; ++index) {
+        zx_window_t window = ZX__WINDOW_ADDRESS(index);
         zx_status_t status = bc_get_window_config(map, window, &config);
-        if (status != ZX_OK) {
-            if (stop_on_error) return status;
-            continue;
-        }
+        if (status != ZX_OK) continue;
         if (config.kind != BC_RAM || config.substitute_from_7ffd_or_dos || config.write_protected)
             continue;
         if (windows[0] == ZX_WINDOW_0 && config.physical_page == surface->page0)

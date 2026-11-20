@@ -9,7 +9,7 @@
 extern uint8_t _console_x, _console_y;
 
 static void test_graphics_console(void) {
-    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
+    ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
     ZX_ASSERT(zx_console_get_font() == NULL);
     ZX_ASSERT(zx_console_putc('A') == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_console_puts("A") == ZX_NOT_INITIALIZED);
@@ -45,7 +45,7 @@ static void test_graphics_console(void) {
 }
 
 static void test_hardware_text(void) {
-    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ATM_TEXT_80) == ZX_OK);
+    ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ATM_TEXT_80) == ZX_OK);
 
     ZX_ASSERT(zx_console_set_font(&zx_font5) == ZX_UNSUPPORTED);
     ZX_ASSERT(zx_console_get_font() == &zx_font5);
@@ -75,12 +75,12 @@ static void test_hardware_text(void) {
 
 static void test_cursor_after_mode_change(void) {
     ZX_ASSERT(zx_console_gotoxy(79, 24) == ZX_OK);
-    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
+    ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
     ZX_ASSERT(_console_x == 0 && _console_y == 0);
 
     ZX_ASSERT(zx_console_gotoxy(41, 23) == ZX_OK);
-    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ATM_TEXT_80) == ZX_OK);
-    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
+    ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ATM_TEXT_80) == ZX_OK);
+    ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
     ZX_ASSERT(_console_x == 41 && _console_y == 23);
 }
 

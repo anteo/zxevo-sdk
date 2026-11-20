@@ -1,6 +1,7 @@
 #include <zx/console.h>
 #include <zx/graphics.h>
 #include <zx/interrupt.h>
+#include <zx/video.h>
 
 enum { CENTER_X = 128, CENTER_Y = 92, RADIUS = 58 };
 
@@ -16,10 +17,14 @@ static void sweep(uint8_t bearing) {
 }
 
 int main(void) {
+    const zx_video_surface_t screen = {
+        .mode = ZX_VIDEO_ZX_256,
+        .page0 = 5,
+    };
     uint8_t turn, bearing;
     zx_status_t status;
 
-    status = zx_select_draw_screen(ZX_SCREEN_0);
+    status = zx_draw_surface(&screen, ZX_WINDOW_1, NULL);
     if (status != ZX_OK) return status;
     zx_set_colors(COLOR_BLACK, COLOR_GREEN | COLOR_BRIGHT, COLOR_BLACK);
     status = zx_console_clear();

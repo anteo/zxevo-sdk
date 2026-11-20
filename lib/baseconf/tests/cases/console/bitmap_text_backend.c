@@ -41,8 +41,8 @@ static void check_missing_backend(void) {
 }
 
 int main(void) {
-    const bc_surface_t zx = {BC_VIDEO_ZX_256, 5, 5};
-    const bc_surface_t multicolor = {BC_VIDEO_ZX_MULTICOLOR, 5, 5};
+    const zx_video_surface_t zx = {BC_VIDEO_ZX_256, 5, 0};
+    const zx_video_surface_t multicolor = {BC_VIDEO_ZX_MULTICOLOR, 5, 0};
 
     if (bc_case_init() == ZX_OK) {
         ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_3, zx.page0) == ZX_OK);
@@ -53,7 +53,7 @@ int main(void) {
         check_missing_backend();
         zx_test_step_marker("initial_surface");
 
-        ZX_ASSERT(bc_select_draw_surface(&multicolor) == ZX_OK);
+        ZX_ASSERT(zx_draw_surface(&multicolor, ZX_WINDOW_3, NULL) == ZX_OK);
         ZX_ASSERT(zx_console_putc('A') == ZX_OK);
         ZX_ASSERT(_console_x == 4 && _console_y == 2);
         ZX_ASSERT(bc_text_draw_font(3, 2, "A", &zx_font5_data[0][0]) == ZX_OK);
@@ -65,7 +65,7 @@ int main(void) {
         ZX_ASSERT(*cell_scanline == (zx_font5_data['A' - 32][1] | 1));
         ZX_ASSERT(cell_scanline[0x2000] == 0x2e);
         ZX_ASSERT(zx_console_set_text_bg(ZX_TEXT_OPAQUE) == ZX_OK);
-        ZX_ASSERT(bc_select_draw_surface(&zx) == ZX_OK);
+        ZX_ASSERT(zx_draw_surface(&zx, ZX_WINDOW_3, NULL) == ZX_OK);
         check_missing_backend();
         zx_test_step_marker("surface_changes");
 

@@ -68,7 +68,7 @@ static void check_banked_heap(void) {
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) return;
 
-    bc_set_pinned_windows(pinned | (1u << ZX_WINDOW_3));
+    bc_set_pinned_windows(pinned | ZX_WINDOW_MASK(ZX_WINDOW_3));
     result = zx_ram_heap_alloc(&heap, BLOCK_SIZE, &extra);
     bc_set_pinned_windows(pinned);
     ZX_ASSERT(result == ZX_BUSY && extra.page == 0xff && extra.offset == 0xffff);
@@ -98,7 +98,7 @@ static void check_banked_heap(void) {
     ZX_ASSERT(zx_ram_heap_destroy(&heap) == ZX_BUSY);
     ZX_ASSERT(((volatile uint8_t *)address)[0] == 0xb3);
     ZX_ASSERT(((volatile uint8_t *)address)[BLOCK_SIZE - 1] == 0xe7);
-    bc_set_pinned_windows(pinned | (1u << ZX_WINDOW_3));
+    bc_set_pinned_windows(pinned | ZX_WINDOW_MASK(ZX_WINDOW_3));
     status = zx_ram_heap_unmap(&heap);
     bc_set_pinned_windows(pinned);
     ZX_ASSERT(status == ZX_BUSY && lease.active);

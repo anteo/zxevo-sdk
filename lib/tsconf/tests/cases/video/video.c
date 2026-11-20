@@ -40,7 +40,7 @@ static void check_palette(void) {
     }
     ts_map_ram_page(ZX_WINDOW_3, 0x40);
     memset(w3 + 272, 2, 32);
-    ts_video_show_page(0x40);
+    zx_display_page(0x40);
     ts_video_set_palette_select(0);
     zx_set_border_color(15);
     ts_video_set_scroll(0x0300, 0x03fe);

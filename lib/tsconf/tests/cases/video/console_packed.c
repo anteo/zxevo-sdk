@@ -8,14 +8,14 @@ static volatile uint8_t *const screen = (volatile uint8_t *)SCREEN_BASE;
 extern const uint8_t font_8x8_zx_system[96][8];
 
 static void check_packed16(void) {
-    const ts_surface_t canvas = {TS_VIDEO_16C_320X200, 0x50, NULL};
+    const zx_video_surface_t canvas = {TS_VIDEO_16C_320X200, 0x50, 0};
     const uint8_t *glyph = zx_font5_data['A' - 32];
     zx_console_size_t grid;
     uint8_t row, x;
 
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     screen[0] = 0x69;
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
     ZX_ASSERT(zx_console_set_font(&zx_font5) == ZX_OK && zx_console_get_font() == &zx_font5);
     ZX_ASSERT(zx_console_get_size(&grid) == ZX_OK && grid.columns == 53 && grid.rows == 25);
     zx_set_ink(0xfa);
@@ -44,13 +44,13 @@ static void check_packed16(void) {
 }
 
 static void check_packed256(void) {
-    const ts_surface_t canvas = {TS_VIDEO_256C_320X240, 0x40, NULL};
+    const zx_video_surface_t canvas = {TS_VIDEO_256C_320X240, 0x40, 0};
     uint8_t row, x;
 
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     zx_set_ink(0xa5);
     zx_set_paper(0xb7);
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
     ZX_ASSERT(zx_console_set_font(&zx_font8) == ZX_OK);
     ZX_ASSERT(zx_console_clear() == ZX_OK);
     ZX_ASSERT(zx_console_gotoxy(32, 4) == ZX_OK && zx_console_gotoxy(40, 4) != ZX_OK);

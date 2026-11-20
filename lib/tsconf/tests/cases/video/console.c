@@ -11,19 +11,18 @@ static const uint16_t palette[16] = {[1] = TS_PALETTE_RGB555(0, 0, 16),
                                      [14] = TS_PALETTE_RGB555(31, 31, 0)};
 
 static void check_zx(void) {
+    const zx_video_surface_t target = {TS_VIDEO_ZX_256X192 | TS_VIDEO_FLAG_HIDE_TSU, 0x60, 0};
     const uint8_t *narrow_a = zx_font5_data['A' - 32];
     uint8_t row;
 
     ts_map_ram_page(ZX_WINDOW_3, 0x60);
     memset((void *)screen, 0, 0x1b00);
-    ts_video_show_page(0x60);
-    zx_set_video_mode(TS_VIDEO_ZX_256X192 | TS_VIDEO_FLAG_HIDE_TSU);
-    ZX_ASSERT(ts_video_select_draw_screen(0x60, screen) == ZX_OK);
-    ZX_ASSERT(zx_show_screen((zx_screen_t)2) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_display_surface(&target) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&target, screen, NULL) == ZX_OK);
     ZX_ASSERT(zx_graphics_begin() == ZX_OK);
-    ZX_ASSERT(zx_show_screen(ZX_SCREEN_1) == ZX_BUSY);
+    ZX_ASSERT(zx_display_page(7) == ZX_BUSY);
     ZX_ASSERT(zx_graphics_end() == ZX_OK);
-    ZX_ASSERT(zx_show_screen(ZX_SCREEN_1) == ZX_OK && ts_memory_get_page3() == 0x60);
+    ZX_ASSERT(zx_display_page(7) == ZX_OK && ts_memory_get_page3() == 0x60);
     ts_console_set_attribute(0x42);
     ZX_ASSERT(zx_console_gotoxy(3, 2) == ZX_OK);
     ZX_ASSERT(zx_console_gotoxy(32, 0) != ZX_OK);
@@ -37,7 +36,7 @@ static void check_zx(void) {
     }
     ZX_ASSERT(screen[0x1843] == 0x42 && screen[0x1845] == 0x42 && screen[0x1860] == 0x42);
     ZX_ASSERT(screen[0x1842] == 0 && screen[0x1846] == 0);
-    ts_video_show_page(0x60);
+    zx_display_page(0x60);
     zx_test_step_shot("zx-printf");
 
     screen[0x1b00] = 0x69;
@@ -78,16 +77,22 @@ static void check_zx(void) {
 }
 
 static void check_text(void) {
-    uint16_t config = TS_VIDEO_TEXT_640X240 | TS_VIDEO_FLAG_HIDE_TSU;
+    const zx_video_surface_t surface = {TS_VIDEO_TEXT_640X240 | TS_VIDEO_FLAG_HIDE_TSU, 0x70, 0};
+    const zx_video_surface_t misaligned = {TS_VIDEO_16C_320X200, 0x71, 0};
+    uint16_t previous_mode;
     ts_map_ram_page(ZX_WINDOW_3, 0x71);
     memset((void *)screen, 0, 2048);
     ts_console_load_text_font(screen);
     ZX_ASSERT(!memcmp((const void *)(screen + 'A' * 8), font_8x8_zx_system['A' - 32], 8));
     ts_map_ram_page(ZX_WINDOW_3, 0x70);
     memset((void *)screen, 0, 0x4000);
-    ZX_ASSERT(zx_set_video_mode(config) == ZX_OK);
-    ZX_ASSERT(ts_video_show_page(0x70) == ZX_OK);
-    ZX_ASSERT(ts_video_select_draw_screen(0x70, screen) == ZX_OK);
+    previous_mode = zx_get_video_mode();
+    ZX_ASSERT(zx_display_surface(&misaligned) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_get_video_mode() == previous_mode);
+    ZX_ASSERT(zx_draw_surface(&surface, screen, NULL) == ZX_OK);
+    ZX_ASSERT(zx_get_video_mode() == previous_mode);
+    ZX_ASSERT(zx_display_surface(&surface) == ZX_OK);
+    ZX_ASSERT(zx_get_video_mode() == surface.mode);
     ZX_ASSERT(zx_console_gotoxy(79, 29) == ZX_OK);
     ZX_ASSERT(zx_console_gotoxy(80, 29) != ZX_OK);
     ZX_ASSERT(zx_console_gotoxy(79, 30) != ZX_OK);
@@ -119,19 +124,17 @@ static void check_text(void) {
 }
 
 static void check_offscreen(void) {
-    ts_surface_t surface = {TS_VIDEO_ZX_256X192, 0x61, screen};
+    const zx_video_surface_t surface = {TS_VIDEO_ZX_256X192, 0x61, 0};
 
     ts_map_ram_page(ZX_WINDOW_3, 0x61);
     memset((void *)screen, 0, 0x1b00);
     zx_set_ink(15);
     zx_set_paper(0);
-    ZX_ASSERT(ts_video_select_draw_surface(&surface) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&surface, screen, NULL) == ZX_OK);
     zx_set_video_mode(TS_VIDEO_16C_256X192 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
-    ts_video_show_page(0x60);
-    ZX_ASSERT(ts_video_select_draw_surface(NULL) != ZX_OK);
-    surface.config = TS_VIDEO_ZX_256X192;
-    surface.base = screen + 1;
-    ZX_ASSERT(ts_video_select_draw_surface(&surface) == ZX_INVALID_ARGUMENT);
+    zx_display_page(0x60);
+    ZX_ASSERT(zx_draw_surface(NULL, NULL, NULL) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_draw_surface(&surface, screen + 1, NULL) == ZX_INVALID_ARGUMENT);
     ZX_ASSERT(zx_console_gotoxy(32, 0) != ZX_OK);
     ZX_ASSERT(zx_console_gotoxy(5, 0) == ZX_OK);
     ZX_ASSERT(zx_console_puts("\tZ") == ZX_OK);
@@ -141,17 +144,20 @@ static void check_offscreen(void) {
 }
 
 int main(void) {
+    const zx_video_surface_t front = {ZX_VIDEO_ZX_256, 5, 0};
+    const zx_video_surface_t back = {ZX_VIDEO_ZX_256, 7, 0};
     zx_test_init();
     ZX_ASSERT(zx_console_clear() == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_console_putc('A') == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_console_puts("A") == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_console_puts("") == ZX_OK && zx_console_puts(NULL) == ZX_INVALID_ARGUMENT);
     ZX_ASSERT(zx_get_video_mode() == ZX_VIDEO_UNKNOWN);
-    ZX_ASSERT(zx_show_screen(ZX_SCREEN_0) == ZX_NOT_INITIALIZED);
-    ZX_ASSERT(ts_video_select_draw_screen(0x60, screen) == ZX_NOT_INITIALIZED);
+    ZX_ASSERT(zx_display_page(0x60) == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_set_video_mode(1) == ZX_INVALID_ARGUMENT);
-    ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_ZX_256) == ZX_OK);
-    ZX_ASSERT(zx_get_video_mode() == ZX_VIDEO_ZX_256);
+    ZX_ASSERT(zx_draw_surface(&back, ZX_WINDOW_3, NULL) == ZX_OK);
+    ZX_ASSERT(ts_memory_get_page3() == 7 && zx_get_video_mode() == ZX_VIDEO_UNKNOWN);
+    ZX_ASSERT(zx_display_surface(&front) == ZX_OK);
+    ZX_ASSERT(ts_memory_get_page3() == 7 && zx_get_video_mode() == ZX_VIDEO_ZX_256);
     ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX |
                                 TS_VIDEO_FLAG_HIDE_TSU) == ZX_OK);
     ZX_ASSERT(zx_get_video_mode() == (TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU));

@@ -194,12 +194,17 @@ if (zx_ram_heap_destroy(&heap) != ZX_OK) return 1;
 CLEAR и XOR. `zx_draw_fill_rect()` и `zx_draw_clear_rect()` работают с прямоугольными областями, а
 `zx_read_pixel_index()` читает пиксель выбранной поверхности.
 
-Для смены видеорежима подготовьте карты и включите менеджер страниц, как описано выше.
-`zx_set_video_mode()` подбирает отображение экранных страниц в незакреплённых окнах. Пример очищает
-текущий видимый экран и рисует на нём в режиме ZX 256.
+Задайте режим дисплея, подготовьте доступные для записи окна CPU и выберите экран для
+рисования. В примере страница 5 уже отображена в память CPU, как при запуске из BASIC.
 
 ```c
-if (zx_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 1;
+const zx_video_surface_t screen = {
+    .mode = ZX_VIDEO_ZX_256,
+    .page0 = 5,
+};
+
+if (zx_display_surface(&screen) != ZX_OK ||
+    zx_draw_surface(&screen, ZX_WINDOW_1, NULL) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 if (zx_console_clear() != ZX_OK) return 1;
@@ -209,9 +214,10 @@ zx_draw_circle(96, 64, 16);
 if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
-Для двойной буферизации заранее отобразите страницы обоих экранов как доступную для записи RAM.
-`zx_select_draw_screen()` выбирает, куда рисовать, а `zx_show_screen()` переключает видимый экран.
-Через `bc_select_draw_surface()` можно рисовать в отображённые страницы другого формата. В режиме ZX
+Для двойной буферизации выберите скрытую поверхность для рисования, подготовьте кадр и
+передайте тот же дескриптор в `zx_display_surface()`. Если режим уже установлен, можно
+передать первую физическую страницу в `zx_display_page()`. Страницы аппаратного экрана возвращает
+`bc_screen_surface()`. В режиме ZX
 графические примитивы меняют битовую карту, сохраняя атрибуты. [video.h](include/baseconf/video.h) ·
 [graphics.h](../common/include/zx/graphics.h)
 
@@ -237,7 +243,13 @@ lease: подготавливайте банковые ресурсы резид
 целые без stdio. Пример использует сборку с поддержкой текста Evo 80×25.
 
 ```c
-if (zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK) return 1;
+/* В этом примере W3 свободно для страницы экрана. */
+const zx_video_surface_t text = {
+    .mode = BC_VIDEO_EVO_TEXT_80,
+    .page0 = 8,
+};
+if (zx_display_surface(&text) != ZX_OK ||
+    zx_draw_surface(&text, ZX_WINDOW_3, NULL) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 zx_console_size_t grid;

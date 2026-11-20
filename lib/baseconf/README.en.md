@@ -190,12 +190,17 @@ to the application. Draw pixels, lines, circles and ellipses with SET, CLEAR or 
 `zx_draw_fill_rect()` and `zx_draw_clear_rect()` for rectangular areas and `zx_read_pixel_index()`
 to inspect a pixel on the selected draw surface.
 
-Before changing video modes, prepare both maps and enable the page manager as described above.
-`zx_set_video_mode()` maps screen pages into unpinned windows as needed. This example clears and
-draws on the currently displayed screen in ZX 256 mode.
+Set the display mode, prepare writable CPU mappings, then select the draw screen. This example
+assumes BASIC's writable mapping of ZX screen 0 (page 5) is already in place.
 
 ```c
-if (zx_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 1;
+const zx_video_surface_t screen = {
+    .mode = ZX_VIDEO_ZX_256,
+    .page0 = 5,
+};
+
+if (zx_display_surface(&screen) != ZX_OK ||
+    zx_draw_surface(&screen, ZX_WINDOW_1, NULL) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 if (zx_console_clear() != ZX_OK) return 1;
@@ -205,9 +210,10 @@ zx_draw_circle(96, 64, 16);
 if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
-For double buffering, map both screens into writable RAM first. `zx_select_draw_screen()` picks the
-draw target, and `zx_show_screen()` selects the displayed screen. Use `bc_select_draw_surface()` to
-draw to mapped pages in a different format from the displayed mode. In ZX mode, primitives update
+For double buffering, select the back surface for drawing, draw the frame, then pass the same
+descriptor to `zx_display_surface()`. If the mode is already set, use `zx_display_page()`
+with the first physical page. Obtain the physical pages of a hardware screen from
+`bc_screen_surface()`. In ZX mode, primitives update
 the bitmap and preserve the attributes. [video.h](include/baseconf/video.h) ·
 [graphics.h](../common/include/zx/graphics.h)
 
@@ -233,7 +239,13 @@ z88dk raw font-pointer IOCTL reports unsupported. `zx_console_printf()` formats 
 integers without stdio. This example uses an archive built with Evo 80×25 text support.
 
 ```c
-if (zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK) return 1;
+/* W3 is available for the screen page in this example. */
+const zx_video_surface_t text = {
+    .mode = BC_VIDEO_EVO_TEXT_80,
+    .page0 = 8,
+};
+if (zx_display_surface(&text) != ZX_OK ||
+    zx_draw_surface(&text, ZX_WINDOW_3, NULL) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 zx_console_size_t grid;

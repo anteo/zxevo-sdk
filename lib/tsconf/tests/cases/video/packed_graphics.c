@@ -5,10 +5,10 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 int main(void) {
-    const ts_surface_t canvas16 = {TS_VIDEO_16C_256X192, 0x50, NULL};
-    const ts_surface_t canvas256 = {TS_VIDEO_256C_256X192, 0x40, NULL};
-    const ts_surface_t misaligned256 = {TS_VIDEO_256C_256X192, 0x48, NULL};
-    const ts_surface_t text = {TS_VIDEO_TEXT_512X192, 0x41, w3};
+    const zx_video_surface_t canvas16 = {TS_VIDEO_16C_256X192, 0x50, 0};
+    const zx_video_surface_t canvas256 = {TS_VIDEO_256C_256X192, 0x40, 0};
+    const zx_video_surface_t misaligned256 = {TS_VIDEO_256C_256X192, 0x48, 0};
+    const zx_video_surface_t text = {TS_VIDEO_TEXT_512X192, 0x41, 0};
     uint8_t index = 0x69;
 
     zx_test_init();
@@ -21,7 +21,7 @@ int main(void) {
     memset((void *)w3, 0, 0x4000);
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     w3[0] = 0x69;
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas16) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas16, NULL, NULL) == ZX_OK);
     zx_set_ink(0xfb);
     zx_draw_plot(1, 63);
     zx_set_ink(3);
@@ -52,8 +52,8 @@ int main(void) {
     ts_map_ram_page(ZX_WINDOW_3, 0x41);
     memset((void *)w3, 0, 0x4000);
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas256) == ZX_OK);
-    ZX_ASSERT(ts_video_select_draw_surface(&misaligned256) != ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas256, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&misaligned256, NULL, NULL) != ZX_OK);
     zx_set_ink(0xa5);
     zx_draw_plot(511, 31);
     zx_set_ink(0xb7);
@@ -67,7 +67,7 @@ int main(void) {
     ts_map_ram_page(ZX_WINDOW_3, 0x40);
     ZX_ASSERT(w3[0x3fff] == 0xa5);
     ts_map_ram_page(ZX_WINDOW_3, 0x41);
-    ZX_ASSERT(ts_video_select_draw_surface(&text) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&text, w3, NULL) == ZX_OK);
     ZX_ASSERT(zx_read_pixel_index(0, 0, &index) != ZX_OK && index == 0xb7);
     zx_draw_plot(0, 0);
     ZX_ASSERT(w3[0] == 0 && w3[0x1fd] == 0 && w3[0x1fe] == 0xb7 && w3[0x1ff] == 0xb7 &&
@@ -82,7 +82,7 @@ int main(void) {
     zx_test_step_marker("printf-without-stdio");
 
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas256) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas256, NULL, NULL) == ZX_OK);
     zx_set_ink(0xcc);
     zx_draw_fill_rect(509, 31, 32767, 2);
     zx_set_ink(0xdd);

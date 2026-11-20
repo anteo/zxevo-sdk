@@ -42,7 +42,7 @@ static void check_draw(void) {
     uint8_t scanline;
     uint8_t glyph = 0;
 
-    status = zx_set_video_mode(BC_VIDEO_ZX_256);
+    status = bc_case_select_video_mode(BC_VIDEO_ZX_256);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) return;
     status = bc_select_screen(ZX_SCREEN_0);

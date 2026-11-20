@@ -16,7 +16,7 @@ uint8_t iff_enabled(void);
 void sample_border_colors(uint8_t *output) __z88dk_fastcall;
 
 int main(void) {
-    bc_surface_t surface = bc_screen_surface(BC_VIDEO_ATM_320, ZX_SCREEN_1);
+    zx_video_surface_t surface = bc_screen_surface(BC_VIDEO_ATM_320, ZX_SCREEN_1);
     bc_window_lease_t lease;
     bc_window_config_t config;
     bc_video_output_t output;
@@ -31,9 +31,7 @@ int main(void) {
         ZX_ASSERT(bc_palette_load_rgb222(invalid) == ZX_INVALID_ARGUMENT);
         ZX_ASSERT(bc_palette_load_rgb222(colors) == ZX_UNSAFE_CONTEXT); /* AVR unknown */
         ZX_ASSERT(zx_avr_window_select(ZX_AVR_WINDOW_VERSION) == ZX_OK);
-        ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_2, surface.page0) == ZX_OK);
-        ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_3, surface.page1) == ZX_OK);
-        ZX_ASSERT(bc_select_draw_surface(&surface) == ZX_OK);
+        ZX_ASSERT(zx_draw_surface(&surface, ZX_WINDOW_2, ZX_WINDOW_3) == ZX_OK);
         ZX_ASSERT(zx_graphics_begin() == ZX_OK);
         ZX_ASSERT(bc_palette_load_rgb222(colors) == ZX_BUSY);
         ZX_ASSERT(zx_graphics_end() == ZX_OK);

@@ -111,7 +111,7 @@ A test is a normal C program with `main()`:
 #include <zx/graphics.h>
 #include "bc_case.h"
 
-static const bc_surface_t surfaces[] = {
+static const uint8_t surfaces[][3] = {
     {BC_VIDEO_ZX_256, 5, 5},
     /* ... */
 };
@@ -123,7 +123,7 @@ int main(void) {
     }
 
     ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-    if (zx_set_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
+    if (bc_case_select_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
         zx_set_ink(7);
         ZX_ASSERT(zx_console_clear() == ZX_OK);
         zx_draw_line(0, 0, 639, 199);
@@ -152,8 +152,8 @@ int main(void) {
 | `zx_test_step_skip(name, reason)`                | SKIP step                                             |
 | `zx_test_finish()`                               | final verdict; the CPU stays in a loop                |
 
-Video tests select screen 0 once for reproducible screenshots. Each call to `zx_set_video_mode()`
-prepares the screen's draw surface in the available CPU windows.
+Video tests select screen 0 once for reproducible screenshots. `bc_case_select_video_mode()`
+sets the display mode and prepares the fixture's CPU mappings for drawing.
 
 ### Result channels
 
@@ -169,7 +169,7 @@ Non-graphics checks use one of three channels:
 
 ```c
 /* table or structure */
-static const bc_surface_t table[] = { /* ... */ };
+static const uint8_t table[][3] = { /* ... */ };
 zx_test_step_data(NULL, table, sizeof(table));
 
 /* text */

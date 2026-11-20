@@ -166,6 +166,10 @@ static void show_ship(uint16_t y) {
 }
 
 int main(void) {
+    const zx_video_surface_t basic_screen = {
+        .mode = ZX_VIDEO_ZX_256,
+        .page0 = 5,
+    };
     const ts_sprite_t skip_layer = {TS_SPRITE_LEAP, 0, 0};
     uint8_t saved_w3 = ts_memory_get_page3();
     uint16_t frame;
@@ -206,8 +210,7 @@ int main(void) {
     ts_map_ram_page(ZX_WINDOW_3, saved_w3);
     ts_video_set_palette_select(15);
     ts_video_set_scroll(0, 0);
-    zx_set_video_mode(ZX_VIDEO_ZX_256);
-    zx_show_screen(ZX_SCREEN_0);
+    zx_display_surface(&basic_screen);
     zx_set_border_color(COLOR_WHITE);
     return status;
 }

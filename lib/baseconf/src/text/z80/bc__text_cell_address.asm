@@ -3,7 +3,7 @@
 SECTION code_clib
 PUBLIC bc__text_cell_address
 
-; IX = caller's frame after saving IX. SDCC byte arguments and bc_surface_t:
+; IX = caller's frame after saving IX. SDCC byte arguments and bc__draw_surface_t:
 ; mode +4, surface { mode +5, page0 +6, page1 +7 }, x +8, y +9.
 ; Return A = character page, DE = character offset. IX/IY are preserved.
 ;

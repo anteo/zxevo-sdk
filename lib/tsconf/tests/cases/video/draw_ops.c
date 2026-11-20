@@ -4,9 +4,9 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 static void check_zx(void) {
-    const ts_surface_t bitmap = {TS_VIDEO_ZX_256X192, 5, w3};
+    const zx_video_surface_t bitmap = {TS_VIDEO_ZX_256X192, 5, 0};
     ts_map_ram_page(ZX_WINDOW_3, 5);
-    ZX_ASSERT(ts_video_select_draw_surface(&bitmap) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&bitmap, w3, NULL) == ZX_OK);
     w3[0] = 0;
     w3[0x100] = 0;
     w3[0x200] = 0;
@@ -33,8 +33,8 @@ static void check_zx(void) {
 }
 
 static void check_group(void) {
-    const ts_surface_t canvas = {TS_VIDEO_16C_256X192, 0x50, 0};
-    const ts_surface_t other = {TS_VIDEO_256C_256X192, 0x40, 0};
+    const zx_video_surface_t canvas = {TS_VIDEO_16C_256X192, 0x50, 0};
+    const zx_video_surface_t other = {TS_VIDEO_256C_256X192, 0x40, 0};
     ts_window_lease_t other_lease;
     uint8_t index = 0x69;
 
@@ -45,7 +45,7 @@ static void check_group(void) {
     w3[0] = 0;
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     w3[0] = 0x69;
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
     zx_set_paper(7);
 
     ZX_ASSERT(ts_window_acquire(ZX_WINDOW_3, 0x7d, &other_lease) == ZX_OK);
@@ -61,7 +61,7 @@ static void check_group(void) {
     ZX_ASSERT(zx_graphics_begin() == ZX_OK);
     ZX_ASSERT(zx_graphics_begin() == ZX_OK);
     ZX_ASSERT(zx_shutdown() == ZX_BUSY);
-    ZX_ASSERT(ts_video_select_draw_surface(&other) == ZX_BUSY);
+    ZX_ASSERT(zx_draw_surface(&other, NULL, NULL) == ZX_BUSY);
     ZX_ASSERT(ts_window_acquire(ZX_WINDOW_3, 0x7d, &other_lease) == ZX_BUSY);
     zx_set_ink(0xf3);
     zx_draw_plot_xor(0, 0);
@@ -81,9 +81,9 @@ static void check_group(void) {
 }
 
 static void check_shapes(void) {
-    const ts_surface_t canvas = {TS_VIDEO_256C_256X192, 0x40, 0};
+    const zx_video_surface_t canvas = {TS_VIDEO_256C_256X192, 0x40, 0};
 
-    ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
+    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
     ts_map_ram_page(ZX_WINDOW_3, 0x40);
     w3[0] = 0;
     w3[1] = 0xb3;

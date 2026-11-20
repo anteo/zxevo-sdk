@@ -34,7 +34,7 @@ zx_status_t zx_ram_heap_alloc(zx_ram_heap_t *heap, uint16_t size, zx_ram_heap_pt
     zx_status_t status;
 
     if (!heap || !heap->pool || !heap->pages || !pointer || !size || !heap->page_capacity ||
-        heap->window < ZX_WINDOW_1 || heap->window > ZX_WINDOW_3)
+        heap->window == ZX_WINDOW_0 || !ZX__WINDOW_VALID(heap->window))
         return ZX_INVALID_ARGUMENT;
     if (heap->mapping_state != ZX_RAM_HEAP_UNMAPPED) return ZX_BUSY;
     if (heap->window == ZX_WINDOW_3) maximum_size -= 4u;

@@ -4,8 +4,17 @@
 #include <stdint.h>
 #include <zx/status.h>
 
-/* The four consecutive 16 KiB windows in the Z80 address space. */
-typedef enum { ZX_WINDOW_0 = 0, ZX_WINDOW_1 = 1, ZX_WINDOW_2 = 2, ZX_WINDOW_3 = 3 } zx_window_t;
+/* Base addresses of the four 16 KiB CPU windows. A required window
+ * argument accepts address zero as W0 where the platform supports it. */
+typedef volatile void *zx_window_t;
+
+#define ZX_WINDOW_0 ((zx_window_t)0x0000u)
+#define ZX_WINDOW_1 ((zx_window_t)0x4000u)
+#define ZX_WINDOW_2 ((zx_window_t)0x8000u)
+#define ZX_WINDOW_3 ((zx_window_t)0xc000u)
+
+/* Convert a valid window address to a bit in a window mask. */
+#define ZX_WINDOW_MASK(window) (1u << ((uintptr_t)(window) >> 14))
 
 typedef uint8_t zx_ram_page_t;
 

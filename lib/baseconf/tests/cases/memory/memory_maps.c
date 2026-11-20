@@ -51,8 +51,8 @@ static void check_pinned_maps(void) {
 
     /* W3 is scratch space. Pin it with differing maps to exercise the
      * rejection without risking either of the resident windows. */
-    bc_set_pinned_windows((uint8_t)(resident | (1u << ZX_WINDOW_3)));
-    ZX_ASSERT(bc_get_pinned_windows() == (resident | (1u << ZX_WINDOW_3)));
+    bc_set_pinned_windows((uint8_t)(resident | ZX_WINDOW_MASK(ZX_WINDOW_3)));
+    ZX_ASSERT(bc_get_pinned_windows() == (resident | ZX_WINDOW_MASK(ZX_WINDOW_3)));
     ZX_ASSERT(bc_select_map(BC_MAP_1) == ZX_UNSAFE_CONTEXT);
     ZX_ASSERT(bc_configure_window(BC_MAP_1, ZX_WINDOW_2, &alternate) == ZX_UNSAFE_CONTEXT);
     ZX_ASSERT(bc_set_page_manager_enabled(1) == ZX_UNSAFE_CONTEXT);

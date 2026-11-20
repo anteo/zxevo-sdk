@@ -16,12 +16,25 @@ zx_status_t bc__video_sync_cache(void) {
     if (BC_PAGING_ACTIVE_MAP(bc_readback_register(0x0a)) != map) return ZX_UNSAFE_CONTEXT;
     fpga_config = bc_readback_register(0x0c);
 
-    status = bc__video_find_page_windows((bc_map_t)map, &bc_video_draw_surface_state,
-                                         BC_VIDEO_SKIP_WINDOW_ERRORS, windows);
+    if (bc_video_surface_selected) {
+        windows[0] = bc_video_draw_windows[0];
+        windows[1] = bc_video_draw_windows[1];
+        status = bc__video_check_page_window((bc_map_t)map, windows[0],
+                                             bc_video_draw_surface_state.page0);
+        if (status != ZX_OK) return status;
+        if (windows[1] != windows[0]) {
+            status = bc__video_check_page_window((bc_map_t)map, windows[1],
+                                                 bc_video_draw_surface_state.page1);
+            if (status != ZX_OK) return status;
+        }
+    } else {
+        status = bc__video_find_page_windows((bc_map_t)map, &bc_video_draw_surface_state,
+                                             windows);
+    }
     bc_video_cached_map = map;
     bc_video_cached_manager_enabled = (uint8_t)((fpga_config & 0x20u) != 0u);
-    bc_video_page0_base = (uint16_t)windows[0] << 14;
-    bc_video_page1_base = (uint16_t)windows[1] << 14;
+    bc_video_page0_base = (uintptr_t)windows[0];
+    bc_video_page1_base = (uintptr_t)windows[1];
     bc_video_cached_width = bc__video_width();
     bc_video_cached_height = bc__video_height();
     bc_video_cache_valid = 1;

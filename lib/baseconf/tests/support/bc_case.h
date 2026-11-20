@@ -8,4 +8,7 @@
  * BaseConf initialization fails so the host receives a result. */
 zx_status_t bc_case_init(void);
 
+/* Configure the mode and prepare the test fixture's screen 0 for drawing. */
+zx_status_t bc_case_select_video_mode(bc_video_mode_t mode);
+
 #endif

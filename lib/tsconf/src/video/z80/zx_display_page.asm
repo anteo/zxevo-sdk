@@ -1,6 +1,6 @@
-        MODULE ts_video_show_page
+        MODULE zx_display_page
 SECTION code_clib
-PUBLIC _ts_video_show_page
+PUBLIC _zx_display_page
 EXTERN _ts__video_set_page
 EXTERN ts_video_config
 EXTERN ts__graphics_group_depth
@@ -12,9 +12,11 @@ EXTERN ts__graphics_group_depth
 ; if ((page & alignment_mask[config & 3]) != 0) return ZX_INVALID_ARGUMENT;
 ; write_page(page); return ZX_OK;
 ;
-; Fastcall L=page, L=status. AF/BC/DE/HL volatile, IX/IY preserved.
-_ts_video_show_page:
-        ld e,l
+; SDCC page byte at SP+2, L=status. AF/BC/DE/HL volatile, IX/IY preserved.
+_zx_display_page:
+        ld hl,2
+        add hl,sp
+        ld e,(hl)
         ld a,(ts__graphics_group_depth)
         or a
         ld l,2                       ; ZX_BUSY

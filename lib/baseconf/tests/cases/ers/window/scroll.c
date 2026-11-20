@@ -57,7 +57,7 @@ static void check_scroll(void) {
     uint8_t row;
     uint8_t scanline;
 
-    status = zx_set_video_mode(BC_VIDEO_ZX_256);
+    status = bc_case_select_video_mode(BC_VIDEO_ZX_256);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) return;
     status = bc_select_screen(ZX_SCREEN_0);

@@ -22,7 +22,7 @@ int main(void) {
         /* Make an unintended cache refresh visible. */
         ZX_ASSERT(bc_set_shadow_ports_override(1) == ZX_OK);
         z80_outp(0xb7f7, (uint8_t)~51u);
-        ZX_ASSERT(bc_readback_register((uint8_t)(4u * map + ZX_WINDOW_2)) == (uint8_t)~51u);
+        ZX_ASSERT(bc_readback_register((uint8_t)(4u * map + 2u)) == (uint8_t)~51u);
         ZX_ASSERT(bc_set_readback_backend(BC_READBACK_BE) == ZX_UNSAFE_CONTEXT);
         ZX_ASSERT(rejected_probes == 1 && selected_during_probe == BC_READBACK_BD);
         ZX_ASSERT(bc_get_readback_backend() == BC_READBACK_BD);
