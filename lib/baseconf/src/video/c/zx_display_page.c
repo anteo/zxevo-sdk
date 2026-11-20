@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "../internal.h"
 #include "../../memory/internal.h"
 
 zx_status_t zx_display_page(zx_ram_page_t page) {

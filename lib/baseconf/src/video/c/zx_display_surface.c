@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "../internal.h"
 #include "../../memory/internal.h"
 
 zx_status_t zx_display_surface(const zx_video_surface_t *surface) {

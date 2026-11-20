@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "../internal.h"
 
 zx_status_t bc__video_find_screen(uint16_t mode, zx_ram_page_t page, zx_screen_t *screen) {
     zx_video_surface_t front;

@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "../internal.h"
 
 /* The low nibble selects the first page, the high nibble the second.
  * A repeated page identifies a single-page layout. */

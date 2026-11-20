@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "../internal.h"
 #include "../../memory/internal.h"
 
 zx_status_t bc__video_check_page_window(bc_map_t map, zx_window_t window, zx_ram_page_t page) {
