@@ -22,6 +22,7 @@ class CheckSummary:
     errors: int = 0
     build_failures: int = 0
     suite_errors: int = 0
+    pending: int | None = None
     total_outputs: int = 0
     failed_runs: list[str] = field(default_factory=list)
 
@@ -44,6 +45,9 @@ class CheckSummary:
         if failed:
             failed_text = console_label(failed_text, style="FAIL")
         summary = f"{console_label('Total')}: {self.started} run, {passed_text}, {failed_text}"
+        if self.pending is not None:
+            pending_text = f"{self.pending} pending"
+            summary += ", " + (console_label(pending_text, style="SKIP") if self.pending else pending_text)
         if self.build_failures:
             summary += ", " + console_label(f"{self.build_failures} build failure(s)", style="FAIL")
         if self.suite_errors:

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from tools.test_runner.discovery import discover_suites
 from tools.test_runner.emulator import find_zesarux
 from tools.test_runner.history import (
-    HISTORY_PATH, load_failures, load_pending, open_history, record_outcome, start_plan,
+    HISTORY_PATH, count_pending, load_failures, load_pending, open_history, record_outcome, start_plan,
 )
 from tools.test_runner.suites.asm import AsmTestSuite
 from tools.test_runner.suites.base import CheckSummary
@@ -147,6 +147,11 @@ def run_combined(args, selected, scope):
             summary.suite_errors += 1
             print(f"{console_label('error', stream=sys.stderr)}: {HISTORY_PATH}: {error}",
                   file=sys.stderr)
+    try:
+        summary.pending = count_pending(scope)
+    except sqlite3.Error as error:
+        summary.suite_errors += 1
+        print(f"{console_label('error', stream=sys.stderr)}: {HISTORY_PATH}: {error}", file=sys.stderr)
     summary.print_report(args.update)
     return summary.exit_code
 

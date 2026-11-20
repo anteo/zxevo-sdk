@@ -61,6 +61,15 @@ def load_pending(scope):
     return rows[0][0], {row[1:] for row in rows}
 
 
+def count_pending(scope):
+    if not HISTORY_PATH.is_file():
+        return 0
+    with closing(open_history()) as connection:
+        return connection.execute(
+            "SELECT COUNT(*) FROM pending_runs WHERE scope = ?", (scope,)
+        ).fetchone()[0]
+
+
 def start_plan(connection, scope, runs):
     plan_id = uuid4().hex
     with connection:
