@@ -3,11 +3,10 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-This directory contains the BaseConf test cases, their machine adapter and the older TAP probes. The
-shared [ZX Evolution test harness](../../../tools/test_runner/README.en.md) drives the emulator and
-compares results. [Common library cases](../../common/tests/README.en.md) run separately on both
-machines. The console TAP tests are at the end. The font benchmark lives in
-[`../bench/README.en.md`](../bench/README.en.md).
+This directory contains the BaseConf test cases, profiles and runner targets. The shared
+[ZX Evolution test harness](../../../tools/test_runner/README.en.md) drives the emulator and compares
+results. [Common library cases](../../common/tests/README.en.md) run on both machines. The font
+benchmark lives in [`../bench/README.en.md`](../bench/README.en.md).
 
 ## Test framework
 
@@ -37,7 +36,7 @@ uses the emulator's own ROM.
 ```
 lib/baseconf/tests/
   profiles.toml          BaseConf settings and composable build layers
-  Makefile               console TAP and test runner targets
+  Makefile               test runner targets
   cases/
     core/smoke.c                    framework self-check
     core/smoke.toml                 optional case metadata
@@ -385,10 +384,3 @@ Run `make -C lib/baseconf/tests framework-list` for the current case list. Selec
 Shared cases for audio, Kempston mouse, UART, Nemo IDE, ZX attributes, SD card data, AVR version
 records and the RAM pool/heap are maintained under `lib/common/tests`.
 [Common suite](../../common/tests/README.en.md)
-
-## Console TAP tests
-
-`make -C lib/baseconf/tests run TEST_MODE=0 TEST_FONT=5 TEST_SCROLL=1` builds and runs the ZX256
-`zx_console_printf` TAP test in ZEsarUX. `make -C lib/baseconf/tests run-crt TEST_MODE=0` checks
-ordinary CRT `printf` through the generic console. The TAP reports and screenshots are written under
-`tests/build/`.

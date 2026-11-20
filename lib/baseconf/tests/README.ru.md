@@ -3,8 +3,8 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-Здесь находятся кейсы BaseConf, адаптер машины и отдельные TAP для проверки консоли. Общий раннер
-собирает кейсы, загружает их в ZEsarUX через ZRCP и сравнивает результаты, полученные через ZXHost.
+Здесь находятся кейсы BaseConf, профили и цели запуска. Общий раннер собирает кейсы, загружает их
+в ZEsarUX через ZRCP и сравнивает результаты, полученные через ZXHost.
 [Инфраструктура](../../../tools/test_runner/README.ru.md) ·
 [Общие кейсы](../../common/tests/README.ru.md) · [Замеры вывода шрифтов](../bench/README.ru.md)
 
@@ -198,9 +198,3 @@ python3 tools/test_runner/runner.py baseconf clean [--case PATH]
 пределом 2 000 000 итераций. Параллельные запуски должны использовать разные порты ZRCP. Некоторые
 источники `newirq`, запись Flash и страничная EEPROM AVR зависят от поддержки оборудования в
 выбранной сборке эмулятора.
-
-## TAP для консоли
-
-`make -C lib/baseconf/tests run TEST_MODE=0 TEST_FONT=5 TEST_SCROLL=1` собирает и запускает
-отдельный TAP с `zx_console_printf` в ZX256. `make -C lib/baseconf/tests run-crt TEST_MODE=0`
-проверяет обычный `printf` через CRT. Отчёты и снимки этих запусков сохраняются в `tests/build/`.
