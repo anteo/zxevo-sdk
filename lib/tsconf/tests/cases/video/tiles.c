@@ -43,7 +43,7 @@ int main(void) {
 
     zx_test_init();
     ts_memory_set_cache(0);
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_video_set_tsu_config(0);
     prepare_atlases();
 
@@ -71,7 +71,7 @@ int main(void) {
     ts_video_set_tile0_scroll(0x0300, 0x03fe);
     ts_video_set_tile1_scroll(0x01f8, 0x0108);
     ts_video_set_tsu_config(TS_TSU_TILE0 | TS_TSU_TILE1);
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX);
     zx_test_step_shot("tile-layers");
 
     ts_video_set_tsu_config(TS_TSU_TILE0 | TS_TSU_TILE0_INDEX0 | TS_TSU_TILE1 |

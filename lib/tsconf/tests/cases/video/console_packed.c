@@ -8,7 +8,7 @@ static volatile uint8_t *const screen = (volatile uint8_t *)SCREEN_BASE;
 extern const uint8_t font_8x8_zx_system[96][8];
 
 static void check_packed16(void) {
-    const ts_surface_t canvas = {TS_VIDEO_16C | TS_VIDEO_320X200, 0x50, NULL};
+    const ts_surface_t canvas = {TS_VIDEO_16C_320X200, 0x50, NULL};
     const uint8_t *glyph = zx_font5_data['A' - 32];
     zx_console_size_t grid;
     uint8_t row, x;
@@ -44,7 +44,7 @@ static void check_packed16(void) {
 }
 
 static void check_packed256(void) {
-    const ts_surface_t canvas = {TS_VIDEO_256C | TS_VIDEO_320X240, 0x40, NULL};
+    const ts_surface_t canvas = {TS_VIDEO_256C_320X240, 0x40, NULL};
     uint8_t row, x;
 
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);

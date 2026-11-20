@@ -42,7 +42,7 @@ int main(void) {
     intrinsic_di();
     bc_ers_set_profile(BC_ERS_NONE);
     bc_set_pinned_windows(pinned);
-    if (bc_set_video_mode(CONSOLE_TEST_MODE) != ZX_OK) return 2;
+    if (zx_set_video_mode(CONSOLE_TEST_MODE) != ZX_OK) return 2;
 #if CONSOLE_TEST_MODE != 4
     if (zx_show_screen(ZX_SCREEN_0) != ZX_OK) return 3;
 #endif

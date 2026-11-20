@@ -102,7 +102,7 @@ static void check_edges(bc_video_mode_t mode, const char *tag) {
     zx_video_size_t size = {0, 0};
     uint8_t packed = mode == BC_VIDEO_PENTAGON_256 || mode == BC_VIDEO_ATM_320;
     uint8_t up_paper = mode == BC_VIDEO_ZX_256 ? INITIAL_PAPER : SCROLL_PAPER;
-    zx_status_t status = bc_set_video_mode(mode);
+    zx_status_t status = zx_set_video_mode(mode);
     ZX_ASSERT(status == ZX_OK);
     if (status == ZX_OK) {
         ZX_ASSERT(zx_graphics_get_size(&size) == ZX_OK);
@@ -125,7 +125,7 @@ static void show_shift(bc_video_mode_t mode, const char *tag, const scroll_case_
                        uint8_t direction) {
     int width, height, x, y, target_x, target_y;
     zx_video_size_t size = {0, 0};
-    if (bc_set_video_mode(mode) != ZX_OK) {
+    if (zx_set_video_mode(mode) != ZX_OK) {
         zx_test_step_skip(tag, "video mode unavailable");
         return;
     }

@@ -30,7 +30,8 @@ static zx_status_t plan_surface_windows(bc_map_t map, const bc_surface_t *surfac
     return ZX_OK;
 }
 
-zx_status_t bc_set_video_mode(bc_video_mode_t mode) {
+zx_status_t zx_set_video_mode(uint16_t mode_number) {
+    bc_video_mode_t mode;
     bc_surface_t surface;
     zx_window_t replacements[2];
     zx_status_t status;
@@ -40,7 +41,8 @@ zx_status_t bc_set_video_mode(bc_video_mode_t mode) {
     uint8_t sys;
     uint8_t video;
 
-    if (mode > BC_VIDEO_EVO_TEXT_80) return ZX_INVALID_ARGUMENT;
+    if (mode_number > BC_VIDEO_EVO_TEXT_80) return ZX_INVALID_ARGUMENT;
+    mode = (bc_video_mode_t)mode_number;
 #ifndef BASECONF_VIDEO_ALL_MODES
     if (!bc__video_mode_enabled(mode)) return ZX_UNSUPPORTED;
 #endif
@@ -112,7 +114,7 @@ zx_status_t bc_set_video_mode(bc_video_mode_t mode) {
         z80_outp(bc__video_system_port(0), (uint8_t)((sys & 0x08u) | video));
         bc__mem_shadow_scope_end(bf);
     }
-    if (bc_get_video_mode() != mode) return ZX_UNSAFE_CONTEXT;
+    if (zx_get_video_mode() != mode) return ZX_UNSAFE_CONTEXT;
 
     if (replacements[0] || replacements[1]) {
         bc_window_config_t config = {BC_RAM, surface.page0, 0, 0};

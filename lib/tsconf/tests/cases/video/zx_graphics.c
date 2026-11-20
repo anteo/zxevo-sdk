@@ -12,7 +12,7 @@ static uint8_t pixel(uint8_t x, uint8_t y) {
 
 int main(void) {
     uint8_t i, index;
-    const ts_surface_t surface = {TS_VIDEO_ZX, 0x60, screen};
+    const ts_surface_t surface = {TS_VIDEO_ZX_256X192, 0x60, screen};
 
     zx_test_init();
     ts_map_ram_page(ZX_WINDOW_3, 0x60);

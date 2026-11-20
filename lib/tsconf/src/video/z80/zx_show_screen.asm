@@ -4,7 +4,7 @@ PUBLIC _zx_show_screen
 IFDEF TSCONF_VIDEO_ZX
 EXTERN ts_video_config
 EXTERN ts__graphics_group_depth
-EXTERN _ts_video_set_page
+EXTERN _ts__video_set_page
 ENDIF
 
 ; Show a standard ZX screen through VPage, leaving CPU paging and the
@@ -41,7 +41,7 @@ IFDEF TSCONF_VIDEO_ZX
         add a,a
         add a,5
         ld l,a
-        call _ts_video_set_page
+        call _ts__video_set_page
         ld l,0                       ; ZX_OK
         ret
 @unsupported:

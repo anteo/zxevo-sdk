@@ -59,8 +59,7 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
 ```
 
 `TSCONF_BUILD` позволяет хранить сборки с разными настройками отдельно. Выбор поверхности и
-`ts_video_set_mode` отклоняют исключённый режим рисования. Прямая запись видеорегистров остаётся
-доступна.
+`zx_set_video_mode` отклоняют режимы, исключённые из сборки.
 
 При работе FPGA с опциональным растром 60 Гц собирайте архив с `TSCONF_VIDEO_60HZ=1`. Флаг задаёт
 геометрию в библиотеке. Тайминг FPGA настраивается отдельно. В этом режиме у растра `360×288` 240
@@ -134,8 +133,8 @@ PT3, эффектами AYFX и сэмплами PCM8/Covox.
   [Общая память](../common/include/zx/memory.h)
 - Общие заголовки также предоставляют PT3, Covox, мышь Kempston, управление IRQ Z80 и Nemo IDE PIO в
   сборках `IDE_HDD`. [Общие API](../common/README.ru.md)
-- `ts_video_set_config`, `ts_video_set_page` и `ts_video_set_scroll` задают режим дисплея, базовую
-  страницу и девятибитовые смещения. В заголовке есть функции для PalSel, Border, TSConfig и SGPage.
+- `zx_set_video_mode`, `ts_video_show_page` и `ts_video_set_scroll` задают режим дисплея,
+  физическую страницу и девятибитовые смещения. В заголовке есть функции для PalSel, Border, TSConfig и SGPage.
   `ts_video_upload_sprites(ZX_WINDOW_3, first, sprites, count)` загружает дескрипторы,
   `ts_video_upload_palette(ZX_WINDOW_3, first, colors, count)` — цвета. Источник NULL очищает
   выбранные записи. Функции включают FMAPS в первых 4 КиБ выбранного окна CPU, записывают данные,
@@ -156,13 +155,13 @@ PT3, эффектами AYFX и сэмплами PCM8/Covox.
 
 Консоль и примитивы используют одну поверхность рисования. На TSConf `zx_init()` не требует
 настройки. `zx_shutdown()` сбрасывает выбранную поверхность после освобождения окон и завершения
-групп рисования. Настройки видимого экрана продолжают действовать. `ts_video_set_mode` настраивает
-экран и рисование на той же поверхности. `ts_video_select_draw_screen` выбирает страницу с последней
-геометрией экрана, `ts_video_select_draw_surface` задаёт свою геометрию. Прямые вызовы
-`ts_video_set_config` и `ts_video_set_page` меняют экран и сохраняют поверхность рисования. В
-стандартном ZX-режиме `zx_show_screen` показывает страницу 5 или 7 с границы строки. VConfig
-доступен только на запись, поэтому перед `ts_video_select_draw_screen` или `zx_show_screen` задайте
-его через библиотеку.
+групп рисования. Режим дисплея задаёт `zx_set_video_mode`, а возвращает `zx_get_video_mode`.
+Для стандартного ZX используйте `ZX_VIDEO_ZX_256`, для TSConf выберите готовый режим,
+например `TS_VIDEO_16C_320X200`. Флаги `TS_VIDEO_FLAG_*` можно добавить через побитовое ИЛИ.
+Физическую страницу показывает `ts_video_show_page`. В стандартном ZX-режиме `zx_show_screen`
+показывает страницу 5 или 7 с границы строки. Страницу для рисования выбирайте отдельно через
+`ts_video_select_draw_screen` с текущей геометрией дисплея или через
+`ts_video_select_draw_surface` со своей геометрией.
 
 `zx_graphics_get_size` возвращает размеры поверхности, `ts_video_get_raster_size` — размеры растра
 по последнему VConfig, записанному библиотекой. Текстовый режим удваивает ширину растра в пикселях.
@@ -180,8 +179,9 @@ PT3, эффектами AYFX и сэмплами PCM8/Covox.
 ```c
 ts_video_set_scroll(0, 0);
 ts_map_ram_page(ZX_WINDOW_3, 0x60);
-if (ts_video_set_mode(TS_VIDEO_ZX | TS_VIDEO_256X192 | TS_VIDEO_HIDE_TSU,
-                      0x60, (volatile void *)0xc000) != ZX_OK) return 1;
+if (zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_TSU) != ZX_OK ||
+    ts_video_show_page(0x60) != ZX_OK ||
+    ts_video_select_draw_screen(0x60, (volatile void *)0xc000) != ZX_OK) return 1;
 zx_console_printf("TSConf %d\n", 48);
 zx_draw_line(16, 16, 96, 64);
 ```
@@ -218,7 +218,7 @@ zx_draw_line(16, 16, 96, 64);
 напрямую из физической RAM. `ts_video_fill_16c_screen`, `ts_video_copy_16c_screen` и
 `ts_video_copy_16c_tile` позволяют вести двойную буферизацию без DMA-дескрипторов в приложении.
 Начало экранной области выравнивается по восьми физическим страницам; рисование идёт в скрытую
-страницу, которую приложение показывает через `ts_video_set_page` на границе кадра.
+страницу, которую приложение показывает через `ts_video_show_page` на границе кадра.
 [Видео API 16C](include/tsconf/video.h)
 
 ## Тайлы

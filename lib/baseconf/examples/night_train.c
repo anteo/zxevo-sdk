@@ -118,7 +118,7 @@ zx_status_t night_train_paint(void) {
     if (status == ZX_OK) status = bc_select_draw_surface(&surface);
     if (status == ZX_OK) status = draw_station();
     if (status == ZX_OK) status = select_screen(ZX_SCREEN_1);
-    if (status == ZX_OK) status = bc_set_video_mode(BC_VIDEO_ATM_320);
+    if (status == ZX_OK) status = zx_set_video_mode(BC_VIDEO_ATM_320);
 
     w1_status = bc_configure_window(map, ZX_WINDOW_1, &saved_w1);
     w3_status = bc_configure_window(map, ZX_WINDOW_3, &saved_w3);
@@ -150,7 +150,7 @@ int main(void) {
     uint8_t irq, border;
     zx_status_t status, restore;
 
-    if (bc_get_video_mode() != BC_VIDEO_ZX_256 ||
+    if (zx_get_video_mode() != BC_VIDEO_ZX_256 ||
         BC_PAGING_SCREEN(bc_readback_register(0x0a)) != ZX_SCREEN_0)
         return ZX_UNSAFE_CONTEXT;
 
@@ -162,7 +162,7 @@ int main(void) {
 
     irq = zx_interrupt_save_disable();
     restore = select_screen(ZX_SCREEN_0);
-    if (restore == ZX_OK) restore = bc_set_video_mode(BC_VIDEO_ZX_256);
+    if (restore == ZX_OK) restore = zx_set_video_mode(BC_VIDEO_ZX_256);
     zx_set_border_color(border);
     zx_interrupt_restore(irq);
     return restore != ZX_OK ? restore : status;

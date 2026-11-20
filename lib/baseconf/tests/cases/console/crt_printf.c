@@ -25,7 +25,7 @@ static void report_counts(const char *tag, int format_count, int wrap_count) {
 static void draw_graphics_case(bc_video_mode_t mode, const zx_font_t *font, const char *tag) {
     int format_count, wrap_count;
     zx_console_size_t grid = {0, 0};
-    if (bc_set_video_mode(mode) != ZX_OK) {
+    if (zx_set_video_mode(mode) != ZX_OK) {
         zx_test_step_skip(tag, "video mode unavailable");
         zx_test_step_skip("counts", "video mode unavailable");
         return;
@@ -57,7 +57,7 @@ static void draw_graphics_case(bc_video_mode_t mode, const zx_font_t *font, cons
 
 static void draw_text_case(bc_video_mode_t mode, const char *tag) {
     int format_count, wrap_count;
-    if (bc_set_video_mode(mode) != ZX_OK) {
+    if (zx_set_video_mode(mode) != ZX_OK) {
         zx_test_step_skip(tag, "video mode unavailable");
         zx_test_step_skip("counts", "video mode unavailable");
         return;

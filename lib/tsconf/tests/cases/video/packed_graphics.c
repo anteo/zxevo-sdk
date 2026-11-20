@@ -5,10 +5,10 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 int main(void) {
-    const ts_surface_t canvas16 = {TS_VIDEO_16C, 0x50, NULL};
-    const ts_surface_t canvas256 = {TS_VIDEO_256C, 0x40, NULL};
-    const ts_surface_t misaligned256 = {TS_VIDEO_256C, 0x48, NULL};
-    const ts_surface_t text = {TS_VIDEO_TEXT, 0x41, w3};
+    const ts_surface_t canvas16 = {TS_VIDEO_16C_256X192, 0x50, NULL};
+    const ts_surface_t canvas256 = {TS_VIDEO_256C_256X192, 0x40, NULL};
+    const ts_surface_t misaligned256 = {TS_VIDEO_256C_256X192, 0x48, NULL};
+    const ts_surface_t text = {TS_VIDEO_TEXT_512X192, 0x41, w3};
     uint8_t index = 0x69;
 
     zx_test_init();

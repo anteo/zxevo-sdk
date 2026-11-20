@@ -111,7 +111,8 @@ zx_status_t ts_ft812_wait_display_list(uint16_t polls) __z88dk_fastcall;
 
 /* Supply the full current native VConfig. Change only D2 to route FT812
  * to the external VDAC2 connector and its INT output to IDE_D1. The
- * onboard display remains native. Requires an IDE_VDAC2 FPGA build. */
+ * onboard display remains native. Requires an IDE_VDAC2 FPGA build.
+ * Cast a TS_VIDEO_* mode combination to uint8_t to pass its low byte. */
 void ts_ft812_route_video(uint8_t native_config, uint8_t enabled);
 
 #endif

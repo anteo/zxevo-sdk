@@ -2,7 +2,7 @@
 SECTION code_clib
 
 PUBLIC _ts_ft812_route_video
-EXTERN _ts_video_set_config
+EXTERN _ts__video_set_config
 
 ; Replace VConfig.D2 and tail-call the native setter. The caller supplies
 ; the full config byte and an enable byte on the stack (SDCC caller-clean).
@@ -20,4 +20,4 @@ _ts_ft812_route_video:
         jr z,@ready
         set 2,l
 @ready:
-        jp _ts_video_set_config
+        jp _ts__video_set_config

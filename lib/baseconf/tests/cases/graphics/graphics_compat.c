@@ -89,7 +89,7 @@ static void check_boxes_and_cursor(void) {
 }
 
 static void check_mode(bc_video_mode_t mode, const char *tag, int right, int bottom) {
-    zx_status_t status = bc_set_video_mode(mode);
+    zx_status_t status = zx_set_video_mode(mode);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) {
         zx_test_step_marker(tag);

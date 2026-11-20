@@ -4,8 +4,8 @@
 #define SCREEN_HEIGHT 512
 #include "../../../../common/tests/support/blit4_checks.h"
 int main(void) {
-    const ts_surface_t surface = {TS_VIDEO_16C, 0x50, 0};
-    const ts_surface_t other = {TS_VIDEO_256C, 0x40, 0};
+    const ts_surface_t surface = {TS_VIDEO_16C_256X192, 0x50, 0};
+    const ts_surface_t other = {TS_VIDEO_256C_256X192, 0x40, 0};
     ts_window_lease_t lease;
     zx_bitmap4_t unsafe = image4;
     volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;

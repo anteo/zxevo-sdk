@@ -26,8 +26,8 @@ static void check_mode(const mode_case_t *test) {
     ZX_ASSERT(front.mode == test->mode && front.page0 == test->page0 && front.page1 == test->page1);
     ZX_ASSERT(back.mode == test->mode && back.page0 == test->page0 + 2 &&
               back.page1 == test->page1 + 2);
-    ZX_ASSERT(bc_set_video_mode(test->mode) == ZX_OK);
-    ZX_ASSERT(bc_get_video_mode() == test->mode);
+    ZX_ASSERT(zx_set_video_mode(test->mode) == ZX_OK);
+    ZX_ASSERT(zx_get_video_mode() == test->mode);
     if (test->mode < BC_VIDEO_ATM_TEXT_80) {
         ZX_ASSERT(zx_graphics_get_size(&size) == ZX_OK);
         ZX_ASSERT(size.width == test->width && size.height == test->height);
@@ -39,8 +39,9 @@ static void check_mode(const mode_case_t *test) {
         ZX_ASSERT(grid.columns == test->width && grid.rows == test->height);
     }
     ZX_ASSERT(zx_select_draw_screen(ZX_SCREEN_0) == ZX_OK);
-    ZX_ASSERT(bc_set_video_mode(BC_VIDEO_UNKNOWN) == ZX_INVALID_ARGUMENT);
-    ZX_ASSERT(bc_get_video_mode() == test->mode);
+    ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_UNKNOWN) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_set_video_mode(0x101u) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_get_video_mode() == test->mode);
     zx_test_step_marker(test->name);
 }
 

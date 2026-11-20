@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <zx/memory.h>
 #include <zx/status.h>
+#include <baseconf/video.h>
 
 typedef uint8_t bc_flash_bank_t;
 
@@ -17,29 +18,12 @@ typedef enum { BC_READBACK_BD, BC_READBACK_BE } bc_readback_backend_t;
 
 typedef enum { BC_ERS_NONE, BC_ERS_ROM_BAS48, BC_ERS_SERVICES_ROM } bc_ers_profile_t;
 
-typedef enum {
-    BC_VIDEO_ZX_256,
-    BC_VIDEO_ZX_MULTICOLOR,
-    BC_VIDEO_PENTAGON_256,
-    BC_VIDEO_ATM_320,
-    BC_VIDEO_ATM_640,
-    BC_VIDEO_ATM_TEXT_80,
-    BC_VIDEO_EVO_TEXT_80,
-    BC_VIDEO_UNKNOWN = 0xff
-} bc_video_mode_t;
-
 typedef struct {
     bc_memory_kind_t kind;
     uint8_t physical_page;
     uint8_t substitute_from_7ffd_or_dos;
     uint8_t write_protected;
 } bc_window_config_t;
-
-typedef struct {
-    bc_video_mode_t mode;
-    zx_ram_page_t page0;
-    zx_ram_page_t page1;
-} bc_surface_t;
 
 /* BC_PAGING_* macros take the byte read from the 7FFD paging register. */
 #define BC_PAGING_ACTIVE_MAP(state) ((bc_map_t)(((state) >> 4) & 1u))
@@ -58,7 +42,6 @@ typedef struct {
 #include <zx/console.h>
 #include <zx/graphics.h>
 #include <zx/init.h>
-#include <zx/video.h>
 #include <zx/ide.h>
 #include <zx/input.h>
 #include <zx/interrupt.h>
@@ -78,6 +61,5 @@ typedef struct {
 #include <baseconf/rtc.h>
 #include <baseconf/storage.h>
 #include <baseconf/text.h>
-#include <baseconf/video.h>
 
 #endif

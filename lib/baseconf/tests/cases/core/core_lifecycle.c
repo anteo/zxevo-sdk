@@ -18,7 +18,7 @@ static void check_reinitialize(void) {
     ZX_ASSERT(bc_set_write_protection(ZX_WINDOW_3, 1) == ZX_NOT_INITIALIZED);
     ZX_ASSERT(bc_window_acquire(ZX_WINDOW_3, config, &lease) == ZX_NOT_INITIALIZED);
     ZX_ASSERT(!lease.active);
-    ZX_ASSERT(bc_set_video_mode(BC_VIDEO_ZX_256) == ZX_NOT_INITIALIZED);
+    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ZX_256) == ZX_NOT_INITIALIZED);
     ZX_ASSERT(bc_readback_register(page_register) == (uint8_t)~52u);
     ZX_ASSERT(*probe == 0xa9);
     ZX_ASSERT(zx_init() == ZX_OK);
@@ -40,7 +40,7 @@ static void check_busy_shutdown(void) {
         ZX_ASSERT(bc_get_paging_state(&snapshot) == ZX_OK);
         ZX_ASSERT(bc_window_release(&lease) == ZX_OK);
     }
-    ZX_ASSERT(bc_set_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
+    ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
     status = zx_graphics_begin();
     ZX_ASSERT(status == ZX_OK);
     if (status == ZX_OK) {

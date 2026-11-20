@@ -41,7 +41,7 @@ static uint8_t saved_border;
 static void demo_begin(void) {
     saved_w3 = ts_memory_get_page3();
     saved_border = (*(const uint8_t *)0x5c48u >> 3) & 7;
-    ts_video_set_config(TS_VIDEO_16C | TS_VIDEO_320X200 | TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(TS_VIDEO_16C_320X200 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_video_set_tsu_config(0);
     ts_video_set_scroll(0, 0);
     ts_video_set_palette_select(0);
@@ -60,9 +60,9 @@ static void demo_end(void) {
     ts_fmaps_disable();
     ts_map_ram_page(ZX_WINDOW_3, saved_w3);
     ts_video_set_palette_select(15);
-    ts_video_set_page(5);
     ts_video_set_scroll(0, 0);
-    ts_video_set_config(TS_VIDEO_ZX | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256);
+    zx_show_screen(ZX_SCREEN_0);
     ts_video_set_border(240u + saved_border);
 }
 
@@ -133,8 +133,8 @@ static void upload(const image_resource_t *image, uint8_t destination) {
 }
 
 static void show_screen(uint8_t page) {
-    ts_video_set_page(page);
-    ts_video_set_config(TS_VIDEO_16C | TS_VIDEO_320X200);
+    ts_video_show_page(page);
+    zx_set_video_mode(TS_VIDEO_16C_320X200);
 }
 
 /* One hardware descriptor per 16x16 source sprite; palette bank 1 keeps

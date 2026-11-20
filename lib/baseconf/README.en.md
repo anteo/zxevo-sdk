@@ -191,11 +191,11 @@ to the application. Draw pixels, lines, circles and ellipses with SET, CLEAR or 
 to inspect a pixel on the selected draw surface.
 
 Before changing video modes, prepare both maps and enable the page manager as described above.
-`bc_set_video_mode()` maps screen pages into unpinned windows as needed. This example clears and
+`zx_set_video_mode()` maps screen pages into unpinned windows as needed. This example clears and
 draws on the currently displayed screen in ZX 256 mode.
 
 ```c
-if (bc_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 1;
+if (zx_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 if (zx_console_clear() != ZX_OK) return 1;
@@ -233,7 +233,7 @@ z88dk raw font-pointer IOCTL reports unsupported. `zx_console_printf()` formats 
 integers without stdio. This example uses an archive built with Evo 80×25 text support.
 
 ```c
-if (bc_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK) return 1;
+if (zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 zx_console_size_t grid;

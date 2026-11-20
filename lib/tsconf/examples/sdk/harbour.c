@@ -68,11 +68,16 @@ static zx_status_t paint_harbour(void) {
 }
 
 int main(void) {
-    const uint8_t mode = TS_VIDEO_256C | TS_VIDEO_256X192 | TS_VIDEO_HIDE_TSU;
+    const uint16_t mode = TS_VIDEO_256C_256X192 | TS_VIDEO_FLAG_HIDE_TSU;
+    const ts_surface_t surface = {TS_VIDEO_256C_256X192, CANVAS_PAGE, 0};
     uint8_t saved_w3 = ts_memory_get_page3();
     zx_status_t status;
 
-    status = ts_video_set_mode(mode | TS_VIDEO_HIDE_GFX, CANVAS_PAGE, 0);
+    status = ts_video_select_draw_surface(&surface);
+    if (status != ZX_OK) return status;
+    status = zx_set_video_mode(mode | TS_VIDEO_FLAG_HIDE_GFX);
+    if (status != ZX_OK) return status;
+    status = ts_video_show_page(CANVAS_PAGE);
     if (status != ZX_OK) return status;
     load_palette(saved_w3);
     ts_video_set_scroll(0, 0);
@@ -80,14 +85,14 @@ int main(void) {
     status = paint_harbour();
     if (status == ZX_OK) {
         zx_set_border_color(COLOR_BLACK);
-        ts_video_set_config(mode);
+        zx_set_video_mode(mode);
         status = zx_wait_frames(basic_frames, 250);
     }
 
     ts_map_ram_page(ZX_WINDOW_3, saved_w3);
-    ts_video_set_page(5);
     ts_video_set_palette_select(15);
-    ts_video_set_config(TS_VIDEO_ZX | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256);
+    zx_show_screen(ZX_SCREEN_0);
     zx_set_border_color(COLOR_WHITE);
     return status;
 }

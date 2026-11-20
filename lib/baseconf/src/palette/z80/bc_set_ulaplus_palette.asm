@@ -2,7 +2,7 @@
 
 SECTION code_clib
 PUBLIC _bc_set_ulaplus_palette
-EXTERN _bc_get_video_mode
+EXTERN _zx_get_video_mode
 
 ; Write a ULAplus palette entry in a supported live video mode. Model:
 ;
@@ -22,7 +22,7 @@ _bc_set_ulaplus_palette:
         cp 64
         ld l,1                       ; ZX_INVALID_ARGUMENT
         ret nc
-        call _bc_get_video_mode
+        call _zx_get_video_mode
         ld a,l
         cp 2                         ; ZX_256 = 0, ZX_MULTICOLOR = 1
         ld l,3                       ; ZX_UNAVAILABLE

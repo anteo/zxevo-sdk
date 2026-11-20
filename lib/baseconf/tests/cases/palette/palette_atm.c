@@ -15,7 +15,7 @@ int main(void) {
     uint8_t bf, system, beam;
     if (bc_case_init() == ZX_OK) {
         ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-        ZX_ASSERT(bc_set_video_mode(BC_VIDEO_ATM_320) == ZX_OK);
+        ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ATM_320) == ZX_OK);
         zx_set_paper(INDEX);
         zx_set_border_color(INDEX);
         clg();

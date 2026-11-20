@@ -10,7 +10,7 @@ int main(void) {
     uint8_t index = 0;
     if (bc_case_init() == ZX_OK) {
         ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-        ZX_ASSERT(bc_set_video_mode(BC_VIDEO_ATM_320) == ZX_OK);
+        ZX_ASSERT(zx_set_video_mode(BC_VIDEO_ATM_320) == ZX_OK);
         surface = bc_screen_surface(BC_VIDEO_ATM_320, ZX_SCREEN_0);
         clg();
 

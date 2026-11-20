@@ -124,7 +124,7 @@ int main(void) {
     }
 
     ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-    if (bc_set_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
+    if (zx_set_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
         zx_set_ink(7);
         ZX_ASSERT(zx_console_clear() == ZX_OK);
         zx_draw_line(0, 0, 639, 199);
@@ -153,7 +153,7 @@ int main(void) {
 | `zx_test_step_skip(name, reason)`                | SKIP step                                             |
 | `zx_test_finish()`                               | final verdict; the CPU stays in a loop                |
 
-Video tests select screen 0 once for reproducible screenshots. Each call to `bc_set_video_mode()`
+Video tests select screen 0 once for reproducible screenshots. Each call to `zx_set_video_mode()`
 prepares the screen's draw surface in the available CPU windows.
 
 ### Result channels

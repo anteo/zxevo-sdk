@@ -27,7 +27,7 @@ int main(void) {
     uint8_t bf;
     if (bc_case_init() == ZX_OK) {
         ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-        ZX_ASSERT(bc_set_video_mode(BC_VIDEO_EVO_TEXT_80) == ZX_OK);
+        ZX_ASSERT(zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) == ZX_OK);
         ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_2, 48) == ZX_OK);
         ZX_ASSERT(zx_console_clear() == ZX_OK);
         ZX_ASSERT(zx_console_gotoxy(12, 8) == ZX_OK);

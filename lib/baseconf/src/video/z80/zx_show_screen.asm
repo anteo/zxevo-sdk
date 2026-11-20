@@ -2,7 +2,7 @@
 SECTION code_clib
 PUBLIC _zx_show_screen
 EXTERN _bc_video_operation_depth
-EXTERN _bc_get_video_mode
+EXTERN _zx_get_video_mode
 IFNDEF BASECONF_VIDEO_ALL_MODES
 EXTERN bc__video_mode_enabled_regs
 ENDIF
@@ -33,7 +33,7 @@ _zx_show_screen:
         ld l,2                       ; ZX_BUSY
         ret nz
 
-        call _bc_get_video_mode
+        call _zx_get_video_mode
         ld a,l
         cp 0FFh                      ; BC_VIDEO_UNKNOWN
         ld l,3                       ; ZX_UNAVAILABLE

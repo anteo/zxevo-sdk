@@ -39,7 +39,7 @@ static void check_window(void) {
     const uint8_t y = WINDOW_Y + 1;
     zx_status_t status;
 
-    status = bc_set_video_mode(BC_VIDEO_EVO_TEXT_80);
+    status = zx_set_video_mode(BC_VIDEO_EVO_TEXT_80);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) return;
     ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);

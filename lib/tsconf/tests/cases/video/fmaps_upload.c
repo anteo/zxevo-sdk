@@ -56,7 +56,7 @@ int main(void) {
     ts_memory_set_cache(0);
     ts_map_ram_page(ZX_WINDOW_3, 0x70);
     ts_fmaps_disable();
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     test_ranges();
     zx_test_step_marker("ranges");
     test_palette();

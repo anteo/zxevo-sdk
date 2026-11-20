@@ -10,7 +10,7 @@ int main(void) {
     intrinsic_di();
     bc_ers_set_profile(BC_ERS_NONE);
     bc_set_pinned_windows(0x07);
-    if (bc_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 2;
+    if (zx_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 2;
     if (zx_show_screen(ZX_SCREEN_0) != ZX_OK) return 3;
     if (zx_select_draw_screen(ZX_SCREEN_0) != ZX_OK) return 4;
     if (zx_console_set_font(&zx_font5) != ZX_OK) return 5;

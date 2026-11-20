@@ -24,7 +24,7 @@ int main(void) {
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) goto finish;
 
-    status = bc_set_video_mode(BC_VIDEO_ZX_256);
+    status = zx_set_video_mode(BC_VIDEO_ZX_256);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) goto finish;
     status = bc_select_screen(ZX_SCREEN_0);

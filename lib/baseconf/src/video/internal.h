@@ -15,8 +15,6 @@ extern uint16_t bc_video_cached_width, bc_video_cached_height;
 uint16_t bc__video_system_port(uint8_t palette_allowed);
 bc_surface_t bc_screen_surface(bc_video_mode_t mode, zx_screen_t screen);
 uint8_t bc__video_mode_enabled(bc_video_mode_t mode);
-zx_status_t bc_set_video_mode(bc_video_mode_t mode);
-bc_video_mode_t bc_get_video_mode(void);
 /* Publish a validated surface and invalidate its prepared CPU mappings. */
 void bc__video_commit_surface(const bc_surface_t *surface) __z88dk_fastcall;
 enum { BC_VIDEO_SKIP_WINDOW_ERRORS, BC_VIDEO_STOP_ON_WINDOW_ERROR };

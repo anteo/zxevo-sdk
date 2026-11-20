@@ -3,7 +3,7 @@
 #include <zx/video.h>
 
 zx_status_t zx_select_draw_screen(zx_screen_t screen) {
-    ts_surface_t surface = {TS_VIDEO_ZX | TS_VIDEO_256X192, 5, (volatile void *)0x4000u};
+    ts_surface_t surface = {TS_VIDEO_ZX_256X192, 5, (volatile void *)0x4000u};
 
     if (screen == ZX_SCREEN_1) {
         surface.page = 7;

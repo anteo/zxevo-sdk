@@ -2,6 +2,7 @@
 SECTION code_clib
 PUBLIC _ts_video_select_draw_surface
 PUBLIC ts_select_surface
+EXTERN ts__video_validate_mode
 EXTERN ts_console_set_geometry
 EXTERN ts_draw_config
 EXTERN ts_draw_base
@@ -9,7 +10,7 @@ EXTERN ts__graphics_group_depth
 
 ; Copy a validated draw surface. Leave the previous target on error.
 ;
-; if (!surface) return INVALID_ARGUMENT;
+; if (!surface || !valid_mode_number(surface->config)) return INVALID_ARGUMENT;
 ; if (graphics_group) return BUSY;
 ; if (!enabled_mode(surface)) return UNSUPPORTED;
 ; if (!valid_location(surface)) return INVALID_ARGUMENT;
@@ -19,15 +20,20 @@ EXTERN ts__graphics_group_depth
 ; if (layout_changed) update_console_geometry();
 ; return OK;
 ;
-; Fastcall HL=descriptor (config:8, physical page:8, base:16).
+; Fastcall HL=descriptor (config:16, physical page:8, base:16).
 ; Internal entry A=config and HL=address of page and base. L=status.
 ; Caller owns the mappings. Clobber AF/BC/DE/HL. Preserve IX/IY.
 _ts_video_select_draw_surface:
         ld a,h
         or l
         jr z,invalid_surface
+        ld e,(hl)
+        inc hl
         ld a,(hl)
         inc hl
+        call ts__video_validate_mode
+        jr nz,invalid_surface
+        ld a,e
 ts_select_surface:
         push af
         ld a,(ts__graphics_group_depth)

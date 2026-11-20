@@ -100,7 +100,7 @@ values and TSConf levels 0/8/16/24.
 - `joystick(1)` and `joystick(4)` read Kempston and Cursor; Space adds Fire.
 - `in_MouseKemp()` returns coordinates within 256×192 and two buttons. The example recenters the
   mouse each frame to accumulate relative movement; `inp()` reads the middle button.
-- `ts_video_set_mode`, `ts_dma_start` and TSU sprite descriptors display the images and moving
+- `zx_set_video_mode`, `ts_dma_start` and TSU sprite descriptors display the images and moving
   objects. The slideshow draws to the hidden screen before switching VPage.
 
 ## Provenance

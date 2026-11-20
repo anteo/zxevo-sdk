@@ -4,7 +4,7 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 static void check_zx(void) {
-    const ts_surface_t bitmap = {TS_VIDEO_ZX, 5, w3};
+    const ts_surface_t bitmap = {TS_VIDEO_ZX_256X192, 5, w3};
     ts_map_ram_page(ZX_WINDOW_3, 5);
     ZX_ASSERT(ts_video_select_draw_surface(&bitmap) == ZX_OK);
     w3[0] = 0;
@@ -33,8 +33,8 @@ static void check_zx(void) {
 }
 
 static void check_group(void) {
-    const ts_surface_t canvas = {TS_VIDEO_16C, 0x50, 0};
-    const ts_surface_t other = {TS_VIDEO_256C, 0x40, 0};
+    const ts_surface_t canvas = {TS_VIDEO_16C_256X192, 0x50, 0};
+    const ts_surface_t other = {TS_VIDEO_256C_256X192, 0x40, 0};
     ts_window_lease_t other_lease;
     uint8_t index = 0x69;
 
@@ -81,7 +81,7 @@ static void check_group(void) {
 }
 
 static void check_shapes(void) {
-    const ts_surface_t canvas = {TS_VIDEO_256C, 0x40, 0};
+    const ts_surface_t canvas = {TS_VIDEO_256C_256X192, 0x40, 0};
 
     ZX_ASSERT(ts_video_select_draw_surface(&canvas) == ZX_OK);
     ts_map_ram_page(ZX_WINDOW_3, 0x40);

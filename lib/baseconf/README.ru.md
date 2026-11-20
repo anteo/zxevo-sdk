@@ -195,11 +195,11 @@ CLEAR и XOR. `zx_draw_fill_rect()` и `zx_draw_clear_rect()` работают �
 `zx_read_pixel_index()` читает пиксель выбранной поверхности.
 
 Для смены видеорежима подготовьте карты и включите менеджер страниц, как описано выше.
-`bc_set_video_mode()` подбирает отображение экранных страниц в незакреплённых окнах. Пример очищает
+`zx_set_video_mode()` подбирает отображение экранных страниц в незакреплённых окнах. Пример очищает
 текущий видимый экран и рисует на нём в режиме ZX 256.
 
 ```c
-if (bc_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 1;
+if (zx_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 if (zx_console_clear() != ZX_OK) return 1;
@@ -237,7 +237,7 @@ lease: подготавливайте банковые ресурсы резид
 целые без stdio. Пример использует сборку с поддержкой текста Evo 80×25.
 
 ```c
-if (bc_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK) return 1;
+if (zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 zx_console_size_t grid;

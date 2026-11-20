@@ -12,7 +12,7 @@ zx_status_t zx_select_draw_screen(zx_screen_t screen) {
     if (!bc_mem_initialized) return ZX_NOT_INITIALIZED;
     if (bc_mem_active_window_lease) return ZX_BUSY;
     if (screen > ZX_SCREEN_1) return ZX_INVALID_ARGUMENT;
-    mode = bc_get_video_mode();
+    mode = zx_get_video_mode();
     if (mode == BC_VIDEO_UNKNOWN) return ZX_UNAVAILABLE;
 #ifndef BASECONF_VIDEO_ALL_MODES
     if (!bc__video_mode_enabled(mode)) return ZX_UNSUPPORTED;

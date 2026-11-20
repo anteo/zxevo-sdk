@@ -8,7 +8,7 @@
 static void draw_mode(bc_video_mode_t mode, const char *tag) {
     int width, height, radius;
     zx_video_size_t size = {0, 0};
-    if (bc_set_video_mode(mode) != ZX_OK) {
+    if (zx_set_video_mode(mode) != ZX_OK) {
         zx_test_step_skip(tag, "video mode unavailable");
         return;
     }

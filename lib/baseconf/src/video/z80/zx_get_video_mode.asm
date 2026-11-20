@@ -1,6 +1,6 @@
-        MODULE bc_get_video_mode
+        MODULE zx_get_video_mode
 SECTION code_clib
-PUBLIC _bc_get_video_mode
+PUBLIC _zx_get_video_mode
 EXTERN bc__mem_readback_register_regs
 
 ; Decode the live FPGA video mode. Return BC_VIDEO_UNKNOWN for undocumented
@@ -14,9 +14,9 @@ EXTERN bc__mem_readback_register_regs
 ; if (layout & 1) return BC_VIDEO_PENTAGON_256;
 ; return layout ? BC_VIDEO_ZX_MULTICOLOR : BC_VIDEO_ZX_256;
 ;
-; SDCC no arguments, result in L. Preserve IX/IY, clobber AF/BC/DE/HL.
+; SDCC no arguments, result in HL. Preserve IX/IY, clobber AF/BC/DE/HL.
 ; The readback helper preserves E, which holds the first register's mode bits.
-_bc_get_video_mode:
+_zx_get_video_mode:
         ld b,0Ch
         call bc__mem_readback_register_regs
         ld a,l
@@ -30,15 +30,18 @@ _bc_get_video_mode:
         ld a,l                       ; EFF7, preserving the mode comparison
         jr z,@zx_layout
         and 21h
+        ld h,0
         ld l,0FFh                    ; BC_VIDEO_UNKNOWN
         ret nz
         ld d,0
         ld hl,bc_video_mode_by_xx77
         add hl,de
         ld l,(hl)
+        ld h,0
         ret
 
 @zx_layout:
+        ld h,0
         and 21h
         ld l,0                       ; BC_VIDEO_ZX_256
         ret z

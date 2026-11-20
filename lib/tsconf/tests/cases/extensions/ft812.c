@@ -80,7 +80,7 @@ uint8_t ts_spi_read_previous(void) {
     return previous;
 }
 
-void ts_video_set_config(uint8_t config) __z88dk_fastcall {
+void ts__video_set_config(uint8_t config) __z88dk_fastcall {
     video_config = config;
     ++video_writes;
 }

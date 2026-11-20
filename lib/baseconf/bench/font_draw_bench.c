@@ -38,14 +38,14 @@ int main(void) {
     bc_ers_set_profile(BC_ERS_NONE);
     bc_set_pinned_windows(pinned);
 #if BENCH_MODE == 4
-    if (bc_set_video_mode(BC_VIDEO_ATM_640) != ZX_OK) return 2;
+    if (zx_set_video_mode(BC_VIDEO_ATM_640) != ZX_OK) return 2;
     if (bc_map_ram_page(ZX_WINDOW_3, 1) != ZX_OK) return 3;
     {
         const bc_surface_t surface = {BC_VIDEO_ATM_640, 1, 5};
         if (bc_select_draw_surface(&surface) != ZX_OK) return 4;
     }
 #else
-    if (bc_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 2;
+    if (zx_set_video_mode(BC_VIDEO_ZX_256) != ZX_OK) return 2;
     if (zx_show_screen(ZX_SCREEN_0) != ZX_OK) return 3;
     if (zx_select_draw_screen(ZX_SCREEN_0) != ZX_OK) return 4;
 #endif

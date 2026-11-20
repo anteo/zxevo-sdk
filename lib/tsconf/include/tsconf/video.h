@@ -5,16 +5,36 @@
 #include <zx/memory.h>
 #include <zx/video.h>
 
-#define TS_VIDEO_ZX 0x00u
-#define TS_VIDEO_16C 0x01u
-#define TS_VIDEO_256C 0x02u
-#define TS_VIDEO_TEXT 0x03u
-#define TS_VIDEO_HIDE_TSU 0x10u
-#define TS_VIDEO_HIDE_GFX 0x20u
-#define TS_VIDEO_256X192 0x00u
-#define TS_VIDEO_320X200 0x40u
-#define TS_VIDEO_320X240 0x80u
-#define TS_VIDEO_360X288 0xc0u
+/* Choose one complete mode. The raster is part of its name.
+ * TEXT names use the displayed pixel width, twice the raster width.
+ * OR in TS_VIDEO_FLAG_* to hide layers. */
+#define TS_VIDEO_ZX_256X192 ZX_VIDEO_ZX_256
+#define TS_VIDEO_ZX_320X200 0x140u
+#define TS_VIDEO_ZX_320X240 0x180u
+#define TS_VIDEO_ZX_360X288 0x1c0u
+
+#define TS_VIDEO_16C_256X192 0x101u
+#define TS_VIDEO_16C_320X200 0x141u
+#define TS_VIDEO_16C_320X240 0x181u
+#define TS_VIDEO_16C_360X288 0x1c1u
+
+#define TS_VIDEO_256C_256X192 0x102u
+#define TS_VIDEO_256C_320X200 0x142u
+#define TS_VIDEO_256C_320X240 0x182u
+#define TS_VIDEO_256C_360X288 0x1c2u
+
+#define TS_VIDEO_TEXT_512X192 0x103u
+#define TS_VIDEO_TEXT_640X200 0x143u
+#define TS_VIDEO_TEXT_640X240 0x183u
+#define TS_VIDEO_TEXT_720X288 0x1c3u
+
+#define TS_VIDEO_FLAG_HIDE_TSU 0x110u /* Hide tile and sprite output. */
+#define TS_VIDEO_FLAG_HIDE_GFX 0x120u /* Hide the base bitmap or text layer. */
+
+/* zx_get_video_mode reports the last mode written by the SDK.
+ * zx_set_video_mode changes VConfig and leaves the display page, CPU mappings
+ * and draw surface alone. Prepare an aligned display page for the new layout
+ * before exposing it. Serialize video changes with drawing. */
 
 #define TS_TSU_TILE0_INDEX0 0x04u
 #define TS_TSU_TILE1_INDEX0 0x08u
@@ -70,13 +90,12 @@ zx_status_t ts_video_upload_sprites(zx_window_t window, uint8_t first, const ts_
 zx_status_t ts_video_upload_palette(zx_window_t window, uint8_t first, const uint16_t *source,
                                     uint16_t count);
 
-/* Write VConfig and remember its layout for ts_video_select_draw_screen.
- * Combine the mode, raster size and layer flags. Leaves the draw target alone. */
-void ts_video_set_config(uint8_t config) __z88dk_fastcall;
-
-/* Select the display's physical base page. Align it to 8 pages for
- * 16-color mode or 16 pages for 256-color mode. Leaves the draw target alone. */
-void ts_video_set_page(uint8_t page) __z88dk_fastcall;
+/* Show a physical RAM page in the current display layout. Packed 16-color
+ * and 256-color pages must be aligned to 8 and 16 pages respectively.
+ * Returns ZX_INVALID_ARGUMENT for misalignment, ZX_NOT_INITIALIZED until
+ * the SDK sets a mode, and ZX_BUSY during a graphics group.
+ * The draw target and CPU mappings are unchanged. */
+zx_status_t ts_video_show_page(uint8_t page) __z88dk_fastcall;
 
 /* DMA helpers for a 320x200 16-color bitmap. Source and destination screen
  * bases are 8-page aligned. Tile coordinates are 0..39, 0..24. Functions
@@ -95,9 +114,9 @@ zx_status_t ts_video_draw_16c_tile(uint8_t source_page, uint16_t tile, uint8_t d
 /* Draw surface with a TS_VIDEO_* mode and raster, and its physical base page.
  * ZX and text need page mapped at a writable 16 KiB-aligned CPU address
  * (base). Packed drawing uses the physical page and borrows W3. For that
- * layout, base is unused and page must be aligned as for ts_video_set_page. */
+ * layout, base is unused and page must be aligned as for ts_video_show_page. */
 typedef struct {
-    uint8_t config;
+    uint16_t config;
     uint8_t page;
     volatile void *base;
 } ts_surface_t;
@@ -113,21 +132,16 @@ zx_status_t ts_video_get_raster_size(zx_video_size_t *size) __z88dk_fastcall;
 /* Copy a draw surface for console and graphics output. This can have a
  * different layout or page from the display. Only the mode and raster bits
  * of config are used. Leaves video registers and CPU mappings alone.
- * Return ZX_INVALID_ARGUMENT for NULL or invalid alignment, ZX_UNSUPPORTED
- * for an excluded mode or ZX_BUSY while a graphics group is open. */
+ * Return ZX_INVALID_ARGUMENT for NULL, an invalid mode number or invalid
+ * alignment, ZX_UNSUPPORTED for an excluded mode or ZX_BUSY while a
+ * graphics group is open. */
 zx_status_t ts_video_select_draw_surface(const ts_surface_t *surface) __z88dk_fastcall;
 
-/* Select a draw page using the layout last set by ts_video_set_config or
- * ts_video_set_mode. Same page/base requirements as ts_surface_t. Leaves
+/* Select a draw page using the current display layout. Same page/base
+ * requirements as ts_surface_t. Leaves
  * video registers and CPU mappings alone. Return ZX_NOT_INITIALIZED if
  * VConfig is unknown, or the draw-surface selection status. */
 zx_status_t ts_video_select_draw_screen(uint8_t page, volatile void *base);
-
-/* Set VConfig and VPage and select the same surface for drawing. The caller
- * prepares the CPU mapping and serializes mode changes, paging and drawing.
- * Return the draw-surface selection status. On error leave both the display
- * and the draw surface untouched. */
-zx_status_t ts_video_set_mode(uint8_t config, uint8_t page, volatile void *base);
 
 /* Write PalSel. Bits 3:0 select the graphics palette bank. Bits 5:4
  * and 7:6 select the palette groups for tile layers 0 and 1. */

@@ -171,7 +171,7 @@ int main(void) {
     uint16_t frame;
     zx_status_t status = ZX_OK;
 
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_video_set_tsu_config(0);
     build_moon();
 
@@ -190,7 +190,7 @@ int main(void) {
     ts_video_set_tile1_scroll(0, 0);
     show_ship(78);
     ts_video_set_tsu_config(TS_TSU_TILE0 | TS_TSU_TILE0_INDEX0 | TS_TSU_TILE1 | TS_TSU_SPRITES);
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX);
 
     for (frame = 0; frame < 300; ++frame) {
         uint8_t phase = (uint8_t)frame & 63;
@@ -205,9 +205,9 @@ int main(void) {
     ts_video_set_tsu_config(0);
     ts_map_ram_page(ZX_WINDOW_3, saved_w3);
     ts_video_set_palette_select(15);
-    ts_video_set_page(5);
     ts_video_set_scroll(0, 0);
-    ts_video_set_config(TS_VIDEO_ZX | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256);
+    zx_show_screen(ZX_SCREEN_0);
     zx_set_border_color(COLOR_WHITE);
     return status;
 }

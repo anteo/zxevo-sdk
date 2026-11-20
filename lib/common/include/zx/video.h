@@ -4,6 +4,19 @@
 #include <stdint.h>
 #include <zx/status.h>
 
+#define ZX_VIDEO_ZX_256 0u
+#define ZX_VIDEO_UNKNOWN 0xffu
+
+/* Set a display mode supported by the active platform. ZX_VIDEO_ZX_256
+ * selects the standard 256x192 ZX bitmap. Other numbers are platform-specific.
+ * Foreign or invalid numbers return ZX_INVALID_ARGUMENT. Modes excluded from
+ * the library build return ZX_UNSUPPORTED. See the platform video header for
+ * paging, draw target and initialization requirements. */
+zx_status_t zx_set_video_mode(uint16_t mode);
+
+/* Get the current display mode or ZX_VIDEO_UNKNOWN if it cannot be determined. */
+uint16_t zx_get_video_mode(void);
+
 typedef enum { ZX_SCREEN_0, ZX_SCREEN_1 } zx_screen_t;
 
 typedef struct {

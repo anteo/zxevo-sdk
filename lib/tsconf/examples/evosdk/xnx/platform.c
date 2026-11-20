@@ -161,7 +161,7 @@ void xnx_present(void) {
         uint8_t old_display = displayed_page;
         displayed_page = draw_page;
         draw_page = old_display;
-        ts_video_set_page(displayed_page);
+        ts_video_show_page(displayed_page);
         ts_video_select_draw_screen(draw_page, 0);
         if (copy_whole_screen)
             ts_video_copy_16c_screen(displayed_page, draw_page);
@@ -263,13 +263,13 @@ static void frame_hook(void) {
 }
 
 void xnx_init(void) {
-    static const ts_surface_t surface = {TS_VIDEO_16C | TS_VIDEO_320X200, SCREEN_BACK, 0};
+    static const ts_surface_t surface = {TS_VIDEO_16C_320X200, SCREEN_BACK, 0};
     tile_buffer = (uint8_t *)(((uint16_t)tile_storage + 1u) & 0xfffeu);
     ts_set_cpu_speed_and_cache(ZX_CPU_14_MHZ, 0);
     ts_fdd_set_config(0);
     ts_io_set_interrupt_mask(0);
     ts_irq_set_frame_position(0, 0, 0);
-    ts_video_set_config(TS_VIDEO_16C | TS_VIDEO_320X200 | TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(TS_VIDEO_16C_320X200 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_video_set_tsu_config(0);
     ts_video_set_border(0);
     ts_video_set_scroll(0, 0);
@@ -293,8 +293,8 @@ void xnx_init(void) {
     zx_pt3_mute();
     zx_ay_select_chip(ZX_AY_CHIP_0);
     zx_ayfx_init(sound_effects);
-    ts_video_set_page(displayed_page);
-    ts_video_set_config(TS_VIDEO_16C | TS_VIDEO_320X200);
+    ts_video_show_page(displayed_page);
+    zx_set_video_mode(TS_VIDEO_16C_320X200);
     /* The B9B9 ISR and BE00..BF00 vectors stay outside the linked BSS. The
      * SPG loader stub is at BC80 and the initial stack starts at BDB0. */
     memset((void *)0xbe00, 0xb9, 257);

@@ -4,7 +4,7 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 static void check_text(void) {
-    const ts_surface_t text = {TS_VIDEO_TEXT, 0x70, w3};
+    const ts_surface_t text = {TS_VIDEO_TEXT_512X192, 0x70, w3};
 
     ts_map_ram_page(ZX_WINDOW_3, 0x70);
     ZX_ASSERT(ts_video_select_draw_surface(&text) == ZX_OK);
@@ -41,7 +41,7 @@ static void check_text(void) {
 }
 
 static void check_zx(void) {
-    const ts_surface_t zx = {TS_VIDEO_ZX, 5, w3};
+    const ts_surface_t zx = {TS_VIDEO_ZX_256X192, 5, w3};
 
     ts_map_ram_page(ZX_WINDOW_3, 5);
     ZX_ASSERT(ts_video_select_draw_surface(&zx) == ZX_OK);
@@ -59,7 +59,7 @@ static void check_zx(void) {
     zx_test_step_marker("zx-bitmap-and-attribute-scroll");
 }
 
-static void check_packed(uint8_t mode, uint8_t base, uint16_t edge, uint16_t width, uint8_t tail,
+static void check_packed(uint16_t mode, uint8_t base, uint16_t edge, uint16_t width, uint8_t tail,
                          uint8_t blank) {
     const ts_surface_t canvas = {mode, base, 0};
 
@@ -88,9 +88,9 @@ int main(void) {
     zx_test_init();
     check_text();
     check_zx();
-    check_packed(TS_VIDEO_16C, 0x50, 0x3800, 128, 2, 0x77);
+    check_packed(TS_VIDEO_16C_256X192, 0x50, 0x3800, 128, 2, 0x77);
     zx_test_step_marker("16c-scroll-cross-page");
-    check_packed(TS_VIDEO_256C, 0x40, 0x3000, 256, 5, 0xb7);
+    check_packed(TS_VIDEO_256C_256X192, 0x40, 0x3000, 256, 5, 0xb7);
     zx_test_step_marker("256c-scroll-cross-page");
     ts_console_set_autoscroll(0);
     zx_test_finish();

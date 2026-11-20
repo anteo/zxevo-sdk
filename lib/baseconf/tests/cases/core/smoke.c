@@ -25,7 +25,7 @@ int main(void) {
         return 0;
     }
     ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
-    status = bc_set_video_mode(BC_VIDEO_ZX_256);
+    status = zx_set_video_mode(BC_VIDEO_ZX_256);
     if (status == ZX_OK) {
         zx_set_ink(6);
         zx_set_paper(0);
@@ -40,7 +40,7 @@ int main(void) {
         zx_test_step_skip("zx256", "video mode unavailable");
         zx_test_step_skip("text", "video mode unavailable");
     }
-    status = bc_set_video_mode(BC_VIDEO_ATM_640);
+    status = zx_set_video_mode(BC_VIDEO_ATM_640);
     if (status == ZX_OK) {
         zx_set_ink(6);
         zx_set_paper(0);

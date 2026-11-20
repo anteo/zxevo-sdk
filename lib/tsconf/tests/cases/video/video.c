@@ -15,7 +15,7 @@ static void check_palette(void) {
     volatile uint8_t *backing = w3;
     uint8_t page;
 
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_map_ram_page(ZX_WINDOW_3, 0x70);
     backing[0] = 0x5a;
     backing[512] = 0x69;
@@ -40,11 +40,11 @@ static void check_palette(void) {
     }
     ts_map_ram_page(ZX_WINDOW_3, 0x40);
     memset(w3 + 272, 2, 32);
-    ts_video_set_page(0x40);
+    ts_video_show_page(0x40);
     ts_video_set_palette_select(0);
     zx_set_border_color(15);
     ts_video_set_scroll(0x0300, 0x03fe);
-    ts_video_set_config(TS_VIDEO_256C | TS_VIDEO_256X192 | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(TS_VIDEO_256C_256X192 | TS_VIDEO_FLAG_HIDE_TSU);
     zx_test_step_shot("palette-and-wrapped-scroll");
 }
 
@@ -52,7 +52,7 @@ static void check_sprite(void) {
     volatile ts_sprite_t *sfile = TS_FMAPS_SFILE(APERTURE);
     uint8_t row;
 
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_HIDE_TSU);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_video_set_scroll(0, 0);
     ts_map_ram_page(ZX_WINDOW_3, 0x58);
     for (row = 0; row < 8; ++row) {
@@ -68,7 +68,7 @@ static void check_sprite(void) {
 
     ts_video_set_border(0);
     ts_video_set_tsu_config(TS_TSU_SPRITES);
-    ts_video_set_config(TS_VIDEO_HIDE_GFX | TS_VIDEO_256X192);
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX);
     zx_test_step_shot("sprite");
 }
 
