@@ -39,6 +39,12 @@ or `make test RERUN_FAILED=1`. The local database at `build/test-runner/failed.s
 records the suite, machine, case path and profile. A passing run clears its entry.
 Filters and early stops leave unattempted entries available for another rerun.
 
+Use `--continue` or `make test CONTINUE=1` after `--fail-fast` or Ctrl+C. The runner saves
+the plan before starting and removes each case and profile as it records the outcome. A case
+interrupted by Ctrl+C stays pending. The database stores a separate plan for `all` and each named
+suite. Use the original suite name and omit `CASE`, `--profile` and `--filter` when resuming.
+`--rerun-failed` can be run first to retry the failure and leaves the saved remainder available.
+
 The runner recursively discovers `suite.toml` under `lib/`. Each manifest names its suite and
 lists `[[targets]]` with an adapter and machine. It uses `profiles.toml` next to the manifest
 unless the target supplies a different path. Each machine resolves its profiles independently.

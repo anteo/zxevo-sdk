@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from tools.test_runner.discovery import discover_suites
 from tools.test_runner.emulator import find_zesarux
 from tools.test_runner.history import (
-    HISTORY_PATH, load_failures, open_history, record_outcome,
+    HISTORY_PATH, load_failures, load_pending, open_history, record_outcome, start_plan,
 )
 from tools.test_runner.suites.asm import AsmTestSuite
 from tools.test_runner.suites.base import CheckSummary
@@ -47,8 +47,11 @@ def parse_suite_args(suite, argv):
     subparsers.add_parser("list", parents=[common], help="list discovered cases")
     check = subparsers.add_parser("check", parents=[common], help="run cases and compare results")
     if suite != "asm":
-        check.add_argument("--rerun-failed", action="store_true",
-                           help="run only previously failed cases in their recorded profiles")
+        selection = check.add_mutually_exclusive_group()
+        selection.add_argument("--rerun-failed", action="store_true",
+                               help="run only previously failed cases in their recorded profiles")
+        selection.add_argument("--continue", dest="resume", action="store_true",
+                               help="run the remaining cases from an interrupted or stopped plan")
     if suite != "all":
         subparsers.add_parser("build", parents=[common], help="prepare cases and manifests")
         subparsers.add_parser("clean", parents=[common], help="remove build outputs and local Python caches")
@@ -68,10 +71,26 @@ def select_recorded_runs(name, suite, runs, recorded):
     return selected
 
 
-def run_combined(args, selected):
+def planned_run_keys(plan):
+    for name, suite, runs in plan:
+        for case_path, _, profiles in runs:
+            case = suite.case_relative_path(case_path).as_posix()
+            for profile in profiles:
+                yield (name, suite.machine, case, profile["name"])
+
+
+def run_combined(args, selected, scope):
     """Plan every matching case before running any machine."""
     rerun_failed = args.command == "check" and args.rerun_failed
-    recorded = load_failures() if rerun_failed else None
+    resume = args.command == "check" and args.resume
+    if resume and (args.case or args.profile or args.filter):
+        raise FrameworkError("--continue uses the saved plan; omit --case, --profile and --filter")
+    recorded = None
+    plan_id = None
+    if rerun_failed:
+        recorded = load_failures()
+    elif resume:
+        plan_id, recorded = load_pending(scope)
     missing = set(args.case or ())
     plan = []
     for name, suite in selected:
@@ -98,16 +117,21 @@ def run_combined(args, selected):
     if not plan:
         if rerun_failed:
             print("No recorded failures match the selection.")
+        if resume:
+            print("No remaining tests in the saved plan.")
     else:
         zesarux = find_zesarux(args.zesarux)
         try:
             with closing(open_history()) as history:
+                if not resume and not rerun_failed:
+                    plan_id = start_plan(history, scope, planned_run_keys(plan))
                 for name, suite, runs in plan:
                     label = f"{name}/{suite.machine}"
                     print(label, flush=True)
 
                     def record(key, failed):
-                        record_outcome(history, (name, suite.machine, *key), failed)
+                        record_outcome(history, (name, suite.machine, *key), failed,
+                                       scope=scope, plan_id=plan_id)
 
                     try:
                         suite.check_runs(args, runs, zesarux, summary, label_prefix=f"{label}/",
@@ -156,11 +180,11 @@ def run_suite(parser, entry):
     args = parse_suite_args(entry.suite, entry.suite_args)
     if entry.suite == "all":
         names = sorted(suites, key=lambda name: (len(suites[name]) > 1, name))
-        return run_combined(args, [(name, suite) for name in names for suite in suites[name]])
+        return run_combined(args, [(name, suite) for name in names for suite in suites[name]], "all")
 
     targets = suites[entry.suite]
     if args.command == "check" or (args.command == "list" and len(targets) > 1):
-        return run_combined(args, [(entry.suite, suite) for suite in targets])
+        return run_combined(args, [(entry.suite, suite) for suite in targets], entry.suite)
     if len(targets) == 1:
         return targets[0].run(args)
 
