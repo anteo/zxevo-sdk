@@ -63,6 +63,40 @@ class AsmTestSuite(TestSuite):
             tail = "\n".join(diagnostics.strip().splitlines()[-15:])
             raise FrameworkError(f"{source.name}: sjasmplus exited with {result.returncode}\n{tail}\nSee {log_path}")
 
+    @staticmethod
+    def rom_symbol_address(symbol, symbols):
+        match = re.search(rf"^{re.escape(symbol)}:[ \t]+EQU[ \t]+0x([0-9a-f]+)\b",
+                          symbols.read_text(), re.IGNORECASE | re.MULTILINE)
+        if match is None:
+            raise FrameworkError(f"{symbol} is missing from {symbols}")
+        return int(match[1], 16)
+
+    def boot_launch(self, profile):
+        address = profile.get("boot_pc")
+        symbol = profile.get("boot_symbol")
+        symbol_file = profile.get("boot_symbol_file")
+        bank = profile.get("boot_rom_bank")
+        if symbol is not None:
+            if not isinstance(symbol, str) or not symbol.strip():
+                raise FrameworkError("boot_symbol must be a nonempty string")
+            if address is not None:
+                raise FrameworkError("choose either boot_symbol or boot_pc")
+            if self.rom_symbols is None:
+                raise FrameworkError("boot_symbol requires --rom-symbols")
+            symbols = self.rom_symbols
+            if symbol_file is not None:
+                if not isinstance(symbol_file, str) or not symbol_file.strip():
+                    raise FrameworkError("boot_symbol_file must be a nonempty path")
+                symbols = symbols.parent / symbol_file
+            address = self.rom_symbol_address(symbol, symbols)
+            if not 0 <= address <= 0xFFFF:
+                raise FrameworkError(f"boot_symbol {symbol} is outside the Z80 address space")
+        elif symbol_file is not None:
+            raise FrameworkError("boot_symbol_file requires boot_symbol")
+        if bank is not None and (address is None or type(bank) is not int or not 0 <= bank <= 0xFF):
+            raise FrameworkError("boot_rom_bank must be an 8-bit bank number and requires a boot address")
+        return LaunchConfig(profile["boot_cycles"], tuple(profile["ports"]), address, symbol, bank)
+
     def patched_rom(self, patch, case_path, output, verbose):
         """Apply the case's binary replacement at a bank-local assembly symbol."""
         if self.rom_symbols is None:
@@ -75,11 +109,7 @@ class AsmTestSuite(TestSuite):
                 or (filename is None) == (source is None)
                 or not isinstance(source if filename is None else filename, str)):
             raise FrameworkError("rom_patch requires bank, symbol and either source or file")
-        match = re.search(rf"^{re.escape(symbol)}:[ \t]+EQU[ \t]+0x([0-9a-f]+)\b",
-                          self.rom_symbols.read_text(), re.IGNORECASE | re.MULTILINE)
-        if match is None:
-            raise FrameworkError(f"{symbol} is missing from {self.rom_symbols}")
-        offset = int(match[1], 16)
+        offset = self.rom_symbol_address(symbol, self.rom_symbols)
         if source is not None:
             binary = output / "rom-patch.bin"
             self.assemble(case_path.parent / source, binary, output / "rom-patch.log", verbose)
@@ -109,13 +139,12 @@ class AsmTestSuite(TestSuite):
         code_org = layout["code_org"]
         stack_org = layout["stack_org"]
         machine_name = profile["machine"]
-        launch = LaunchConfig(profile["boot_cycles"], tuple(profile["ports"]), profile.get("boot_pc"))
-
         try:
             if not self.rom.is_file():
                 raise FrameworkError(f"test ROM is missing: {self.rom}")
             protocol = json.loads(PROTOCOL_FILE.read_text(encoding="utf-8"))
             manifest_path.unlink(missing_ok=True)
+            launch = self.boot_launch(profile)
             generate_header(protocol, output / "zx_host_config.inc", "sjasmplus")
             self.assemble(case_path, binary, output / "build.log", verbose)
             size = binary.stat().st_size

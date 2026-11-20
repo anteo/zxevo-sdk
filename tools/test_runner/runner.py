@@ -29,7 +29,7 @@ def parse_suite_args(suite, argv):
         common.add_argument("--suite-dir", type=Path, required=True, help="directory with profiles.toml and cases/")
         common.add_argument("--build-dir", type=Path, required=True, help="directory for ASM build and test outputs")
         common.add_argument("--rom", type=Path, required=True, help="ROM image to load")
-        common.add_argument("--rom-symbols", type=Path, help="sjasmplus symbols for case ROM patches")
+        common.add_argument("--rom-symbols", type=Path, help="sjasmplus symbols for boot checkpoints and case ROM patches")
         common.add_argument("--sjasmplus", default="sjasmplus", help="sjasmplus executable")
         common.add_argument("--include-dir", type=Path, action="append", default=[],
                             help="add an assembly include directory (repeatable)")

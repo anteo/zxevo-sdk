@@ -326,10 +326,12 @@ def return_site(remote, sp):
     return int.from_bytes(data, "little"), (sp + 2) & 0xFFFF
 
 
-def breakpoint(remote, index, pc, sp=None):
+def breakpoint(remote, index, pc, sp=None, *, epc=None):
     condition = f"PC={pc:04X}H"
     if sp is not None:
         condition += f" AND SP={sp:04X}H"
+    if epc is not None:
+        condition = f"EPC=0{epc:X}H AND {condition}"
     remote.command(f"set-breakpoint {index} {condition}")
     remote.command(f"set-breakpointaction {index} break")
     remote.command(f"enable-breakpoint {index}")

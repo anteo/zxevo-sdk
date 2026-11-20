@@ -51,12 +51,20 @@ if the case omits both keys. ASM requires a profile. The `machine` field in a se
 profile chooses the ZEsarUX machine. All explicit `machine` values in a run must agree. Port writes
 are appended in order, including repetitions, and later layers can override mapper settings.
 
-Set `boot_pc` in a profile to stop the ROM at a Z80 address before the runner loads the case. With
-`boot_pc`, `boot_cycles` is a positive limit for the ZRCP `run` command, counted in its
-instruction-loop iterations. Reaching the limit without the address fails the run. Profiles that
-omit `boot_pc` use the fixed startup run. C suites default to 500,000 iterations; the TS-BIOS
-profile allows 1,000,000 while waiting for ROM PC `02B0h`, and the BaseConf `ers-rom` profile allows
-2,000,000 while waiting for ROM PC `6155h`.
+Set `boot_pc` in a profile to stop the ROM at a Z80 address before the runner loads the case.
+ASM profiles can use `boot_symbol` instead. The runner resolves the name from the sjasmplus
+table passed to `--rom-symbols` when it builds the manifest. Set `boot_symbol_file` to select
+a different table relative to the directory of that file. If `boot_rom_bank` is present, the
+breakpoint also matches the physical ROM bank. This requires a ZEsarUX build that exposes the
+machine's mapped page in `EPC`.
+For `boot_symbol`, the runner issues a hard reset after pausing the CPU so it
+can reach a startup label even if the emulator passed it before ZRCP connected.
+
+For a breakpoint, `boot_cycles` limits the number of ZRCP `run` iterations. Reaching the limit
+without hitting the checkpoint fails the run. Profiles without a checkpoint use a fixed startup
+run. C suites default to 500,000 iterations. The TS-BIOS profile allows 1,000,000 while waiting
+for ROM PC `02B0h`, and the BaseConf `ers-rom` profile allows 2,000,000 while waiting for ROM PC
+`6155h`.
 
 Reference lookup starts in the case's reference directory, then follows the layer order. The full
 run name is checked last. For `stdio+60hz`, the profile directories are `default/`, `stdio/`,

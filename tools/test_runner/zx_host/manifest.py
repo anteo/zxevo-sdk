@@ -9,6 +9,8 @@ class LaunchConfig:
     boot_cycles: int
     ports: tuple
     boot_pc: Optional[int] = None
+    boot_symbol: Optional[str] = None
+    boot_rom_bank: Optional[int] = None
 
     def to_dict(self):
         launch = {
@@ -17,6 +19,10 @@ class LaunchConfig:
         }
         if self.boot_pc is not None:
             launch["boot_pc"] = self.boot_pc
+        if self.boot_symbol is not None:
+            launch["boot_symbol"] = self.boot_symbol
+        if self.boot_rom_bank is not None:
+            launch["boot_rom_bank"] = self.boot_rom_bank
         return launch
 
 

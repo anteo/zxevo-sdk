@@ -1,6 +1,7 @@
 """Host-side sessions with ZXHost runtimes running on the emulated ZX."""
 import json
 import os
+import re
 import time
 
 from tools.zesarux.runner import ZesaruxRunner, breakpoint, keyboard_matrix, registers
@@ -68,6 +69,13 @@ class ZXHostSession:
                    for block in self.manifest.get("blocks", [])):
             raise ValueError("manifest has no bootstrap block on the mailbox source page")
 
+    def _at_boot_address(self, pc, address, epc):
+        if pc != address or epc is None:
+            return pc == address
+        response = self.remote.command("evaluate EPC")
+        result = re.match(r"\s*([0-9]+)", response)
+        return result is not None and int(result[1]) == epc
+
     def _boot(self, launch):
         limit = launch.get("boot_cycles", 0)
         address = launch.get("boot_pc")
@@ -79,20 +87,31 @@ class ZXHostSession:
         if type(limit) is not int or limit <= 0:
             raise ValueError("boot_pc requires a positive boot_cycles limit")
 
+        bank = launch.get("boot_rom_bank")
+        epc = None
+        target = f"{address:04X}h"
+        if bank is not None:
+            if type(bank) is not int or not 0 <= bank <= 0xFF:
+                raise ValueError("boot_rom_bank must be an 8-bit ROM bank number")
+            # ZEsarUX EPC encodes the bank, ROM flag and 16 KiB window offset.
+            epc = (bank << 20) | 0x10000 | (address & 0x3FFF)
+            target = f"ROM {bank:02X}h:{address:04X}h"
+        if launch.get("boot_symbol"):
+            target = f"{launch['boot_symbol']} ({target})"
         pc, _ = registers(self.remote)
-        if pc == address:
+        if self._at_boot_address(pc, address, epc):
             return
 
         self.remote.command("enable-breakpoints")
         try:
-            breakpoint(self.remote, 1, address)
+            breakpoint(self.remote, 1, address, epc=epc)
             self.remote.run_cycles(limit)
             pc, _ = registers(self.remote)
         finally:
             self.remote.command("disable-breakpoints")
-        if pc != address:
+        if not self._at_boot_address(pc, address, epc):
             raise RuntimeError(
-                f"ROM did not reach boot_pc {address:04X}h before the boot_cycles limit of {limit:,} (PC={pc:04X}h)"
+                f"ROM did not reach {target} before the boot_cycles limit of {limit:,} (PC={pc:04X}h)"
             )
 
     def start(self, command, args=(0, 0), *, prepare=None):
@@ -106,6 +125,9 @@ class ZXHostSession:
             self.remote = self.runner.remote
             self.remote.enter_cpu_step()
             launch = self.manifest.get("launch", {})
+            if "boot_symbol" in launch:
+                # A startup label may have run before ZRCP took control of the CPU.
+                self.remote.command(self.RESET_COMMANDS["hard"])
             self._boot(launch)
             if prepare is not None:
                 prepare(self.remote)
