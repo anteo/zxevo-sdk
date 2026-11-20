@@ -22,7 +22,7 @@ files sit beside their case and use the file stem.
 ```sh
 make -C lib/baseconf/tests test            # build and check all cases
 make -C lib/baseconf/tests shots           # write expected files (PASS only)
-make -C lib/baseconf/tests framework-list  # list cases and expected files
+make -C lib/baseconf/tests list            # list cases and expected files
 python3 tools/test_runner/runner.py baseconf check --case core/helpers
 python3 tools/test_runner/runner.py baseconf check --case core
 ```
@@ -370,7 +370,7 @@ UART case requires a ZEsarUX build with BaseConf UART support and the `--uartbri
 
 ### Coverage
 
-Run `make -C lib/baseconf/tests framework-list` for the current case list. Select a group with
+Run `make -C lib/baseconf/tests list` for the current case list. Select a group with
 `--case` and its directory name.
 
 | Group                                 | Examples                                                                       |

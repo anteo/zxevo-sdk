@@ -16,7 +16,7 @@ ZRCP. `ZESARUX` указывает исполняемый файл, `ZXEVO_TEST_
 
 ```sh
 make -C lib/baseconf/tests test
-make -C lib/baseconf/tests framework-list
+make -C lib/baseconf/tests list
 make -C lib/baseconf/tests shots
 python3 tools/test_runner/runner.py baseconf check --case core/helpers
 python3 tools/test_runner/runner.py baseconf check --case core
@@ -185,7 +185,7 @@ python3 tools/test_runner/runner.py baseconf clean [--case PATH]
 
 ## Покрытие и ограничения
 
-Актуальный список показывает `make -C lib/baseconf/tests framework-list`. Группы `core` и `memory`
+Актуальный список показывает `make -C lib/baseconf/tests list`. Группы `core` и `memory`
 проверяют инициализацию, страницы, временные отображения, Flash и кучу. `video`, `palette` и
 `graphics` проверяют режимы, палитры, рисование, отсечение и прокрутку. `console` и `font` покрывают
 `zx_console_printf`, CRT stdio, шрифты и вывод текста. `input`, `rtc`, `timing` и `interrupt`
