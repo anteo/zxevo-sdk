@@ -8,7 +8,7 @@ EXTERN _bc_mem_window_cache
 
 ; Program one window in the hardware-selected map and update its cached entry.
 ;
-; port = 0x3ff7 | (window << 14);
+; port = 0x3ff7 | window;
 ; page = (uint8_t)~config->physical_page;
 ; saved_bf = shadow_scope_begin();
 ; out(port, (page & 0x3f) | (config->kind == BC_RAM ? 0x40 : 0) |
@@ -16,29 +16,27 @@ EXTERN _bc_mem_window_cache
 ; if (config->kind == BC_RAM) out(port & ~0x0800, page);
 ; out(port & ~0x0400, config->write_protected);
 ; shadow_scope_end(saved_bf);
-; window_cache[bc_get_active_map()][window] = *config;
+; window_cache[bc_get_active_map()][window >> 14] = *config;
 ;
-; SDCC window byte at SP+2, config pointer at SP+3. The caller validates
-; window 0..3, kind (RAM=0, Flash=1), and both 0/1 flags. The four-byte
+; SDCC 16-bit window address at SP+2, config pointer at SP+4. The caller
+; validates alignment, kind (RAM=0, Flash=1), and both 0/1 flags. The four-byte
 ; config, code and stack must remain accessible throughout the remap.
-; Stack saves hold the window and BF. Preserve IX/IY, clobber AF/BC/DE/HL.
+; One saved word holds the window high byte and original BF. Preserve IX/IY,
+; clobber AF/BC/DE/HL.
 _bc__mem_apply_window:
-        ld hl,2
+        ld hl,3                      ; only the high byte of the window is used
         add hl,sp
         ld a,(hl)
         inc hl
         ld e,(hl)
         inc hl
         ld d,(hl)
-        push af
+        ld h,a                       ; scope entry preserves H and DE
         call _bc__mem_shadow_scope_begin
-        pop af
-        push af
-        push hl                      ; L = saved BF
+        ld a,h
+        push hl                      ; H = window high byte, L = saved BF
 
-        rrca
-        rrca
-        or 3Fh                       ; type port high byte = 3Fh | window*64
+        or 3Fh                       ; window already provides A15:A14
         ld b,a
         ld c,0F7h
         ex de,hl
@@ -60,11 +58,11 @@ _bc__mem_apply_window:
         out (c),a
         bit 0,d
         jr nz,@protect
-        res 3,b                      ; page port high byte = 37h | window*64
+        res 3,b                      ; page port high byte = 37h | window high byte
         out (c),e
         set 3,b
 @protect:
-        res 2,b                      ; protection port = 3Bh | window*64
+        res 2,b                      ; protection port high byte = 3Bh | window high byte
         inc hl
         ld a,(hl)
         out (c),a
@@ -75,9 +73,11 @@ _bc__mem_apply_window:
         dec hl
         dec hl
         dec hl
-        pop af
-        add a,a
-        add a,a
+        ld a,d
+        rrca
+        rrca
+        rrca
+        rrca                         ; 00h/40h/80h/C0h -> 0/4/8/12 in the cache
         ld e,a
         ld d,0                       ; window offset within one map's cache
         push hl
