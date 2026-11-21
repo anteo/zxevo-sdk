@@ -46,7 +46,6 @@ parent = "default"
 description = "Enable bitmap text in Multicolor and graphics primitives in standard ZX"
 
 [profiles.multicolor-text.library]
-build_dir = "build/tests-multicolor-text"
 make_args = ["BASECONF_VIDEO_TEXT_MODES=ZX_MULTICOLOR", "BASECONF_VIDEO_PRIMITIVE_MODES=ZX_256"]
 
 [profiles.memory-maps]

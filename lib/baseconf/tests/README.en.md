@@ -237,12 +237,17 @@ Profile fields:
 | Field                  | Purpose                                             |
 | ---------------------- | --------------------------------------------------- |
 | `layout`               | addresses, pages, windows; inherited from `default` |
-| `library.build_dir`    | library build directory                             |
+| `library.build_dir`    | parent directory for library builds                  |
 | `library.make_targets` | `make` targets                                      |
 | `library.make_args`    | `make` arguments                                    |
 | `library.extra_libs`   | additional `-l<name>` options                       |
 | `cflags`               | additional `zcc` flags                              |
 | `defines`              | additional `-D` options                             |
+
+Under `lib/baseconf/build/tests/`, the runner builds `baseconf.lib` in `default/` when
+`library.make_args` is empty. Each combination of library flags gets a `flags-<hash>/`
+directory. For example, `stdio+no-font8` and `no-stdio+no-font8` reuse the same archive.
+Each directory contains a `compile-flags` file with the compiler and assembler options.
 
 `newirq`: `src/newirq` objects are part of `baseconf.lib`; `<baseconf/newirq.h>` is always
 available.

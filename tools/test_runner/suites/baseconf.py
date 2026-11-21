@@ -1,11 +1,12 @@
 """Compiler and mapper settings for BaseConf tests."""
 
+import hashlib
 import os
 from pathlib import Path
 
 from ..compiler import TargetBuild, run_test_build
 from ..support import ROOT, FrameworkError
-from .c import CTestSuite
+from .c import CTestSuite, profile_assignment
 
 
 BASECONF = ROOT / "lib/baseconf"
@@ -15,9 +16,18 @@ SUPPORT = BASECONF / "tests/support"
 class BaseConfSuite(CTestSuite):
     def build_target(self, profile, verbose):
         library = profile.get("library", {})
-        build_dir = BASECONF / library.get("build_dir", "build/default")
+        build_root = BASECONF / library.get("build_dir", "build/tests")
+        make_args = library.get("make_args", [])
+        build_dir = build_root / "default"
+        if make_args:
+            # Independent VAR=value assignments select the same archive in any layer order.
+            # Preserve argument order for other make options where order can matter.
+            key_args = (sorted(make_args) if all(profile_assignment("make_args", arg) for arg in make_args)
+                        else make_args)
+            digest = hashlib.sha256("\0".join(key_args).encode()).hexdigest()
+            build_dir = build_root / f"flags-{digest[:16]}"
         command = ["make", f"-j{os.cpu_count() or 1}", "-C", str(BASECONF),
-                   f"BUILD={build_dir}", *library.get("make_args", []),
+                   f"BUILD={build_dir}", *make_args,
                    *library.get("make_targets", [])]
         if verbose:
             print("  " + " ".join(command))
