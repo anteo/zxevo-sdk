@@ -29,12 +29,14 @@ the cursor, or `zx_console_draw()` to draw at a cell without moving the cursor. 
 stops at the right edge or the first byte below 32. [Initialization](include/zx/init.h) ·
 [Video](include/zx/video.h) · [Console](include/zx/console.h)
 
-For double buffering, prepare slots `0` and `1` with `zx_prepare_draw_buffer()` or
-`zx_prepare_split_draw_buffer()`. Switch the draw target with `zx_select_draw_buffer(slot)`,
-and present the frame with `zx_display_buffer(slot)`. The displayed slot's first page is shown
-in the current display mode. Use `zx_display_page(page)` to show a physical page directly.
-Keep the explicit CPU mappings for both slots resident, or prepare a slot again after its
-mapping changes. TSConf packed buffers use `NULL` for the window in both slots.
+Prepare slots `0` and `1` once. BaseConf slots may share a writable window in one-page
+modes or two writable windows in split modes. TSConf ZX pages 5 and 7 use separate windows.
+TSConf packed buffers take `NULL` as the window in both slots.
+
+`zx_select_draw_buffer(slot)` selects the draw target and maps the prepared BaseConf banks.
+After drawing, `zx_display_buffer(slot)` shows the first page in the current display mode.
+BaseConf hardware supplies the second displayed page in split modes.
+[BaseConf screen pairs and double buffering](../baseconf/README.en.md#video-modes-and-graphics)
 
 `zx_console_set_text_bg()` sets the background for character, string, formatted and positioned
 console output. The initial mode is `ZX_TEXT_OPAQUE`. Use `zx_console_draw_op()` to override the

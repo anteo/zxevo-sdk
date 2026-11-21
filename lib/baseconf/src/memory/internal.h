@@ -30,6 +30,9 @@ void bc__mem_shadow_scope_end(uint8_t saved_bf) __z88dk_fastcall;
 void bc__mem_write_shadow_override(uint8_t enabled) __z88dk_fastcall;
 zx_status_t bc__mem_write_eff7(uint8_t data);
 void bc__mem_apply_window(zx_window_t window, const bc_window_config_t *c);
+/* Temporary configurations are owned by a checked window lease. */
+zx_status_t bc__mem_configure_window(bc_map_t map, zx_window_t window,
+                                     const bc_window_config_t *configuration, uint8_t temporary);
 zx_status_t bc_resync(void);
 zx_status_t bc_configure_window(bc_map_t map, zx_window_t window,
                                 const bc_window_config_t *configuration);

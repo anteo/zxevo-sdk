@@ -38,20 +38,24 @@ zx_status_t zx_set_split_draw_buffer(uint16_t mode, zx_ram_page_t page0, zx_wind
 
 /* Prepare slot 0 or 1 using the same format and mapping rules as the setters.
  * This can change CPU mappings. It does not select the slot or change the
- * display. Keep both slots' explicit mappings resident to switch between them.
- * TSConf returns ZX_UNSUPPORTED for a split buffer. */
+ * display. BaseConf slots may share one or both windows. TSConf slots with
+ * explicit windows require resident mappings. TSConf does not support split buffers. */
 zx_status_t zx_prepare_draw_buffer(uint8_t slot, uint16_t mode, zx_ram_page_t page,
                                    zx_window_t window);
 zx_status_t zx_prepare_split_draw_buffer(uint8_t slot, uint16_t mode, zx_ram_page_t page0,
                                          zx_window_t window0, zx_ram_page_t page1,
                                          zx_window_t window1);
 
-/* Select a prepared slot without remapping pages. Return ZX_UNAVAILABLE if
+/* Select a prepared slot. BaseConf maps its banks into the prepared windows.
+ * BaseConf checks stack placement during preparation. Keep live code, stack
+ * and resident data outside the changing windows throughout use of the slots.
+ * An active BaseConf window lease or video operation returns ZX_BUSY. Return ZX_UNAVAILABLE if
  * it is empty or its paging context has been invalidated, ZX_INVALID_ARGUMENT
  * if out of range. */
 zx_status_t zx_select_draw_buffer(uint8_t slot) __z88dk_fastcall;
 
 /* Show a prepared slot's first physical page using zx_display_page rules.
+ * In split BaseConf modes, hardware determines the second displayed page.
  * Preserve the display mode, draw target and CPU mappings. An empty or
  * invalidated slot returns ZX_UNAVAILABLE. Return ZX_INVALID_ARGUMENT
  * if the slot number is out of range. */

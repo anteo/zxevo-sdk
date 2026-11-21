@@ -1,6 +1,5 @@
 #include <baseconf.h>
 #include "../internal.h"
-#include "../../internal.h"
 
 zx_status_t bc_window_acquire(zx_window_t window, bc_window_config_t temporary,
                               bc_window_lease_t *lease) {
@@ -14,9 +13,12 @@ zx_status_t bc_window_acquire(zx_window_t window, bc_window_config_t temporary,
     lease->window = window;
     lease->map = map;
     lease->active = 0;
-    status = bc_configure_window(map, window, &temporary);
-    if (status != ZX_OK) return status;
-    lease->active = 1;
     bc_mem_active_window_lease = lease;
+    status = bc__mem_configure_window(map, window, &temporary, 1);
+    if (status != ZX_OK) {
+        bc_mem_active_window_lease = 0;
+        return status;
+    }
+    lease->active = 1;
     return ZX_OK;
 }

@@ -2,6 +2,7 @@
 
 uint8_t bc_video_operation_depth;
 uint8_t bc_video_cache_valid;
+uint8_t bc_video_bound_slots;
 uint8_t bc_video_cached_map;
 uint8_t bc_video_cached_manager_enabled;
 uint8_t bc_video_surface_selected;

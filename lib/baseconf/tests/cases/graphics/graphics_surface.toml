@@ -1,2 +1,2 @@
-description = "Draw to independent buffers and formats, and reject unavailable or text surfaces"
+description = "Draw to independent ZX frames and preserve the active buffer across a RAM lease"
 profile = "no-stdio+no-font8"

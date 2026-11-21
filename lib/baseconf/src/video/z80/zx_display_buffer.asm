@@ -1,4 +1,5 @@
         MODULE zx_display_buffer
+INCLUDE "video/draw_buffer.inc"
 SECTION code_clib
 PUBLIC _zx_display_buffer
 EXTERN _bc_video_prepared_buffers
@@ -27,7 +28,7 @@ _zx_display_buffer:
         ld hl,_bc_video_prepared_buffers
         or a
         jr z,@slot
-        ld hl,_bc_video_prepared_buffers+7
+        ld hl,_bc_video_prepared_buffers+BC_DRAW_SLOT_SIZE
 @slot:
         ld a,(hl)
         or a
@@ -35,7 +36,7 @@ _zx_display_buffer:
         ld a,(_bc_video_operation_depth)
         or a
         jr nz,@busy
-        ld de,5                      ; display_status within the record
+        ld de,BC_DRAW_DISPLAY_STATUS
         add hl,de
         ld a,(hl)
         or a

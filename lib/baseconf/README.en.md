@@ -206,11 +206,11 @@ zx_draw_circle(96, 64, 16);
 if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
-For double buffering, set the mode once, select the back buffer for drawing, and pass its first
-page to `zx_display_page()` once the frame is ready. Use `zx_set_split_draw_buffer()` with both
-page and CPU window pairs in two-page modes. Drawing also accepts arbitrary writable RAM pages.
-The display uses the hardware page layouts below. In ZX mode, primitives update the bitmap and
-preserve the attributes.
+For double buffering, prepare both frames once. They may share CPU windows.
+Select the hidden slot with `zx_select_draw_buffer()`. To present it,
+`zx_display_buffer()` uses the slot's first page and the current display mode. In split modes
+the hardware determines the second displayed page from the table below. Drawing also accepts
+arbitrary writable RAM pages. In ZX mode, primitives update the bitmap and preserve the attributes.
 [video.h](include/baseconf/video.h) · [graphics.h](../common/include/zx/graphics.h)
 
 | Mode | Screen 0 pages | Screen 1 pages |
@@ -219,6 +219,26 @@ preserve the attributes.
 | Pentagon 16-color | 4, 5 | 6, 7 |
 | ATM 320, ATM 640, ATM text | 1, 5 | 3, 7 |
 | Evo text | 8 | 10 |
+
+In ATM320 both slots can use W2 and W3. Preparation checks the stack location.
+Keep code, the full stack and resident data outside W2/W3 while using the slots.
+Draw the hidden frame and present it at the frame boundary.
+
+```c
+uint8_t back = 1;
+if (zx_set_video_mode(BC_VIDEO_ATM_320) != ZX_OK ||
+    zx_prepare_split_draw_buffer(0, BC_VIDEO_ATM_320, 1, ZX_WINDOW_2, 5, ZX_WINDOW_3) != ZX_OK ||
+    zx_prepare_split_draw_buffer(1, BC_VIDEO_ATM_320, 3, ZX_WINDOW_2, 7, ZX_WINDOW_3) != ZX_OK ||
+    zx_display_buffer(0) != ZX_OK) return 1;
+
+for (;;) {
+    if (zx_select_draw_buffer(back) != ZX_OK) return 1;
+    draw_frame();
+    wait_for_vblank();
+    if (zx_display_buffer(back) != ZX_OK) return 1;
+    back ^= 1;
+}
+```
 
 `zx_blit4()` and `zx_blit4_key()` copy linear high-nibble-first 4bpp images to an ATM320 draw
 surface. The shared `zx_bitmap4_t` describes pixels, dimensions and byte stride; the keyed call

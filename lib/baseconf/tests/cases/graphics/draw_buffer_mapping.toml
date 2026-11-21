@@ -1,0 +1,2 @@
+description = "Switch prepared ATM320 banks in shared CPU windows and reject unavailable draw targets"
+profile = "no-stdio+no-font8"
