@@ -5,15 +5,6 @@
 #include <baseconf.h>
 #include <baseconf/memory.h>
 
-#ifndef BASECONF_INLINE
-#if defined(__SDCC)
-/* SDCC inlines these definitions but emits standalone bodies for static inline. */
-#define BASECONF_INLINE inline
-#else
-#define BASECONF_INLINE static inline
-#endif
-#endif
-
 /* Compact layout used by the drawing and hardware-text assembly routines.
  * Single-page surfaces repeat the physical page in both slots. */
 typedef struct {
