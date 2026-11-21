@@ -41,9 +41,8 @@ static void check_missing_backend(void) {
 }
 
 int main(void) {
-
     if (bc_case_init() == ZX_OK) {
-        ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_3, zx.page0) == ZX_OK);
+        ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_3, 5) == ZX_OK);
         ZX_ASSERT(zx_graphics_begin() == ZX_OK);
         ZX_ASSERT(zx_graphics_end() == ZX_OK);
         ZX_ASSERT(zx_console_get_font() == &zx_font8);
