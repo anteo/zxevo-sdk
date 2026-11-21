@@ -5,7 +5,7 @@ EXTERN _bc_mem_initialized
 EXTERN _bc_video_operation_depth
 EXTERN _bc__video_first_screen_pages
 EXTERN bc__video_read_mode_regs
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 IFNDEF BASECONF_VIDEO_ALL_MODES
 EXTERN bc__video_mode_enabled_regs
 ENDIF
@@ -69,8 +69,7 @@ ENDIF
         add a,a                      ; page delta 0/2 -> 7FFD bit 3 clear/set
         ld e,a
         ld d,c                       ; retain EFF7 across the 7FFD readback
-        ld b,0Ah
-        call bc__mem_readback_register_regs
+        BC_MEM_READBACK 0Ah, l
         ld a,l
         xor e
         and 8

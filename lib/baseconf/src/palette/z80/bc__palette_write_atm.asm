@@ -1,7 +1,7 @@
         MODULE bc__palette_write_atm
 SECTION code_clib
 PUBLIC bc__palette_write_atm
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 EXTERN _bc__mem_shadow_scope_open
 EXTERN bc__mem_shadow_scope_end_regs
 EXTERN bc__palette_fdd_control_from_status_regs
@@ -30,9 +30,7 @@ bc__palette_write_atm:
         ld d,a
         push af                      ; saved BF for the final shadow restore
         push bc                      ; encoded address/data
-        ld b,0Ch
-        call bc__mem_readback_register_regs
-        ld e,l                       ; saved config, D still holds BF
+        BC_MEM_READBACK 0Ch, e       ; saved config, D still holds BF
         ld l,d
         bit 0,l
         call z,_bc__mem_shadow_scope_open

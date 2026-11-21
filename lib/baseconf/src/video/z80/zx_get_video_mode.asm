@@ -3,7 +3,7 @@ SECTION code_clib
 PUBLIC _zx_get_video_mode
 PUBLIC _bc__video_read_mode_and_eff7
 PUBLIC bc__video_read_mode_regs
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 
 ; Return the sampled mode in L and EFF7 in H for C callers.
 ; SDCC no arguments. Preserve IX/IY, clobber AF/BC/DE/HL.
@@ -25,21 +25,17 @@ _bc__video_read_mode_and_eff7:
 ;
 ; SDCC no arguments, result in HL. Preserve IX/IY, clobber AF/BC/DE/HL.
 ; Register entry also returns the sampled EFF7 byte in B.
-; The readback helper preserves E, which holds the first register's mode bits.
+; E holds the first register's mode bits across the second read.
 _zx_get_video_mode:
 bc__video_read_mode_regs:
-        ld b,0Ch
-        call bc__mem_readback_register_regs
-        ld a,l
+        BC_MEM_READBACK 0Ch, a
         and 7
         ld e,a
-        ld b,0Bh
-        call bc__mem_readback_register_regs
-        ld b,l
+        BC_MEM_READBACK 0Bh, b
 
         ld a,e
         cp 3
-        ld a,l                       ; EFF7, preserving the mode comparison
+        ld a,b                       ; EFF7, preserving the mode comparison
         jr z,@zx_layout
         and 21h
         ld h,0

@@ -7,7 +7,7 @@ EXTERN _bc_video_operation_depth
 EXTERN _bc_newirq_enabled
 EXTERN _bc_read_video_output
 EXTERN bc__palette_encode_rgb222_regs
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 EXTERN _bc__mem_shadow_scope_open
 EXTERN bc__mem_shadow_scope_end_regs
 EXTERN bc__palette_fdd_control_from_status_regs
@@ -146,12 +146,9 @@ _bc_palette_load_rgb222:
         ld bc,00bfh
         in a,(c)
         ld (ix+PAL_BF),a
-        ld b,0ch
-        call bc__mem_readback_register_regs
+        BC_MEM_READBACK 0ch, l
         ld (ix+PAL_CONFIG),l
-        ld b,0fh
-        call bc__mem_readback_register_regs
-        ld a,l
+        BC_MEM_READBACK 0fh, a
         and 15
         ld (ix+PAL_BORDER),a
         ld l,(ix+PAL_BF)

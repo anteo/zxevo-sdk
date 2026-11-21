@@ -26,9 +26,9 @@ typedef enum {
  * or paging configuration outside the SDK, call bc_resync and prepare the slots
  * again. zx_display_page reads the live mode and paging registers. */
 
-/* Read the current beam color through 0DBD; it is raster-phase dependent. */
+/* Read the current beam color through readback register 0Dh; it is raster-phase dependent. */
 zx_status_t bc_read_beam_color(uint8_t *color);
-/* Read the glyph-row byte currently exposed by port 0EBDh, not a row selected by
- * character code. The result depends on raster phase. NULL returns ZX_INVALID_ARGUMENT. */
+/* Read the glyph-row byte currently exposed by readback register 0Eh.
+ * The result depends on raster phase. NULL returns ZX_INVALID_ARGUMENT. */
 zx_status_t bc_read_font_row(uint8_t *row);
 #endif

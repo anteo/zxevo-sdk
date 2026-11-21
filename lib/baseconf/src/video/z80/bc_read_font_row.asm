@@ -2,11 +2,12 @@
 
 SECTION code_clib
 PUBLIC _bc_read_font_row
+INCLUDE "memory/readback.inc"
 
 ; Read the glyph-row byte exposed at the current raster position. Model:
 ;
 ; if (!row) return ZX_INVALID_ARGUMENT;
-; *row = IN(0x0ebd);
+; *row = readback(0x0e);
 ; return ZX_OK;
 ;
 ; SDCC row:16 at SP+2. Return status in L. Preserve IX/IY,
@@ -21,8 +22,7 @@ _bc_read_font_row:
         or e
         ld l,1                       ; ZX_INVALID_ARGUMENT
         ret z
-        ld bc,0EBDh
-        in a,(c)
+        BC_MEM_READBACK 0Eh, a
         ld (de),a
         ld l,0                       ; ZX_OK
         ret

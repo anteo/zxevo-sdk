@@ -3,7 +3,7 @@ SECTION code_clib
 PUBLIC _zx_display_buffer
 EXTERN _bc_video_prepared_buffers
 EXTERN _bc_video_operation_depth
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 
 ; Present a prepared screen while preserving the live paging bits of 7FFD.
 ;
@@ -42,8 +42,7 @@ _zx_display_buffer:
         jr nz,@result
         inc hl
         ld e,(hl)                    ; desired screen and cached 128K mode flag
-        ld b,0Ah
-        call bc__mem_readback_register_regs
+        BC_MEM_READBACK 0Ah, l
         ld a,l
         xor e
         and 8

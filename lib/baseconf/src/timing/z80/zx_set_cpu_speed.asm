@@ -1,7 +1,7 @@
         MODULE zx_set_cpu_speed
 SECTION code_clib
 PUBLIC _zx_set_cpu_speed
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 EXTERN bc__mem_write_eff7_regs
 EXTERN bc__video_system_port_for_regs
 EXTERN _bc__mem_shadow_scope_begin
@@ -36,8 +36,7 @@ _zx_set_cpu_speed:
         cp 2
         jr z,@system
 
-        ld b,0Bh
-        call bc__mem_readback_register_regs
+        BC_MEM_READBACK 0Bh, l
         res 4,l
         bit 0,e
         jr nz,@write_eff7
@@ -52,8 +51,7 @@ _zx_set_cpu_speed:
         ret nz
 
 @system:
-        ld b,0Ch
-        call bc__mem_readback_register_regs
+        BC_MEM_READBACK 0Ch, l
         ld a,l
         and 7
         bit 1,e
@@ -72,9 +70,7 @@ _zx_set_cpu_speed:
         out (c),d
         call bc__mem_shadow_scope_end_regs
 
-        ld b,0Ch
-        call bc__mem_readback_register_regs
-        ld a,l
+        BC_MEM_READBACK 0Ch, a
         xor d
         and 8
         ld l,6                       ; ZX_UNSAFE_CONTEXT

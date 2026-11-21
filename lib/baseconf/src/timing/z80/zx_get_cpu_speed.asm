@@ -1,7 +1,7 @@
         MODULE zx_get_cpu_speed
 SECTION code_clib
 PUBLIC _zx_get_cpu_speed
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 
 ; Read the CPU speed selector from the system and EFF7 readback bytes.
 ;
@@ -11,20 +11,16 @@ EXTERN bc__mem_readback_register_regs
 ;                    : (eff7 & 0x10) ? ZX_CPU_3_5_MHZ : ZX_CPU_7_MHZ;
 ; return ZX_OK;
 ;
-; Fastcall output pointer in HL, status in L. Save system readback in a word
-; on the stack across EFF7 readback. Preserve IX/IY, clobber AF/BC/DE/HL.
+; Fastcall output pointer in HL, status in L. H holds the system byte across
+; EFF7 readback. Preserve IX/IY, clobber AF/BC/DE/HL.
 _zx_get_cpu_speed:
         ex de,hl
         ld a,d
         or e
         jr z,@invalid
-        ld b,0Ch
-        call bc__mem_readback_register_regs
-        push hl
-        ld b,0Bh
-        call bc__mem_readback_register_regs
-        pop bc                       ; C = system configuration
-        bit 3,c
+        BC_MEM_READBACK 0Ch, h
+        BC_MEM_READBACK 0Bh, l
+        bit 3,h
         ld a,2                       ; ZX_CPU_14_MHZ
         jr nz,@store
         bit 4,l

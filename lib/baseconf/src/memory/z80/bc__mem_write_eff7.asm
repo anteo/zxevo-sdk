@@ -2,7 +2,7 @@
 SECTION code_clib
 PUBLIC _bc__mem_write_eff7
 PUBLIC bc__mem_write_eff7_regs
-EXTERN bc__mem_readback_register_regs
+INCLUDE "memory/readback.inc"
 
 ; Write EFF7 through ordinary port decoding and confirm the stored value.
 ;
@@ -20,8 +20,7 @@ _bc__mem_write_eff7:
         add hl,sp
         ld e,(hl)
 bc__mem_write_eff7_regs:
-        ld b,0Ch
-        call bc__mem_readback_register_regs
+        BC_MEM_READBACK 0Ch, l
         bit 4,l
         ld l,6                       ; ZX_UNSAFE_CONTEXT
         ret nz
@@ -40,9 +39,7 @@ bc__mem_write_eff7_regs:
         ld bc,00BFh
         out (c),d
 @verify:
-        ld b,0Bh
-        call bc__mem_readback_register_regs
-        ld a,l
+        BC_MEM_READBACK 0Bh, a
         cp e
         ld l,6                       ; ZX_UNSAFE_CONTEXT
         ret nz
