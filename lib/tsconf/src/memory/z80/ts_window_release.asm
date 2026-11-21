@@ -2,13 +2,15 @@
 SECTION code_clib
 PUBLIC _ts_window_release
 EXTERN _ts__memory_window_owner
+EXTERN _ts__draw_window_leased
 
 ; Restore the original page and invalidate the active window lease.
 ;
 ; if (!lease || !lease->active) return ZX_INVALID_ARGUMENT;
 ; if (window_owner != lease) return ZX_BUSY;
 ; out(page_port(lease->window), lease->previous_page);
-; lease->active = 0; window_owner = NULL; return ZX_OK;
+; lease->active = 0; draw_window_leased = 0; window_owner = NULL;
+; return ZX_OK;
 ;
 ; SDCC lease pointer at SP+2, status in L. The original, resident lease is
 ; unchanged since acquire. AF/BC/DE/HL volatile, IX/IY preserved.
@@ -45,6 +47,8 @@ _ts_window_release:
         inc hl
         ld (hl),0                    ; active
         ld hl,0
+        ld a,l
+        ld (_ts__draw_window_leased),a
         ld (_ts__memory_window_owner),hl
         ret                          ; ZX_OK in L
 @invalid:

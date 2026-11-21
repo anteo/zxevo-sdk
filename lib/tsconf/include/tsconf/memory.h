@@ -24,6 +24,8 @@ zx_status_t ts_map_ram_page(zx_window_t window, zx_ram_page_t page);
 /* Save and temporarily replace the page in W2 or W3. These are the windows
  * with register readback. W0/W1 return ZX_UNSUPPORTED. Invalid arguments
  * return ZX_INVALID_ARGUMENT. Another active lease returns ZX_BUSY.
+ * An open graphics group also returns ZX_BUSY when it uses the same window.
+ * Drawing to a CPU-mapped target in a leased window resumes after release.
  * Keep lease and needed memory resident. Serialize with other paging users,
  * including packed drawing (W3), TS-BIOS (W2) and direct register writes. */
 zx_status_t ts_window_acquire(zx_window_t window, zx_ram_page_t page, ts_window_lease_t *lease);

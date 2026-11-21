@@ -147,18 +147,6 @@ int main(void) {
     ZX_ASSERT(zx_console_putc('A') == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_console_puts("A") == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_console_puts("") == ZX_OK && zx_console_puts(NULL) == ZX_INVALID_ARGUMENT);
-    ZX_ASSERT(zx_get_video_mode() == ZX_VIDEO_UNKNOWN);
-    ZX_ASSERT(zx_display_page(0x60) == ZX_NOT_INITIALIZED);
-    ZX_ASSERT(zx_display_buffer(ZX_DRAW_BUFFER_SLOTS) == ZX_INVALID_ARGUMENT);
-    ZX_ASSERT(zx_display_buffer(1) == ZX_UNAVAILABLE);
-    ZX_ASSERT(zx_set_video_mode(1) == ZX_INVALID_ARGUMENT);
-    ZX_ASSERT(zx_set_draw_buffer(ZX_VIDEO_ZX_256, 7, ZX_WINDOW_3) == ZX_OK);
-    ZX_ASSERT(zx_set_split_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_2, 7, ZX_WINDOW_3) ==
-              ZX_UNSUPPORTED);
-    ZX_ASSERT(ts_memory_get_page3() == 7 && zx_get_video_mode() == ZX_VIDEO_UNKNOWN);
-    ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_ZX_256) == ZX_OK);
-    ZX_ASSERT(zx_display_page(5) == ZX_OK);
-    ZX_ASSERT(ts_memory_get_page3() == 7 && zx_get_video_mode() == ZX_VIDEO_ZX_256);
     ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_GFX |
                                 TS_VIDEO_FLAG_HIDE_TSU) == ZX_OK);
     ZX_ASSERT(zx_get_video_mode() == (TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU));

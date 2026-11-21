@@ -21,4 +21,7 @@ _ts_video_prepared_buffers:
 
 SECTION bss_clib
 PUBLIC ts__graphics_group_depth
+PUBLIC _ts__draw_window_leased
 ts__graphics_group_depth: defb 0
+; A public RAM lease temporarily covers the selected CPU-mapped draw window.
+_ts__draw_window_leased: defb 0

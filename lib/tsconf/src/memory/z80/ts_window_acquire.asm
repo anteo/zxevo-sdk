@@ -2,12 +2,19 @@
 SECTION code_clib
 PUBLIC _ts_window_acquire
 EXTERN _ts__memory_window_owner
+EXTERN _ts__draw_window_leased
+EXTERN ts_draw_base
+EXTERN ts_draw_config
+EXTERN ts__graphics_group_depth
 
 ; Save the current page and install a temporary RAM mapping in W2 or W3.
 ;
 ; if (!lease || !aligned(window)) return ZX_INVALID_ARGUMENT;
 ; if (window < 0x8000) return ZX_UNSUPPORTED;
 ; if (window_owner) return ZX_BUSY;
+; overlaps_draw = draw_config != UNSELECTED && draw_base == window;
+; if (overlaps_draw && graphics_depth) return ZX_BUSY;
+; draw_window_leased = overlaps_draw;
 ; window_owner = lease;
 ; lease->window = window; lease->previous_page = in(page_port(window));
 ; lease->active = 1;
@@ -42,6 +49,18 @@ _ts_window_acquire:
         ld a,h
         or l
         jr nz,@busy
+        ld a,(ts_draw_config)
+        cp 0ffh
+        jr z,@claim
+        ld a,(ts_draw_base)
+        cp b
+        jr nz,@claim
+        ld a,(ts__graphics_group_depth)
+        or a
+        jr nz,@busy
+        inc a
+        ld (_ts__draw_window_leased),a
+@claim:
         ex de,hl
         ld (_ts__memory_window_owner),hl
         ld (hl),0                    ; window low byte

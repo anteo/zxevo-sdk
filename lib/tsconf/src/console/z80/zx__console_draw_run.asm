@@ -2,6 +2,7 @@
 SECTION code_clib
 PUBLIC _zx__console_draw_run
 EXTERN ts__console_write_cell
+EXTERN _ts__draw_window_leased
 IFDEF TSCONF_VIDEO_TEXT
 EXTERN ts_draw_config
 ELSE
@@ -17,6 +18,7 @@ ENDIF
 
 ; Draw a validated printable run under one W3 lease in packed modes.
 ;
+; if (draw_window_leased) return BUSY;
 ; if (native_text && transparent) return UNSUPPORTED;
 ; if (packed && !claim_w3()) return BUSY;
 ; while (length--) write_cell(column++, row, *text++, background);
@@ -27,6 +29,10 @@ ENDIF
 ; Return status in L, preserve IX/IY. IX holds the string pointer. Preserve
 ; D=remaining, E=background and BC=cell across each writer.
 _zx__console_draw_run:
+        ld a,(_ts__draw_window_leased)
+        or a
+        ld l,2                       ; ZX_BUSY
+        ret nz
         ld hl,2
         add hl,sp
         ld c,(hl)

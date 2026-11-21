@@ -10,6 +10,7 @@ EXTERN ts_packed_end
 ENDIF
 IFDEF TSCONF_VIDEO_ZX
 EXTERN ts_draw_base
+EXTERN _ts__draw_window_leased
 EXTERN zx__pixel_address
 EXTERN zx__attribute_address
 ENDIF
@@ -28,6 +29,7 @@ ENDIF
 ; if (mode == TEXT) return UNSUPPORTED;
 ; if (!in_bounds(mode, x, y)) return INVALID_ARGUMENT;
 ; if (mode == ZX) {
+;     if (draw_window_leased) return BUSY;
 ;     bit = bitmap(x,y); attr = attribute(x,y);
 ;     color = ((attr >> (bit ? 0 : 3)) & 7) | ((attr & 0x40) >> 3);
 ; } else {
@@ -127,6 +129,9 @@ IFDEF TSCONF_VIDEO_ZX
         ld a,e
         cp 192
         jr nc,@invalid
+        ld a,(_ts__draw_window_leased)
+        or a
+        jr nz,@busy
         ld a,(ts_draw_base)
         call zx__pixel_address
         and (hl)
@@ -156,12 +161,10 @@ ENDIF
         ld l,1                       ; ZX_INVALID_ARGUMENT
         pop ix
         ret
-IFDEF TSCONF_VIDEO_PACKED
 @busy:
         ld l,2                       ; ZX_BUSY
         pop ix
         ret
-ENDIF
 ELSE
         ld l,5                       ; ZX_UNSUPPORTED
         ret

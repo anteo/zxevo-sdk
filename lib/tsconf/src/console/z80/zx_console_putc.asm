@@ -3,6 +3,7 @@ SECTION code_clib
 PUBLIC _zx_console_putc
 PUBLIC ts_console_putc_a
 EXTERN ts_draw_config
+EXTERN _ts__draw_window_leased
 EXTERN ts_console_size
 EXTERN ts_console_position
 EXTERN ts__console_write_cell
@@ -19,6 +20,7 @@ ENDIF
 ; runs on a wrap or newline at the bottom row.
 ;
 ; if (draw_config == UNSELECTED) return NOT_INITIALIZED;
+; if (draw_window_leased) return BUSY;
 ; if (native_text && text_bg == TRANSPARENT) return UNSUPPORTED;
 ; if (c == TAB) do { write_and_advance(' '); } while (column & 7);
 ; else if (c < 32) cursor_control(c);
@@ -34,6 +36,10 @@ _zx_console_putc:
         ld a,(hl)
 ts_console_putc_a:
         ld d,a
+        ld a,(_ts__draw_window_leased)
+        or a
+        ld l,2                       ; ZX_BUSY
+        ret nz
         ld a,(ts_draw_config)
         cp 0ffh
         ld l,4                       ; ZX_NOT_INITIALIZED

@@ -15,6 +15,7 @@ EXTERN zx__paper
 ENDIF
 IFDEF TSCONF_VIDEO_ZX
 EXTERN ts_draw_base
+EXTERN _ts__draw_window_leased
 EXTERN zx__set_clipped
 EXTERN zx__clear
 EXTERN zx__xor
@@ -28,6 +29,7 @@ ENDIF
 ;     packed_operation = op;
 ;     return (packed_writer, 512, 512);
 ; }
+; if (draw_window_leased) return failure;
 ; return (zx_writer(op), 256, 192);
 ;
 ; A=operation. Carry on failure. On success HL=writer and
@@ -72,6 +74,9 @@ ENDIF
 ENDIF
 IFDEF TSCONF_VIDEO_ZX
 @zx:
+        ld a,(_ts__draw_window_leased)
+        or a
+        jr nz,writer_invalid
         ld a,c
         ld hl,write_zx_set
         or a

@@ -28,7 +28,10 @@ typedef struct {
  * The platform may reject windows whose mapping cannot be read back or whose
  * resident contents are pinned. TSConf supports W2/W3; BaseConf supports any
  * unpinned window after zx_init. Code, stack, lease and needed data must stay
- * outside the mapped window. Only one lease may be active per platform. */
+ * outside the mapped window. Only one lease may be active per platform.
+ * A lease can suspend access to the active draw buffer. Drawing operations
+ * with a status result return ZX_BUSY while access is suspended. Prepared
+ * slots are available again once the original mapping is restored. */
 zx_status_t zx_acquire_ram(zx_window_t window, zx_ram_page_t page, zx_ram_lease_t *lease);
 /* Replace the page in the same acquired window without losing its original
  * mapping. A foreign or inactive lease returns ZX_BUSY/ZX_INVALID_ARGUMENT. */

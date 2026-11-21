@@ -4,6 +4,7 @@
 
 extern ts_window_lease_t *ts__memory_window_owner;
 extern uint8_t ts_draw_config, ts_draw_base;
+extern uint8_t ts__draw_window_leased;
 extern zx_ram_page_t ts_draw_page;
 
 static zx_status_t prepare_draw_buffer(ts__draw_buffer_t *buffer, uint16_t mode,
@@ -44,5 +45,9 @@ zx_status_t zx_prepare_draw_buffer(uint8_t slot, uint16_t mode, zx_ram_page_t pa
 zx_status_t zx_set_draw_buffer(uint16_t mode, zx_ram_page_t page, zx_window_t window) {
     ts__draw_buffer_t target;
     zx_status_t status = prepare_draw_buffer(&target, mode, page, window);
-    return status == ZX_OK ? ts__video_commit_draw_buffer(&target) : status;
+    if (status != ZX_OK) return status;
+    /* Only a packed target can replace the current target while a lease is active. */
+    status = ts__video_commit_draw_buffer(&target);
+    ts__draw_window_leased = 0;
+    return status;
 }

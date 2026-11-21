@@ -3,11 +3,47 @@
 
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
+static void check_video_api(void) {
+    ZX_ASSERT(zx_get_video_mode() == ZX_VIDEO_UNKNOWN);
+    ZX_ASSERT(zx_display_page(0x60) == ZX_NOT_INITIALIZED);
+    ZX_ASSERT(zx_display_buffer(ZX_DRAW_BUFFER_SLOTS) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_display_buffer(1) == ZX_UNAVAILABLE);
+    ZX_ASSERT(zx_set_video_mode(1) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_set_draw_buffer(ZX_VIDEO_ZX_256, 7, ZX_WINDOW_3) == ZX_OK);
+    ZX_ASSERT(zx_set_split_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_2, 7, ZX_WINDOW_3) ==
+              ZX_UNSUPPORTED);
+    ZX_ASSERT(ts_memory_get_page3() == 7 && zx_get_video_mode() == ZX_VIDEO_UNKNOWN);
+    ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_ZX_256) == ZX_OK);
+    ZX_ASSERT(zx_display_page(5) == ZX_OK);
+    ZX_ASSERT(ts_memory_get_page3() == 7 && zx_get_video_mode() == ZX_VIDEO_ZX_256);
+    ZX_ASSERT(zx_shutdown() == ZX_OK);
+}
+
 static void check_zx(void) {
+    zx_ram_lease_t lease;
+    uint8_t index = 0x69;
+
     ts_map_ram_page(ZX_WINDOW_3, 5);
     ZX_ASSERT(zx_prepare_draw_buffer(0, TS_VIDEO_ZX_256X192, 5, ZX_WINDOW_3) == ZX_OK);
     ZX_ASSERT(zx_graphics_begin() == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_select_draw_buffer(0) == ZX_OK);
+
+    ZX_ASSERT(zx_graphics_begin() == ZX_OK);
+    ZX_ASSERT(zx_acquire_ram(ZX_WINDOW_3, 0x7d, &lease) == ZX_BUSY);
+    ZX_ASSERT(zx_graphics_end() == ZX_OK);
+    ZX_ASSERT(zx_acquire_ram(ZX_WINDOW_3, 0x7d, &lease) == ZX_OK);
+    w3[0] = 0x69;
+    ZX_ASSERT(zx_graphics_begin() == ZX_BUSY);
+    ZX_ASSERT(zx_read_pixel_index(0, 0, &index) == ZX_BUSY && index == 0x69);
+    ZX_ASSERT(zx_console_putc('A') == ZX_BUSY);
+    ZX_ASSERT(zx_console_draw(0, 0, "A") == ZX_BUSY);
+    ZX_ASSERT(zx_console_clear() == ZX_BUSY);
+    zx_draw_plot(0, 0);
+    zx_draw_fill_rect(0, 0, 8, 1);
+    ZX_ASSERT(w3[0] == 0x69);
+    ZX_ASSERT(zx_release_ram(&lease) == ZX_OK);
+    ZX_ASSERT(ts_memory_get_page3() == 5);
+
     w3[0] = 0;
     w3[0x100] = 0;
     w3[0x200] = 0;
@@ -135,6 +171,7 @@ int main(void) {
     ZX_ASSERT(zx_select_draw_buffer(0) == ZX_UNAVAILABLE);
     ZX_ASSERT(zx_graphics_begin() == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_graphics_end() == ZX_NOT_INITIALIZED);
+    check_video_api();
     check_zx();
     check_group();
     check_shapes();

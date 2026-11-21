@@ -5,6 +5,7 @@ IFDEF TSCONF_VIDEO_BITMAP
 EXTERN ts_draw_config
 IFDEF TSCONF_VIDEO_ZX
 EXTERN ts_draw_base
+EXTERN _ts__draw_window_leased
 EXTERN zx__bitmap_offset
 EXTERN zx__span_masks
 ENDIF
@@ -41,7 +42,7 @@ defc TS_RECT_PAINT = -15
 
 ; Fill the clipped rectangle with bitmap bits or palette indices by scanline.
 ;
-; if (mode == TEXT || !clip_extents(x,y,width,height)) return;
+; if (draw_window_leased || mode == TEXT || !clip_extents(x,y,width,height)) return;
 ; paint = zx_bitmap ? (op == SET ? 0xff : 0) : (op == SET ? ink : paper);
 ; prepare_byte_span(x_first, x_last, mode, paint);
 ; if (packed) begin(page, mode);
@@ -54,6 +55,11 @@ defc TS_RECT_PAINT = -15
 ; and the persistent locals above. IY preserved, AF/BC/DE/HL volatile.
 zx__graphics_rect_a:
         ld b,a
+IFDEF TSCONF_VIDEO_ZX
+        ld a,(_ts__draw_window_leased)
+        or a
+        ret nz
+ENDIF
         ld a,(ts_draw_config)
         and 3
         cp 3                         ; text or unselected

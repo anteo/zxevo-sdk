@@ -4,6 +4,7 @@ PUBLIC _zx_graphics_begin
 PUBLIC _zx_graphics_end
 EXTERN ts_draw_config
 EXTERN ts__graphics_group_depth
+EXTERN _ts__draw_window_leased
 IFDEF TSCONF_VIDEO_PACKED
 EXTERN ts_draw_page
 EXTERN ts_packed_begin_window
@@ -14,7 +15,7 @@ ENDIF
 ;
 ; if (!surface_selected) return ZX_NOT_INITIALIZED;
 ; if (native_text) return ZX_UNSUPPORTED;
-; if (depth >= 253 || (packed && !begin_window(page))) return ZX_BUSY;
+; if (draw_window_leased || depth >= 253 || (packed && !begin_window(page))) return ZX_BUSY;
 ; ++depth; return ZX_OK;
 ;
 ; No arguments. Status in L. AF/BC/DE/HL volatile, IX/IY preserved.
@@ -27,6 +28,9 @@ _zx_graphics_begin:
         cp 3
         jr z,@unsupported
         ld c,a
+        ld a,(_ts__draw_window_leased)
+        or a
+        jr nz,@busy
         ld a,(ts__graphics_group_depth)
         cp 253                       ; leave room for a nested text run and glyph
         jr nc,@busy

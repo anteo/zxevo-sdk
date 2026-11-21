@@ -4,6 +4,7 @@ PUBLIC _zx_console_clear
 EXTERN ts_console_size
 EXTERN ts_console_position
 EXTERN ts_draw_config
+EXTERN _ts__draw_window_leased
 IFDEF TSCONF_VIDEO_ZX
 EXTERN ts_console_zx_attribute
 EXTERN ts_draw_base
@@ -28,6 +29,7 @@ EXTERN zx__fill_bytes
 ; Clear the selected console and return the cursor to its origin.
 ;
 ; if (draw_config == UNSELECTED) return NOT_INITIALIZED;
+; if (draw_window_leased) return BUSY;
 ; if (mode == ZX) zx__clear_screen(base, zx_attribute());
 ; else if (mode == TEXT) for each console row { fill(codes, ' '); fill(attrs, attr); }
 ; else { if (!claim_w3()) return BUSY; fill_packed_pages(); release_w3(); }
@@ -37,6 +39,10 @@ EXTERN zx__fill_bytes
 ; A saved BC word holds the current row and width, or page counter and paint
 ; byte. AF/BC/DE/HL volatile, IX/IY preserved. SDCC result in L.
 _zx_console_clear:
+        ld a,(_ts__draw_window_leased)
+        or a
+        ld l,2                       ; ZX_BUSY
+        ret nz
         ld a,(ts_draw_config)
         cp 0ffh
         ld l,4                       ; ZX_NOT_INITIALIZED
