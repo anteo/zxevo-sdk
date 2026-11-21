@@ -31,6 +31,13 @@ make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 `SUITE`, например `make test SUITE=tsconf CASE=storage`. Команда
 `python3 tools/test_runner/runner.py all list` выводит совпадения без запуска.
 
+Команда `make test JOBS=4` или параметр `check --jobs 4` запускает до четырёх эмуляторов
+одновременно. Раннер собирает по одному кейсу, пока предыдущие выполняются. Эмуляторы занимают
+последовательные порты ZRCP начиная с `--port` (по умолчанию 10040). В терминале видны старт
+и результат каждого кейса. Шаги сохраняются в `<кейс>.steps.log` рядом с манифестом и выводятся
+целиком при падении. По умолчанию, а также при `--fail-fast` и `--update`, запуск последовательный.
+При продолжении прогона можно поменять число эмуляторов.
+
 Флаг `--fail-fast` или `make test FAIL_FAST=1` останавливает прогон на первом падении. Чтобы
 повторить упавшие тесты SDK, используйте
 `python3 tools/test_runner/runner.py all check --rerun-failed` или `make test RERUN_FAILED=1`.

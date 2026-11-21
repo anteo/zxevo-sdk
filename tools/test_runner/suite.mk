@@ -4,6 +4,7 @@ TEST_RUNNER_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 PYTHON ?= python3
 CASE ?=
 export ZX_TEST_CASE := $(strip $(CASE))
+export ZX_TEST_JOBS := $(strip $(JOBS))
 CASE_ARG = $(if $(ZX_TEST_CASE),--case "$$ZX_TEST_CASE")
 
 .NOTPARALLEL:
@@ -14,6 +15,7 @@ all: test
 test build list shots:
 	@$(PYTHON) "$(TEST_RUNNER_DIR)/runner.py" $(TEST_SUITE) \
 		$(if $(filter test shots,$@),check,$@) $(if $(filter shots,$@),--update) $(CASE_ARG) \
+		$(if $(and $(filter test,$@),$(ZX_TEST_JOBS)),--jobs "$$ZX_TEST_JOBS") \
 		$(if $(and $(filter test,$@),$(filter 1,$(FAIL_FAST))),--fail-fast) \
 		$(if $(and $(filter test,$@),$(filter 1,$(RERUN_FAILED))),--rerun-failed) \
 		$(if $(and $(filter test,$@),$(filter 1,$(CONTINUE))),--continue)
@@ -31,6 +33,7 @@ help:
 	  '  clean   Remove test build outputs and Python caches' \
 	  '  format  Format test sources and documentation' \
 	  'Pass CASE=<group or case> to test, build, list or shots.' \
+	  'Pass JOBS=N to run up to N emulators concurrently (default 1).' \
 	  'Pass FAIL_FAST=1, RERUN_FAILED=1 or CONTINUE=1 to test.'
 
 FORMAT_FILES := $(wildcard *.md) \

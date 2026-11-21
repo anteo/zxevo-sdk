@@ -5,11 +5,13 @@ import re
 import shutil
 import sys
 import tomllib
+from contextlib import closing
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..comparison import compare_data_files, compare_screenshots, expected_files, output_prefix, write_expected
-from ..emulator import find_zesarux, run_session
+from ..emulator import find_zesarux
+from ..execution import PreparedCase, emulator_results
 from ..profiles import case_profile_names, profile_layers
 from ..support import FrameworkError, TestFailure, console_label
 
@@ -247,14 +249,20 @@ class TestSuite:
         return summary.exit_code
 
     def check_runs(self, args, runs, zesarux, summary, *, label_prefix=None, record_outcome=None):
+        cases = self.prepare_runs(args, runs, summary, label_prefix, record_outcome)
+        with closing(emulator_results(cases, zesarux, args)) as results:
+            for case, result, elapsed in results:
+                self.report_case(args, case, result, elapsed, summary, record_outcome)
+                sys.stdout.flush()
+                if args.fail_fast and summary.exit_code:
+                    break
+
+    def prepare_runs(self, args, runs, summary, label_prefix, record_outcome):
         prefix = self.case_prefix if label_prefix is None else label_prefix
         for case_path, meta, chosen in runs:
             for profile in chosen:
                 relative_case = self.case_relative_path(case_path)
-                name = relative_case.name
                 run_dir = self.run_directory(relative_case, profile)
-                directories = self.expected_directories(case_path, profile)
-                shared_dir, specific_dir = directories[0], directories[-1]
                 case_path_label = relative_case.as_posix()
                 label = f"{prefix}{case_path_label} [{profile['name']}]"
                 run_key = (case_path_label, profile["name"])
@@ -275,145 +283,147 @@ class TestSuite:
                     if record_outcome is not None:
                         record_outcome(run_key, True)
                     if args.fail_fast:
-                        break
+                        return
                     continue
-                timeout = args.timeout or meta.get("timeout", 30)
                 summary.started += 1
-                print(f"{console_label('RUN', 6)}{label}", flush=True)
-                try:
-                    result = run_session(manifest_path, name, profile["name"],
-                                         zesarux, args.port, timeout, run_dir, args.verbose,
-                                         meta.get("audio_capture", False),
-                                         meta.get("audio_expectations"),
-                                         meta.get("audio_step_flush_cycles", 0),
-                                         meta.get("emulator_steps"))
-                except TimeoutError as error:
-                    print(f"{console_label('FAIL')} {label}: test timeout: {error}")
-                    summary.failures += 1
-                    summary.failed_runs.append(f"{label} (timeout)")
-                    if record_outcome is not None:
-                        record_outcome(run_key, True)
-                    if args.fail_fast:
-                        break
+                yield PreparedCase(case_path, relative_case, manifest_path, meta, profile, label)
+
+    def report_case(self, args, case, result, elapsed, summary, record_outcome):
+        label = case.label
+        run_key = (case.relative.as_posix(), case.profile["name"])
+        duration = f" ({elapsed:.2f}s)" if args.jobs > 1 and elapsed is not None else ""
+
+        def show_step_log():
+            if args.jobs > 1 and case.step_log.is_file():
+                print(case.step_log.read_text(encoding="utf-8"), end="")
+
+        if isinstance(result, Exception):
+            if isinstance(result, TimeoutError):
+                print(f"{console_label('FAIL')} {label}{duration}: test timeout: {result}")
+                summary.failures += 1
+                summary.failed_runs.append(f"{label} (timeout)")
+            else:
+                print(f"{console_label('FAIL')} {label}{duration}: emulator error: {result}")
+                summary.errors += 1
+                summary.failed_runs.append(f"{label} (emulator error)")
+            show_step_log()
+            if record_outcome is not None:
+                record_outcome(run_key, True)
+            return
+
+        case_path, meta, profile = case.source, case.meta, case.profile
+        name = case.relative.name
+        run_dir = case.manifest.parent
+        directories = self.expected_directories(case_path, profile)
+        shared_dir, specific_dir = directories[0], directories[-1]
+        case_failures = []
+        case_failures.extend(result["audio_errors"])
+        case_failures.extend(result["step_errors"])
+        do_update = args.update and result["status"] == 0
+        update_shared = len(directories) == 1 or self.updates_shared_expectations(meta, profile)
+        inherited = self.expected_outputs(directories[:-1], name)
+        references = inherited | self.expected_outputs(directories[-1:], name)
+        if args.update and result["status"] != 0:
+            case_failures.append("target reported FAIL; expected files were not updated")
+        produced = set()
+        for step, step_title, actual in result["shots"]:
+            summary.total_outputs += 1
+            produced.add(actual.name)
+            if do_update:
+                write_expected(actual, shared_dir, specific_dir, update_shared, inherited.get(actual.name))
+                continue
+            expected = references.get(actual.name, specific_dir / actual.name)
+            if actual.name not in references:
+                case_failures.append(f"missing expected {expected.relative_to(self.tests)}")
+                continue
+            try:
+                count, first = compare_screenshots(
+                    expected, actual, run_dir / f"{actual.stem}.diff.png",
+                    meta.get("emulator_steps", {}).get(step_title, {}).get("region"))
+            except (TestFailure, FrameworkError) as error:
+                case_failures.append(str(error))
+                continue
+            if count:
+                where = f"first at {first[0]},{first[1]}" if first else ""
+                case_failures.append(
+                    f"{actual.name}: {count} pixel(s) differ ({where}); "
+                    f"see {run_dir / (actual.stem + '.diff.png')}")
+        for step, step_title, actual, kind in result["data"]:
+            summary.total_outputs += 1
+            produced.add(actual.name)
+            if do_update:
+                write_expected(actual, shared_dir, specific_dir, update_shared, inherited.get(actual.name))
+                continue
+            expected = references.get(actual.name, specific_dir / actual.name)
+            if actual.name not in references:
+                case_failures.append(f"missing expected {expected.relative_to(self.tests)}")
+                continue
+            try:
+                message = compare_data_files(
+                    expected, actual, run_dir / f"{actual.stem}.diff.txt")
+            except (TestFailure, FrameworkError, OSError) as error:
+                case_failures.append(str(error))
+                continue
+            if message:
+                case_failures.append(message)
+        case_failures.extend(result.get("data_errors", []))
+        for orphan in references.values():
+            if orphan.name in produced:
+                continue
+            shared = shared_dir / orphan.name
+            if (do_update and inherited.get(orphan.name, shared) == shared
+                    and (update_shared or not shared.is_file())):
+                for path in dict.fromkeys((orphan, shared)):
+                    if path.is_file():
+                        path.unlink()
+                        print(f"     removed stale golden {path.relative_to(self.tests)}")
+            else:
+                case_failures.append(
+                    f"golden without a produced output: {orphan.relative_to(self.tests)}")
+        failed_steps = [step for step in result["steps"] if step["status"] == 1]
+        for step in failed_steps:
+            detail = " | ".join(line.strip() for line in step["log"].splitlines()[1:]
+                                if line.strip() and not line.startswith("DATA "))
+            case_failures.append(
+                f"step {step['step']}: {step['name']}: {detail or 'FAIL'}")
+        if result["status"] == 1 and not failed_steps:
+            detail = result.get("completion_detail", [])
+            case_failures.extend(detail or ["target reported FAIL"])
+        report = {
+            "case": name,
+            "machine": profile.get("machine", self.machine),
+            "profile": profile["name"],
+            "status": result["status"],
+            "skips": result["skips"],
+            "steps": result["steps"],
+            "screenshots": [
+                {"step": step, "name": step_title, "file": actual.name}
+                for step, step_title, actual in result["shots"]
+            ],
+            "data": [
+                {"step": step, "name": step_title, "file": actual.name, "kind": kind}
+                for step, step_title, actual, kind in result["data"]
+            ],
+            "failures": case_failures,
+            "updated": do_update,
+        }
+        report_path = run_dir / f"{output_prefix(name, profile['name'])}report.json"
+        report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        if record_outcome is not None:
+            record_outcome(run_key, bool(case_failures))
+        if case_failures:
+            summary.failures += 1
+            summary.failed_runs.append(label)
+            print(f"{console_label('FAIL')} {label}{duration}")
+            show_step_log()
+            for line in case_failures:
+                if (result.get("completion_failure_inline") and
+                        line in result.get("completion_detail", [])):
                     continue
-                except (OSError, ValueError, RuntimeError) as error:
-                    print(f"{console_label('FAIL')} {label}: emulator error: {error}")
-                    summary.errors += 1
-                    summary.failed_runs.append(f"{label} (emulator error)")
-                    if record_outcome is not None:
-                        record_outcome(run_key, True)
-                    if args.fail_fast:
-                        break
-                    continue
-                case_failures = []
-                case_failures.extend(result["audio_errors"])
-                case_failures.extend(result["step_errors"])
-                do_update = args.update and result["status"] == 0
-                update_shared = len(directories) == 1 or self.updates_shared_expectations(meta, profile)
-                inherited = self.expected_outputs(directories[:-1], name)
-                references = inherited | self.expected_outputs(directories[-1:], name)
-                if args.update and result["status"] != 0:
-                    case_failures.append("target reported FAIL; expected files were not updated")
-                produced = set()
-                for step, step_title, actual in result["shots"]:
-                    summary.total_outputs += 1
-                    produced.add(actual.name)
-                    if do_update:
-                        write_expected(actual, shared_dir, specific_dir, update_shared, inherited.get(actual.name))
-                        continue
-                    expected = references.get(actual.name, specific_dir / actual.name)
-                    if actual.name not in references:
-                        case_failures.append(f"missing expected {expected.relative_to(self.tests)}")
-                        continue
-                    try:
-                        count, first = compare_screenshots(
-                            expected, actual, run_dir / f"{actual.stem}.diff.png",
-                            meta.get("emulator_steps", {}).get(step_title, {}).get("region"))
-                    except (TestFailure, FrameworkError) as error:
-                        case_failures.append(str(error))
-                        continue
-                    if count:
-                        where = f"first at {first[0]},{first[1]}" if first else ""
-                        case_failures.append(
-                            f"{actual.name}: {count} pixel(s) differ ({where}); "
-                            f"see {run_dir / (actual.stem + '.diff.png')}")
-                for step, step_title, actual, kind in result["data"]:
-                    summary.total_outputs += 1
-                    produced.add(actual.name)
-                    if do_update:
-                        write_expected(actual, shared_dir, specific_dir, update_shared, inherited.get(actual.name))
-                        continue
-                    expected = references.get(actual.name, specific_dir / actual.name)
-                    if actual.name not in references:
-                        case_failures.append(f"missing expected {expected.relative_to(self.tests)}")
-                        continue
-                    try:
-                        message = compare_data_files(
-                            expected, actual, run_dir / f"{actual.stem}.diff.txt")
-                    except (TestFailure, FrameworkError, OSError) as error:
-                        case_failures.append(str(error))
-                        continue
-                    if message:
-                        case_failures.append(message)
-                case_failures.extend(result.get("data_errors", []))
-                for orphan in references.values():
-                    if orphan.name in produced:
-                        continue
-                    shared = shared_dir / orphan.name
-                    if (do_update and inherited.get(orphan.name, shared) == shared
-                            and (update_shared or not shared.is_file())):
-                        for path in dict.fromkeys((orphan, shared)):
-                            if path.is_file():
-                                path.unlink()
-                                print(f"     removed stale golden {path.relative_to(self.tests)}")
-                    else:
-                        case_failures.append(
-                            f"golden without a produced output: {orphan.relative_to(self.tests)}")
-                failed_steps = [step for step in result["steps"] if step["status"] == 1]
-                for step in failed_steps:
-                    detail = " | ".join(line.strip() for line in step["log"].splitlines()[1:]
-                                        if line.strip() and not line.startswith("DATA "))
-                    case_failures.append(
-                        f"step {step['step']}: {step['name']}: {detail or 'FAIL'}")
-                if result["status"] == 1 and not failed_steps:
-                    detail = result.get("completion_detail", [])
-                    case_failures.extend(detail or ["target reported FAIL"])
-                report = {
-                    "case": name,
-                    "machine": profile.get("machine", self.machine),
-                    "profile": profile["name"],
-                    "status": result["status"],
-                    "skips": result["skips"],
-                    "steps": result["steps"],
-                    "screenshots": [
-                        {"step": step, "name": step_title, "file": actual.name}
-                        for step, step_title, actual in result["shots"]
-                    ],
-                    "data": [
-                        {"step": step, "name": step_title, "file": actual.name, "kind": kind}
-                        for step, step_title, actual, kind in result["data"]
-                    ],
-                    "failures": case_failures,
-                    "updated": do_update,
-                }
-                report_path = run_dir / f"{output_prefix(name, profile['name'])}report.json"
-                report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-                if record_outcome is not None:
-                    record_outcome(run_key, bool(case_failures))
-                if case_failures:
-                    summary.failures += 1
-                    summary.failed_runs.append(label)
-                    print(f"{console_label('FAIL')} {label}")
-                    for line in case_failures:
-                        if (result.get("completion_failure_inline") and
-                                line in result.get("completion_detail", [])):
-                            continue
-                        print(f"     {line}")
-                    if args.fail_fast:
-                        break
-                else:
-                    summary.passed += 1
-                    skip_text = f" ({result['skips']} skipped step(s))" if result["skips"] else ""
-                    print(f"{console_label('PASS', 6)}{label}{skip_text}")
-            if args.fail_fast and summary.exit_code:
-                break
+                print(f"     {line}")
+        else:
+            summary.passed += 1
+            skip_text = f" ({result['skips']} skipped step(s))" if result["skips"] else ""
+            print(f"{console_label('PASS', 6)}{label}{skip_text}{duration}")
+            if args.verbose:
+                show_step_log()

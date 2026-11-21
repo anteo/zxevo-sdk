@@ -46,6 +46,8 @@ def parse_suite_args(suite, argv):
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("list", parents=[common], help="list discovered cases")
     check = subparsers.add_parser("check", parents=[common], help="run cases and compare results")
+    check.add_argument("--jobs", type=int, default=1, metavar="N",
+                       help="maximum concurrent emulators (default 1, sequential for --fail-fast and --update)")
     if suite != "asm":
         selection = check.add_mutually_exclusive_group()
         selection.add_argument("--rerun-failed", action="store_true",
@@ -57,7 +59,15 @@ def parse_suite_args(suite, argv):
         subparsers.add_parser("clean", parents=[common], help="remove build outputs and local Python caches")
     if not argv or argv[0].startswith("-"):
         argv = ["check", *argv]
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.command == "check":
+        if args.jobs < 1:
+            parser.error("--jobs must be positive")
+        if args.fail_fast or args.update:
+            args.jobs = 1
+        if args.port < 1 or args.port + args.jobs - 1 > 65535:
+            parser.error("the ZRCP port range must fit in 1..65535")
+    return args
 
 
 def select_recorded_runs(name, suite, runs, recorded):
@@ -164,6 +174,9 @@ def main():
 
     try:
         return run_suite(parser, entry)
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        return 130
     except (FrameworkError, OSError, sqlite3.Error, tomllib.TOMLDecodeError) as error:
         print(f"{console_label('error', stream=sys.stderr)}: {error}", file=sys.stderr)
         return 2

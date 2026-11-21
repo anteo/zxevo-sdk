@@ -33,6 +33,13 @@ make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 example `make test SUITE=tsconf CASE=storage`. Use `python3 tools/test_runner/runner.py all list` to
 list matches without running them.
 
+Use `make test JOBS=4` or `check --jobs 4` to run up to four emulators at once. The runner builds
+one case at a time while earlier cases execute. Workers use consecutive ZRCP ports starting at
+`--port` (default 10040). The terminal shows each case starting and finishing. Each worker writes
+its steps to `<case>.steps.log` next to the manifest, and the runner prints them on failure.
+The default, `--fail-fast` and `--update` run sequentially. A resumed plan can use a different
+worker count.
+
 Use `--fail-fast` (or `make test FAIL_FAST=1`) to stop at the first failure. To rerun recorded SDK
 failures, use `python3 tools/test_runner/runner.py all check --rerun-failed` or
 `make test RERUN_FAILED=1`. The local database at `build/test-runner/failed.sqlite3` records the

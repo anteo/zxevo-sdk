@@ -31,8 +31,10 @@ examples-xnx: appmake
 
 test: export ZX_TEST_SUITE := $(strip $(SUITE))
 test: export ZX_TEST_CASE := $(strip $(CASE))
+test: export ZX_TEST_JOBS := $(strip $(JOBS))
 test:
 	@$(PYTHON) tools/test_runner/runner.py "$$ZX_TEST_SUITE" check \
+		$(if $(strip $(JOBS)),--jobs "$$ZX_TEST_JOBS") \
 		$(if $(strip $(CASE)),--case "$$ZX_TEST_CASE") \
 		$(if $(filter 1,$(FAIL_FAST)),--fail-fast) $(if $(filter 1,$(RERUN_FAILED)),--rerun-failed) \
 		$(if $(filter 1,$(CONTINUE)),--continue)
