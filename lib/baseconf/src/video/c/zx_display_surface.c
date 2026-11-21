@@ -10,8 +10,7 @@ zx_status_t zx_display_surface(const zx_video_surface_t *surface) {
     status = bc__video_find_screen(surface->mode, surface->page0, &screen);
     if (status != ZX_OK) return status;
     target = bc_screen_surface((bc_video_mode_t)surface->mode, screen);
-    if (surface->page1 != target.page1)
-        return ZX_INVALID_ARGUMENT;
+    if (surface->page1 != target.page1) return ZX_INVALID_ARGUMENT;
     if (!bc_mem_initialized) return ZX_NOT_INITIALIZED;
     if (bc_mem_active_window_lease || bc_video_operation_depth) return ZX_BUSY;
 

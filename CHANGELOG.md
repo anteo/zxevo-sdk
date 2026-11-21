@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.2.0
+
+### Features
+
+- (test-runner) resume ASM tests across machine resets
+- (test-runner) support storage images and hotplug in ASM tests
+- (test-runner) resolve banked ROM boot symbols
+- (video) unify display mode selection
+- (video) unify surface selection and window addresses
+- (test-runner) highlight totals and recap failed cases
+- (test-runner) discover suites for a unified test run
+- (test-runner) rerun failed test profiles
+- (test-runner) resume interrupted test plans
+- (test-runner) report pending test runs
+
+### Fixes
+
+- (baseconf) include the private video declarations
+- (test-runner) honor per-step audio sample minimums
+
+### Other changes
+
+- (baseconf) remove standalone console TAP probes
+
+### Refactoring
+
+- (test-runner) share suite make targets
+
+### Tests
+
+- (tsconf) stabilize frame waits with line interrupts
+- (tsconf) require successful SD sector writes
+- (tsconf) allow PCM8 audio capture to drain
+
 ## v0.1.0
 
 ### Documentation

@@ -136,9 +136,9 @@ music, AYFX effects and PCM8/Covox samples.
   `ts_ram_heap_init` with a dedicated `ts_window_lease_t` to bind a common banked heap to W2 or W3.
   Allocation, mapping, unmapping, freeing and destruction use `zx_ram_heap_*`.
   [Common memory API](../common/include/zx/memory.h)
-- `zx_set_video_mode`, `zx_display_page` and `ts_video_set_scroll` set the display
-  layout, physical page and nine-bit graphics offsets. The video header also provides setters
-  for PalSel, Border, TSConfig and SGPage.
+- `zx_set_video_mode`, `zx_display_page` and `ts_video_set_scroll` set the display layout, physical
+  page and nine-bit graphics offsets. The video header also provides setters for PalSel, Border,
+  TSConfig and SGPage.
 - Use `ts_video_upload_sprites(ZX_WINDOW_3, first, sprites, count)` and
   `ts_video_upload_palette(ZX_WINDOW_3, first, colors, count)` to upload descriptors/colors. A NULL
   source clears the selected entries. These functions enable FMAPS in the first 4 KiB of the
@@ -160,9 +160,11 @@ music, AYFX effects and PCM8/Covox samples.
 
 The console and drawing primitives share a draw surface. `zx_init()` has no setup to do on TSConf.
 `zx_shutdown()` discards the software draw target once all window leases and graphics groups have
-ended. Set the display layout with `zx_set_video_mode` and query it with `zx_get_video_mode`.
-Use `ZX_VIDEO_ZX_256` for the standard ZX mode or select a TSConf layout such as
-`TS_VIDEO_16C_320X200`. To hide layers, OR in `TS_VIDEO_FLAG_*`. Show physical pages with `zx_display_page`. In ZX mode, pages 5 and 7 are the standard screen pages. Use `zx_draw_surface` to choose a draw target with its own mode.
+ended. Set the display layout with `zx_set_video_mode` and query it with `zx_get_video_mode`. Use
+`ZX_VIDEO_ZX_256` for the standard ZX mode or select a TSConf layout such as `TS_VIDEO_16C_320X200`.
+To hide layers, OR in `TS_VIDEO_FLAG_*`. Show physical pages with `zx_display_page`. In ZX mode,
+pages 5 and 7 are the standard screen pages. Use `zx_draw_surface` to choose a draw target with its
+own mode.
 
 `zx_graphics_get_size` reports pixel bounds on the selected draw surface, and
 `ts_video_get_raster_size` reports the native TSConf display area from the last VConfig written
@@ -175,7 +177,8 @@ surface in both profiles. `zx_console_puts()` writes a string at the cursor and
 `zx_console_printf()` formats strings and 16-bit integers without requiring stdio.
 [zx/printf.h](../common/include/zx/printf.h)
 
-The caller keeps the CPU mapping during output. This example uses a free W3 and a configured ZX palette.
+The caller keeps the CPU mapping during output. This example uses a free W3 and a configured ZX
+palette.
 
 ```c
 const zx_video_surface_t surface = {
@@ -190,9 +193,9 @@ zx_console_printf("TSConf %d\n", 48);
 zx_draw_line(16, 16, 96, 64);
 ```
 
-Use the same `zx_video_surface_t` for both standard ZX screens and arbitrary physical pages.
-Pass one CPU window address for ZX and text, and `NULL, NULL` for packed 16- and 256-color
-surfaces. In packed modes the library borrows W3 during drawing.
+Use the same `zx_video_surface_t` for both standard ZX screens and arbitrary physical pages. Pass
+one CPU window address for ZX and text, and `NULL, NULL` for packed 16- and 256-color surfaces. In
+packed modes the library borrows W3 during drawing.
 
 Native text stores 128 character bytes and 128 attribute bytes per row. Map the font page
 `surface.page0 ^ 1` and call `ts_console_load_text_font` to install the default ASCII glyphs. Then
@@ -226,8 +229,8 @@ group. They leave ink/paper, palettes and the displayed page unchanged, and do n
 For a 320×200 16C bitmap, `ts_video_draw_16c_tile` copies a packed 8×8 tile directly from physical
 RAM. `ts_video_fill_16c_screen`, `ts_video_copy_16c_screen` and `ts_video_copy_16c_tile` handle
 double buffering without application-owned DMA descriptors. Screen bases must align to eight
-physical pages; drawing goes to a hidden page and the application selects it with
-`zx_display_page` at a frame boundary. [16C video API](include/tsconf/video.h)
+physical pages; drawing goes to a hidden page and the application selects it with `zx_display_page`
+at a frame boundary. [16C video API](include/tsconf/video.h)
 
 ## Tile layers
 

@@ -4,9 +4,9 @@
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
 This directory contains the BaseConf test cases, profiles and runner targets. The shared
-[ZX Evolution test harness](../../../tools/test_runner/README.en.md) drives the emulator and compares
-results. [Common library cases](../../common/tests/README.en.md) run on both machines. The font
-benchmark lives in [`../bench/README.en.md`](../bench/README.en.md).
+[ZX Evolution test harness](../../../tools/test_runner/README.en.md) drives the emulator and
+compares results. [Common library cases](../../common/tests/README.en.md) run on both machines. The
+font benchmark lives in [`../bench/README.en.md`](../bench/README.en.md).
 
 ## Test framework
 
@@ -152,8 +152,8 @@ int main(void) {
 | `zx_test_step_skip(name, reason)`                | SKIP step                                             |
 | `zx_test_finish()`                               | final verdict; the CPU stays in a loop                |
 
-Video tests select screen 0 once for reproducible screenshots. `bc_case_select_video_mode()`
-sets the display mode and prepares the fixture's CPU mappings for drawing.
+Video tests select screen 0 once for reproducible screenshots. `bc_case_select_video_mode()` sets
+the display mode and prepares the fixture's CPU mappings for drawing.
 
 ### Result channels
 
@@ -370,8 +370,8 @@ UART case requires a ZEsarUX build with BaseConf UART support and the `--uartbri
 
 ### Coverage
 
-Run `make -C lib/baseconf/tests list` for the current case list. Select a group with
-`--case` and its directory name.
+Run `make -C lib/baseconf/tests list` for the current case list. Select a group with `--case` and
+its directory name.
 
 | Group                                 | Examples                                                                       |
 | ------------------------------------- | ------------------------------------------------------------------------------ |

@@ -41,8 +41,7 @@ int main(void) {
     demo_begin();
     upload(&image_resources[0], ATLAS_PAGE);
     /* Current SDK clear handles packed page mapping; no duplicate blitter. */
-    if (zx_draw_surface(&surface, NULL, NULL) != ZX_OK ||
-        zx_display_surface(&surface) != ZX_OK) {
+    if (zx_draw_surface(&surface, NULL, NULL) != ZX_OK || zx_display_surface(&surface) != ZX_OK) {
         demo_end();
         return 1;
     }

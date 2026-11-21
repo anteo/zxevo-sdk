@@ -28,8 +28,7 @@ zx_status_t bc__video_sync_cache(void) {
             if (status != ZX_OK) return status;
         }
     } else {
-        status = bc__video_find_page_windows((bc_map_t)map, &bc_video_draw_surface_state,
-                                             windows);
+        status = bc__video_find_page_windows((bc_map_t)map, &bc_video_draw_surface_state, windows);
     }
     bc_video_cached_map = map;
     bc_video_cached_manager_enabled = (uint8_t)((fpga_config & 0x20u) != 0u);

@@ -2,7 +2,7 @@
 #include "../../memory/internal.h"
 
 zx_status_t zx_draw_surface(const zx_video_surface_t *surface, zx_window_t window0,
-                                   zx_window_t window1) {
+                            zx_window_t window1) {
     bc__draw_surface_t target;
     bc_window_config_t config = {BC_RAM, 0, 0, 0};
     uint8_t single_page, protected_windows, replace0, replace1 = 0;

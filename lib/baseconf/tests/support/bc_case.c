@@ -26,11 +26,9 @@ zx_status_t bc_case_select_video_mode(bc_video_mode_t mode) {
     if (status != ZX_OK) return status;
     w1_writable = w1.kind == BC_RAM && !w1.substitute_from_7ffd_or_dos && !w1.write_protected;
     if (w1_writable && w1.physical_page == surface.page0)
-        return zx_draw_surface(&surface, ZX_WINDOW_1,
-                                      surface.page1 ? ZX_WINDOW_2 : NULL);
-    if (!surface.page1)
-        return zx_draw_surface(&surface, ZX_WINDOW_3, NULL);
+        return zx_draw_surface(&surface, ZX_WINDOW_1, surface.page1 ? ZX_WINDOW_2 : NULL);
+    if (!surface.page1) return zx_draw_surface(&surface, ZX_WINDOW_3, NULL);
     return zx_draw_surface(&surface, ZX_WINDOW_3,
-                                  w1_writable && w1.physical_page == surface.page1
-                                      ? ZX_WINDOW_1 : ZX_WINDOW_2);
+                           w1_writable && w1.physical_page == surface.page1 ? ZX_WINDOW_1
+                                                                            : ZX_WINDOW_2);
 }

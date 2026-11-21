@@ -211,11 +211,10 @@ if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
 For double buffering, select the back surface for drawing, draw the frame, then pass the same
-descriptor to `zx_display_surface()`. If the mode is already set, use `zx_display_page()`
-with the first physical page. Obtain the physical pages of a hardware screen from
-`bc_screen_surface()`. In ZX mode, primitives update
-the bitmap and preserve the attributes. [video.h](include/baseconf/video.h) ·
-[graphics.h](../common/include/zx/graphics.h)
+descriptor to `zx_display_surface()`. If the mode is already set, use `zx_display_page()` with the
+first physical page. Obtain the physical pages of a hardware screen from `bc_screen_surface()`. In
+ZX mode, primitives update the bitmap and preserve the attributes.
+[video.h](include/baseconf/video.h) · [graphics.h](../common/include/zx/graphics.h)
 
 `zx_blit4()` and `zx_blit4_key()` copy linear high-nibble-first 4bpp images to an ATM320 draw
 surface. The shared `zx_bitmap4_t` describes pixels, dimensions and byte stride; the keyed call

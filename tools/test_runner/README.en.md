@@ -20,39 +20,38 @@ adapters and keeps build and result directories separate by machine.
 
 ## Running the suites
 
-From the SDK root, run `make test` to discover suites and run them with one combined report. The runner needs
-Python 3.11 or newer and ZEsarUX with ZRCP. Set `ZESARUX` to select the executable, or let the
-runner find it on `PATH` or in a standard installation directory. Set `ZXEVO_TEST_ROM` to override
-the ROM used by the `ers-rom` and `ts-bios` profiles.
+From the SDK root, run `make test` to discover suites and run them with one combined report. The
+runner needs Python 3.11 or newer and ZEsarUX with ZRCP. Set `ZESARUX` to select the executable, or
+let the runner find it on `PATH` or in a standard installation directory. Set `ZXEVO_TEST_ROM` to
+override the ROM used by the `ers-rom` and `ts-bios` profiles.
 
 ```sh
 make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM
 ```
 
 `CASE` selects a case or directory across all suites. Add `SUITE` to restrict the search, for
-example `make test SUITE=tsconf CASE=storage`. Use
-`python3 tools/test_runner/runner.py all list` to list matches without running them.
+example `make test SUITE=tsconf CASE=storage`. Use `python3 tools/test_runner/runner.py all list` to
+list matches without running them.
 
-Use `--fail-fast` (or `make test FAIL_FAST=1`) to stop at the first failure. To rerun
-recorded SDK failures, use `python3 tools/test_runner/runner.py all check --rerun-failed`
-or `make test RERUN_FAILED=1`. The local database at `build/test-runner/failed.sqlite3`
-records the suite, machine, case path and profile. A passing run clears its entry.
-Filters and early stops leave unattempted entries available for another rerun.
+Use `--fail-fast` (or `make test FAIL_FAST=1`) to stop at the first failure. To rerun recorded SDK
+failures, use `python3 tools/test_runner/runner.py all check --rerun-failed` or
+`make test RERUN_FAILED=1`. The local database at `build/test-runner/failed.sqlite3` records the
+suite, machine, case path and profile. A passing run clears its entry. Filters and early stops leave
+unattempted entries available for another rerun.
 
-Use `--continue` or `make test CONTINUE=1` after `--fail-fast` or Ctrl+C. The runner saves
-the plan before starting and removes each case and profile as it records the outcome. A case
-interrupted by Ctrl+C stays pending. The database stores a separate plan for `all` and each named
-suite. Use the original suite name and omit `CASE`, `--profile` and `--filter` when resuming.
-`--rerun-failed` can be run first to retry the failure and leaves the saved remainder available.
+Use `--continue` or `make test CONTINUE=1` after `--fail-fast` or Ctrl+C. The runner saves the plan
+before starting and removes each case and profile as it records the outcome. A case interrupted by
+Ctrl+C stays pending. The database stores a separate plan for `all` and each named suite. Use the
+original suite name and omit `CASE`, `--profile` and `--filter` when resuming. `--rerun-failed` can
+be run first to retry the failure and leaves the saved remainder available.
 
-The runner recursively discovers `suite.toml` under `lib/`. Each manifest names its suite and
-lists `[[targets]]` with an adapter and machine. It uses `profiles.toml` next to the manifest
-unless the target supplies a different path. Each machine resolves its profiles independently.
+The runner recursively discovers `suite.toml` under `lib/`. Each manifest names its suite and lists
+`[[targets]]` with an adapter and machine. It uses `profiles.toml` next to the manifest unless the
+target supplies a different path. Each machine resolves its profiles independently.
 
-Binaries,
-manifests, reports and captures go to `tests/build/` under the corresponding library. The common
-suite adds machine-specific subdirectories. Run `make clean` from the SDK root to remove build and
-test outputs and Python caches. [BaseConf tests](../../lib/baseconf/tests/README.en.md) ·
+Binaries, manifests, reports and captures go to `tests/build/` under the corresponding library. The
+common suite adds machine-specific subdirectories. Run `make clean` from the SDK root to remove
+build and test outputs and Python caches. [BaseConf tests](../../lib/baseconf/tests/README.en.md) ·
 [TSConf tests](../../lib/tsconf/README.en.md#emulator-tests) ·
 [Common tests](../../lib/common/tests/README.en.md)
 
@@ -71,20 +70,18 @@ if the case omits both keys. ASM requires a profile. The `machine` field in a se
 profile chooses the ZEsarUX machine. All explicit `machine` values in a run must agree. Port writes
 are appended in order, including repetitions, and later layers can override mapper settings.
 
-Set `boot_pc` in a profile to stop the ROM at a Z80 address before the runner loads the case.
-ASM profiles can use `boot_symbol` instead. The runner resolves the name from the sjasmplus
-table passed to `--rom-symbols` when it builds the manifest. Set `boot_symbol_file` to select
-a different table relative to the directory of that file. If `boot_rom_bank` is present, the
-breakpoint also matches the physical ROM bank. This requires a ZEsarUX build that exposes the
-machine's mapped page in `EPC`.
-For `boot_symbol`, the runner issues a hard reset after pausing the CPU so it
-can reach a startup label even if the emulator passed it before ZRCP connected.
+Set `boot_pc` in a profile to stop the ROM at a Z80 address before the runner loads the case. ASM
+profiles can use `boot_symbol` instead. The runner resolves the name from the sjasmplus table passed
+to `--rom-symbols` when it builds the manifest. Set `boot_symbol_file` to select a different table
+relative to the directory of that file. If `boot_rom_bank` is present, the breakpoint also matches
+the physical ROM bank. This requires a ZEsarUX build that exposes the machine's mapped page in
+`EPC`. For `boot_symbol`, the runner issues a hard reset after pausing the CPU so it can reach a
+startup label even if the emulator passed it before ZRCP connected.
 
 For a breakpoint, `boot_cycles` limits the number of ZRCP `run` iterations. Reaching the limit
-without hitting the checkpoint fails the run. Profiles without a checkpoint use a fixed startup
-run. C suites default to 500,000 iterations. The TS-BIOS profile allows 1,000,000 while waiting
-for ROM PC `02B0h`, and the BaseConf `ers-rom` profile allows 2,000,000 while waiting for ROM PC
-`6155h`.
+without hitting the checkpoint fails the run. Profiles without a checkpoint use a fixed startup run.
+C suites default to 500,000 iterations. The TS-BIOS profile allows 1,000,000 while waiting for ROM
+PC `02B0h`, and the BaseConf `ers-rom` profile allows 2,000,000 while waiting for ROM PC `6155h`.
 
 Reference lookup starts in the case's reference directory, then follows the layer order. The full
 run name is checked last. For `stdio+60hz`, the profile directories are `default/`, `stdio/`,
@@ -131,28 +128,24 @@ keys are hexadecimal `xxAF` register indices and its values are bytes. The runne
 emulator's readback while the target is stopped at that step. A `joystick` byte sets the input
 before advancing the next step.
 
-An ASM case can set `reset = "soft"` or `reset = "hard"` in an
-`[emulator_steps.<step>]` table. After collecting the step output, the runner
-resets the same emulator, runs the ROM to the profile's boot point and
-reloads the test. The new entry receives the next zero-based step number
-in ZXHost `ARG0`. The initial launch receives zero. Use that number to
-dispatch to the matching part of the case. The emulator and attached
-images stay in the same session. An optional `reset_keys = ["symbol-shift"]`
-holds keys while the ROM boots.
+An ASM case can set `reset = "soft"` or `reset = "hard"` in an `[emulator_steps.<step>]` table.
+After collecting the step output, the runner resets the same emulator, runs the ROM to the profile's
+boot point and reloads the test. The new entry receives the next zero-based step number in ZXHost
+`ARG0`. The initial launch receives zero. Use that number to dispatch to the matching part of the
+case. The emulator and attached images stay in the same session. An optional
+`reset_keys = ["symbol-shift"]` holds keys while the ROM boots.
 
 ### Emulator storage images
 
-Set `mmc_present = false` under `[emulator_steps.<step>]` to eject SD1 after
-that step, or `mmc_present = true` to reinsert its configured image. The runner
-uses ZRCP `mmc-disable 0` and `mmc-enable 0` while the CPU is paused.
-For the second slot, use `mmc2_present`; the runner sends `mmc-disable 1`
-and `mmc-enable 1`.
-This requires ZEsarUX support for these commands. Both C and ASM cases can
-provide emulator launch options in the TOML `emulator_args` array of strings.
+Set `mmc_present = false` under `[emulator_steps.<step>]` to eject SD1 after that step, or
+`mmc_present = true` to reinsert its configured image. The runner uses ZRCP `mmc-disable 0` and
+`mmc-enable 0` while the CPU is paused. For the second slot, use `mmc2_present`; the runner sends
+`mmc-disable 1` and `mmc-enable 1`. This requires ZEsarUX support for these commands. Both C and ASM
+cases can provide emulator launch options in the TOML `emulator_args` array of strings.
 
-Declare each device the C or ASM case needs in its TOML. The runner creates the image under the run's
-`build/.../<profile>/emulator_images/` directory and attaches it to ZEsarUX with persistent writes
-disabled. Image paths in `manifest.json` are relative to the manifest's directory.
+Declare each device the C or ASM case needs in its TOML. The runner creates the image under the
+run's `build/.../<profile>/emulator_images/` directory and attaches it to ZEsarUX with persistent
+writes disabled. Image paths in `manifest.json` are relative to the manifest's directory.
 
 ```toml
 [emulator_images.ide]
@@ -162,14 +155,15 @@ size_sectors = 131_072
 mount_list = ["E:/DOCS/DISK.TRD C:"]
 ```
 
-The device keys are `mmc` for SD1, `mmc2` for SD2, `ide` for HDD and `trd` for a Beta Disk image. `ers-fat16`
-contains the ERS SD files, `ers-fat32` contains the ERS HDD files, and `ts-fat32` contains the
-fragmented file and nested directory used by TS-FAT. For FAT fixtures, `size_sectors` gives the size
-of the entire image in 512-byte sectors. The optional `mount_list` writes the listed lines to
-`IMAGE.MNT` on `ers-fat32`. The `trd` fixture has a fixed 640 KiB layout and takes only a filename.
+The device keys are `mmc` for SD1, `mmc2` for SD2, `ide` for HDD and `trd` for a Beta Disk image.
+`ers-fat16` contains the ERS SD files, `ers-fat32` contains the ERS HDD files, and `ts-fat32`
+contains the fragmented file and nested directory used by TS-FAT. For FAT fixtures, `size_sectors`
+gives the size of the entire image in 512-byte sectors. The optional `mount_list` writes the listed
+lines to `IMAGE.MNT` on `ers-fat32`. The `trd` fixture has a fixed 640 KiB layout and takes only a
+filename.
 
-To test insertion after boot, set `initially_present = false` in the image
-table and enable the card with `mmc_present = true` or `mmc2_present = true` in a step.
+To test insertion after boot, set `initially_present = false` in the image table and enable the card
+with `mmc_present = true` or `mmc2_present = true` in a step.
 
 ## ZXHost target runtime and mailbox
 

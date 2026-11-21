@@ -3,8 +3,8 @@
 [![English](https://img.shields.io/badge/lang-en-blue.svg)](README.en.md)
 [![Русский](https://img.shields.io/badge/lang-ru-green.svg)](README.ru.md)
 
-Здесь находятся кейсы BaseConf, профили и цели запуска. Общий раннер собирает кейсы, загружает их
-в ZEsarUX через ZRCP и сравнивает результаты, полученные через ZXHost.
+Здесь находятся кейсы BaseConf, профили и цели запуска. Общий раннер собирает кейсы, загружает их в
+ZEsarUX через ZRCP и сравнивает результаты, полученные через ZXHost.
 [Инфраструктура](../../../tools/test_runner/README.ru.md) ·
 [Общие кейсы](../../common/tests/README.ru.md) · [Замеры вывода шрифтов](../bench/README.ru.md)
 
@@ -185,9 +185,9 @@ python3 tools/test_runner/runner.py baseconf clean [--case PATH]
 
 ## Покрытие и ограничения
 
-Актуальный список показывает `make -C lib/baseconf/tests list`. Группы `core` и `memory`
-проверяют инициализацию, страницы, временные отображения, Flash и кучу. `video`, `palette` и
-`graphics` проверяют режимы, палитры, рисование, отсечение и прокрутку. `console` и `font` покрывают
+Актуальный список показывает `make -C lib/baseconf/tests list`. Группы `core` и `memory` проверяют
+инициализацию, страницы, временные отображения, Flash и кучу. `video`, `palette` и `graphics`
+проверяют режимы, палитры, рисование, отсечение и прокрутку. `console` и `font` покрывают
 `zx_console_printf`, CRT stdio, шрифты и вывод текста. `input`, `rtc`, `timing` и `interrupt`
 проверяют PS/2, RTC, скорость CPU, IRQ и NMI. `storage` и `ers` покрывают SD, FDD и сервисы ROM.
 Звук, мышь Kempston, UART, Nemo IDE, ZX-атрибуты, данные SD, версия AVR, пул страниц и куча также

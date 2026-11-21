@@ -36,7 +36,7 @@ typedef struct {
  * explicit mappings and keeps live code and data outside windows it remaps.
  * Display configuration is preserved. */
 zx_status_t zx_draw_surface(const zx_video_surface_t *surface, zx_window_t window0,
-                                   zx_window_t window1);
+                            zx_window_t window1);
 
 /* Set the mode and show the surface. BaseConf requires a hardware screen's
  * exact pages. TSConf accepts an aligned physical page for the mode. CPU

@@ -5,7 +5,7 @@
 extern ts_window_lease_t *ts__memory_window_owner;
 
 zx_status_t zx_draw_surface(const zx_video_surface_t *surface, zx_window_t window0,
-                                   zx_window_t window1) {
+                            zx_window_t window1) {
     ts__draw_surface_t target;
     zx_status_t status;
     uint8_t layout;
