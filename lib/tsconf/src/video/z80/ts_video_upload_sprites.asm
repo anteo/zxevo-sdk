@@ -7,7 +7,7 @@ EXTERN ts__fmaps_upload
 ;
 ; if (!aligned(window) || first+count>85) return INVALID_ARGUMENT;
 ; if (!count) return OK;
-; return fmaps_upload(window,0x200+6*first,source,6*count);
+; return fmaps_upload(window>>8,0x200+6*first,source,6*count);
 ;
 ; SDCC caller-clean: window address SP+2, first SP+4, source SP+5, count SP+7.
 ; Status L; AF/BC/DE/HL volatile, IX/IY preserved. No local frame.
@@ -19,13 +19,10 @@ _ts_video_upload_sprites:
         or a
         jr nz,@invalid
         inc hl
-        ld a,(hl)
+        ld b,(hl)
+        ld a,b
         and 3fh
         jr nz,@invalid
-        ld a,(hl)
-        rlca
-        rlca
-        ld b,a                       ; window index
         inc hl
         ld a,(hl)
         cp 86
@@ -45,7 +42,7 @@ _ts_video_upload_sprites:
         ld a,(hl)
         or a
         jr z,@ok
-        push bc                      ; window/first
+        push bc                      ; window high byte / first descriptor
         push de                      ; source
         ld l,a
         ld h,0
@@ -57,7 +54,7 @@ _ts_video_upload_sprites:
         ld b,h
         ld c,l
         pop hl                       ; source
-        pop de                       ; D=window, E=first
+        pop de                       ; D=window high byte, E=first
         push hl
         ld a,d
         ld d,0

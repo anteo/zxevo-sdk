@@ -5,13 +5,14 @@ PUBLIC ts__fmaps_upload
 ; Map FMAPS at the start of a CPU window, transfer bytes, then unmap it.
 ; The typed entry points have already checked window and destination bounds.
 ;
-; destination=(window<<14)+offset;
-; saved_iff=IFF2; DI(); OUT(0x15af,0x10|(window<<2));
+; destination=(window_high<<8)+offset;
+; saved_iff=IFF2; DI(); OUT(0x15af,0x10|(window_high>>4));
 ; if (source) copy_bytes_low_first(destination,source,count);
 ; else fill_bytes(destination,0,count);
 ; OUT(0x15af,0); restore_iff(saved_iff); return OK;
 ;
-; A=window0..3, DE=even offset, HL=source or NULL, BC=nonzero even byte count.
+; A=window address high byte (00h/40h/80h/C0h), DE=even offset,
+; HL=source or NULL, BC=nonzero even byte count.
 ; Result L=ZX_OK; AF/BC/DE/HL volatile, IX/IY/SP preserved. Saved IFF flags
 ; occupy two stack bytes throughout the transfer; temporary BC preserves count
 ; across the FMAddr port write. Source/code/stack stay outside the 4KiB aperture.
@@ -19,9 +20,7 @@ PUBLIC ts__fmaps_upload
 ; or NMI writers. Does not remap RAM or touch the cache; paging stays caller-owned.
 ; Low byte precedes high byte: each odd-address store commits its internal word.
 ts__fmaps_upload:
-        rrca
-        rrca                         ; window<<6, CPU address high byte
-        or d
+        or d                         ; add the window base to the offset
         ld d,a
         ld a,i
         di
@@ -31,7 +30,7 @@ ts__fmaps_upload:
         rrca
         rrca
         rrca
-        rrca                         ; window<<2
+        rrca                         ; address bits 15:14 become FMAddr bits 3:2
         or 10h
         push bc
         ld bc,15afh
