@@ -2,5 +2,5 @@
 #include "../internal.h"
 
 bc_readback_backend_t bc_get_readback_backend(void) {
-    return bc_mem_readback_backend;
+    return (bc_readback_backend_t)(bc_mem_readback_port - 0xbdu);
 }

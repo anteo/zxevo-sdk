@@ -17,7 +17,7 @@ static uint8_t bc__mem_calculate_pinned_windows(void) {
 
 zx_status_t zx_init(void) {
     if (bc_mem_active_window_lease || bc_video_operation_depth) return ZX_BUSY;
-    if (bc__mem_readback_is_unsafe(bc_mem_readback_backend)) return ZX_UNSAFE_CONTEXT;
+    if (!bc__mem_detect_readback()) return ZX_UNSAFE_CONTEXT;
 
     /* A caller override is useful for overlays with code or resident data in
      * additional windows. Otherwise protect the library's code/state and the

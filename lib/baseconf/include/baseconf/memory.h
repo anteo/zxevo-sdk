@@ -33,7 +33,7 @@ zx_status_t bc_get_paging_state(bc_paging_snapshot_t *state);
 /* Return the current software mask (bits 0..3 are W0..W3); no hardware readback
  * is performed and the mask is not checked against actual code/stack placement. */
 uint8_t bc_get_pinned_windows(void);
-/* Return the selected software backend without reading or validating hardware. */
+/* Return the backend detected by zx_init, or BD before the first successful init. */
 bc_readback_backend_t bc_get_readback_backend(void);
 /* Copy a cached map/window configuration. Requires zx_init and returns
  * ZX_INVALID_ARGUMENT for invalid map/window or NULL configuration.
@@ -80,14 +80,6 @@ zx_status_t bc_set_page_manager_enabled(uint8_t enabled);
  * stored unchanged. Include every window holding resident code, data or stack;
  * the library does not validate the assertion. */
 void bc_set_pinned_windows(uint8_t mask);
-/* Select the FPGA window-readback port: BD for the standard image, BE for
- * portbemux images. Before init, record the selection for zx_init to check.
- * After init, probe the new port before refreshing the window and video
- * caches. If all probed memory registers read FF, return ZX_UNSAFE_CONTEXT
- * and retain the previous backend and caches. Selecting the current backend
- * is a no-op. Returns ZX_INVALID_ARGUMENT for an unknown backend and ZX_BUSY
- * during a window lease/video operation. */
-zx_status_t bc_set_readback_backend(bc_readback_backend_t backend);
 /* Set BF.0 shadow-port override (zero off, nonzero on), changing mirrored-port
  * decoding. Returns ZX_BUSY during a video operation, otherwise ZX_OK. */
 zx_status_t bc_set_shadow_ports_override(uint8_t enabled);

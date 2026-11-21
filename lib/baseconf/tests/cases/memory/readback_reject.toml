@@ -1,2 +1,2 @@
-description = "Reject a failed readback probe before changing the selected backend or cache"
+description = "Detect BE when BD fails and retain the port and cache when both probes fail"
 profile = "no-stdio"

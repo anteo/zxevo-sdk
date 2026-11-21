@@ -32,14 +32,6 @@ static void check_readback(void) {
     ZX_ASSERT(bc_get_paging_state(0) == ZX_INVALID_ARGUMENT);
 
     ZX_ASSERT(bc_get_readback_backend() == BC_READBACK_BD);
-    ZX_ASSERT(bc_set_readback_backend(BC_READBACK_BE) == ZX_OK);
-    ZX_ASSERT(bc_get_readback_backend() == BC_READBACK_BE);
-    ZX_ASSERT(bc_readback_register(REG_PAGING) == paging);
-    ZX_ASSERT(bc_readback_register(REG_ADDRESSING) == eff7);
-    ZX_ASSERT(bc_readback_register(REG_SYSTEM) == system);
-    ZX_ASSERT(bc_set_readback_backend((bc_readback_backend_t)2) == ZX_INVALID_ARGUMENT);
-    ZX_ASSERT(bc_get_readback_backend() == BC_READBACK_BE);
-    ZX_ASSERT(bc_set_readback_backend(BC_READBACK_BD) == ZX_OK);
     zx_test_step_marker("readback");
 }
 

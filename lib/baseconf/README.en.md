@@ -81,8 +81,9 @@ Rebuild the archive and relink after changing these options. In hardware text mo
 ## Initialization and setup
 
 The SDK CRT calls `zx_init()` before `main()`, after the stack and static storage are ready.
-Initialization reads the live FPGA state and returns `ZX_UNSAFE_CONTEXT` if the readback probe
-fails. The default readback port is BD and the default ERS profile is the service ROM.
+On startup, `zx_init()` probes BD, then tries BE if BD returns only `0xFF`. It saves the
+responding port and uses it to read the FPGA state. If both probes fail, it returns
+`ZX_UNSAFE_CONTEXT`. The default ERS profile is the service ROM.
 
 The application is responsible for memory maps and screen surfaces. Alongside initialization, an
 application can choose an ERS profile with `bc_ers_set_profile()`, override the pinned-window mask
@@ -93,7 +94,7 @@ it returns `ZX_UNSAFE_CONTEXT` because the hardware would replace all RAM window
 pages must be mapped as writable RAM in windows W1–W3. Normal drawing operations do not remap
 windows or change memory protection.
 
-For manual startup, for example to choose BE before the first probe, compile with
+For manual startup, compile with
 `-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0` and call `zx_init()` and `zx_shutdown()` explicitly.
 Shutdown returns `ZX_BUSY` while a window lease or graphics group is active. Hardware mappings and
 display settings stay in effect, so `zx_init()` can read them again.

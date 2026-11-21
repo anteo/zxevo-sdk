@@ -7,7 +7,7 @@
 
 #define BC_PORT_BF 0x00bfu
 
-extern bc_readback_backend_t bc_mem_readback_backend;
+extern uint8_t bc_mem_readback_port;
 extern uint8_t bc_mem_maps_prepared;
 extern uint8_t bc_mem_pinned_window_mask;
 extern uint8_t bc_mem_pinned_window_override;
@@ -15,7 +15,7 @@ extern uint8_t bc_mem_active_map;
 extern uint8_t bc_mem_initialized;
 extern bc_window_config_t bc_mem_window_cache[2][4];
 extern bc_window_lease_t *bc_mem_active_window_lease;
-uint8_t bc__mem_readback_is_unsafe(bc_readback_backend_t backend) __z88dk_fastcall;
+uint8_t bc__mem_detect_readback(void);
 /* Reconstruct the xx77 port from one 0Ch readback byte. */
 uint16_t bc__mem_xx77_port(uint8_t config) __z88dk_fastcall;
 void bc__mem_decode_window(uint8_t map, uint8_t window, uint8_t config_bits,

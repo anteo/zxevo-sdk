@@ -1,6 +1,6 @@
 #include <baseconf.h>
 
-bc_readback_backend_t bc_mem_readback_backend = BC_READBACK_BD;
+uint8_t bc_mem_readback_port = 0xbdu;
 uint8_t bc_mem_maps_prepared;
 uint8_t bc_mem_pinned_window_mask;
 uint8_t bc_mem_pinned_window_override;
