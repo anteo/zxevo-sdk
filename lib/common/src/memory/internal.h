@@ -4,6 +4,7 @@
 #include <zx/memory.h>
 
 #define ZX__WINDOW_VALID(window) (((uintptr_t)(window) & ~(uintptr_t)0xc000u) == 0)
+#define ZX__WINDOW_BASE(address) ((zx_window_t)((uintptr_t)(address) & 0xc000u))
 #define ZX__WINDOW_INDEX(window) ((uint8_t)((uintptr_t)(window) >> 14))
 #define ZX__WINDOW_ADDRESS(index) ((zx_window_t)((uintptr_t)(index) << 14))
 

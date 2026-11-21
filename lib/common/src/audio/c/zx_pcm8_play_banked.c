@@ -13,14 +13,12 @@ zx_status_t zx_pcm8_play_banked(const zx_pcm8_banked_t *sample, zx_window_t wind
     first_address = (uint16_t)sample;
     if (first_address > (uint16_t)(0xffffu - sizeof(*sample) + 1u)) return ZX_INVALID_ARGUMENT;
     last_address = first_address + sizeof(*sample) - 1u;
-    if ((first_address >> 14) == ZX__WINDOW_INDEX(window) ||
-        (last_address >> 14) == ZX__WINDOW_INDEX(window))
+    if (ZX__WINDOW_BASE(first_address) == window || ZX__WINDOW_BASE(last_address) == window)
         return ZX_INVALID_ARGUMENT;
     first_address = (uint16_t)lease;
     if (first_address > (uint16_t)(0xffffu - sizeof(*lease) + 1u)) return ZX_INVALID_ARGUMENT;
     last_address = first_address + sizeof(*lease) - 1u;
-    if ((first_address >> 14) == ZX__WINDOW_INDEX(window) ||
-        (last_address >> 14) == ZX__WINDOW_INDEX(window))
+    if (ZX__WINDOW_BASE(first_address) == window || ZX__WINDOW_BASE(last_address) == window)
         return ZX_INVALID_ARGUMENT;
 
     page = sample->first_page;
