@@ -9,7 +9,7 @@ static const uint8_t video_by_mode[] = {3, 3, 3, 0, 2, 6, 7};
 zx_status_t zx_set_video_mode(uint16_t mode_number) {
     bc_video_mode_t mode;
     zx_status_t status;
-    uint8_t eff7;
+    uint8_t eff7, displayed_mode;
     uint8_t sys;
 
     if (mode_number > BC_VIDEO_EVO_TEXT_80) return ZX_INVALID_ARGUMENT;
@@ -25,13 +25,14 @@ zx_status_t zx_set_video_mode(uint16_t mode_number) {
     if (mode == BC_VIDEO_ZX_MULTICOLOR) eff7 |= 0x20u;
     if (mode == BC_VIDEO_PENTAGON_256) eff7 |= 0x01u;
     /* Revalidate the draw context after updating the FPGA mode registers. */
-    bc__video_invalidate_cache();
+    bc__video_invalidate_draw_cache();
     status = bc__mem_write_eff7(eff7);
-    if (status != ZX_OK) return status;
-    {
+    if (status == ZX_OK) {
         uint8_t bf = bc__mem_shadow_scope_begin();
         z80_outp(bc__video_system_port(0), (uint8_t)((sys & 0x08u) | video_by_mode[mode]));
         bc__mem_shadow_scope_end(bf);
     }
-    return zx_get_video_mode() == mode ? ZX_OK : ZX_UNSAFE_CONTEXT;
+    displayed_mode = bc__video_refresh_display_buffers();
+    if (status != ZX_OK) return status;
+    return displayed_mode == mode ? ZX_OK : ZX_UNSAFE_CONTEXT;
 }

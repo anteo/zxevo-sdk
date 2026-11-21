@@ -5,16 +5,12 @@
 #include <stdlib.h>
 
 int main(void) {
-    const zx_video_surface_t screen = {
-        .mode = ZX_VIDEO_ZX_256,
-        .page0 = 5,
-    };
     zx_ram_page_t saved_w3 = ts_memory_get_page3();
     zx_status_t status;
 
     /* Keep the BASIC stack and system variables in W1 while drawing via W3. */
-    if (zx_display_surface(&screen) != ZX_OK) return 1;
-    if (zx_draw_surface(&screen, ZX_WINDOW_3, NULL) != ZX_OK) return 1;
+    if (zx_set_video_mode(ZX_VIDEO_ZX_256) != ZX_OK || zx_display_page(5) != ZX_OK) return 1;
+    if (zx_set_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_3) != ZX_OK) return 1;
 
     zx_set_colors(COLOR_BLACK, COLOR_WHITE, COLOR_BLACK);
     status = zx_console_clear();

@@ -77,7 +77,6 @@ int main(void) {
         zx_test_finish();
         return 0;
     }
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     draw_mode(BC_VIDEO_ZX_256, "zx256");
     draw_mode(BC_VIDEO_ZX_MULTICOLOR, "multicolor");
     draw_mode(BC_VIDEO_PENTAGON_256, "pentagon256");

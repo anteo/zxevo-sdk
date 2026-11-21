@@ -163,7 +163,7 @@ The console and drawing primitives share a draw surface. `zx_init()` has no setu
 ended. Set the display layout with `zx_set_video_mode` and query it with `zx_get_video_mode`. Use
 `ZX_VIDEO_ZX_256` for the standard ZX mode or select a TSConf layout such as `TS_VIDEO_16C_320X200`.
 To hide layers, OR in `TS_VIDEO_FLAG_*`. Show physical pages with `zx_display_page`. In ZX mode,
-pages 5 and 7 are the standard screen pages. Use `zx_draw_surface` to choose a draw target with its
+pages 5 and 7 are the standard screen pages. Use `zx_set_draw_buffer` to choose a draw target with its
 own mode.
 
 `zx_graphics_get_size` reports pixel bounds on the selected draw surface, and
@@ -181,25 +181,22 @@ The caller keeps the CPU mapping during output. This example uses a free W3 and 
 palette.
 
 ```c
-const zx_video_surface_t surface = {
-    .mode = ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_TSU,
-    .page0 = 0x60,
-};
-
 ts_video_set_scroll(0, 0);
-if (zx_draw_surface(&surface, ZX_WINDOW_3, NULL) != ZX_OK ||
-    zx_display_surface(&surface) != ZX_OK) return 1;
+if (zx_set_draw_buffer(ZX_VIDEO_ZX_256, 0x60, ZX_WINDOW_3) != ZX_OK ||
+    zx_set_video_mode(ZX_VIDEO_ZX_256 | TS_VIDEO_FLAG_HIDE_TSU) != ZX_OK ||
+    zx_display_page(0x60) != ZX_OK) return 1;
 zx_console_printf("TSConf %d\n", 48);
 zx_draw_line(16, 16, 96, 64);
 ```
 
-Use the same `zx_video_surface_t` for both standard ZX screens and arbitrary physical pages. Pass
-one CPU window address for ZX and text, and `NULL, NULL` for packed 16- and 256-color surfaces. In
-packed modes the library borrows W3 during drawing.
+Pass the physical base page of the buffer, including standard ZX screen pages or arbitrary RAM
+pages. Use a CPU window address for ZX and text, and `NULL` for packed 16- and 256-color formats.
+In packed modes the library borrows W3 during drawing.
 
 Native text stores 128 character bytes and 128 attribute bytes per row. Map the font page
-`surface.page0 ^ 1` and call `ts_console_load_text_font` to install the default ASCII glyphs. Then
-map and select the text page. The console takes its grid size from the selected surface's raster. In
+`page ^ 1`, where `page` is the text buffer's base, and call `ts_console_load_text_font` to install
+the default ASCII glyphs. Then map and select the text page. The console takes its grid size from
+the selected surface's raster. In
 ZX and packed modes, pass `&zx_font8`, `&zx_font5` or a custom descriptor to `zx_console_set_font`.
 Use `zx_set_ink` and `zx_set_paper` to set the console colors. These values persist across
 draw-surface changes. The console uses canvas coordinates starting at the origin.

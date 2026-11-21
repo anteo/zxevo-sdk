@@ -58,9 +58,6 @@ zx_status_t bc_resync(void);
  * pinned windows in both maps (otherwise ZX_UNSAFE_CONTEXT). Returns ZX_BUSY
  * during a window lease/video operation or if the paging lock prevents switching. */
 zx_status_t bc_select_map(bc_map_t map);
-/* Set 7FFD's displayed-screen bit to 0 or 1 without changing the draw target.
- * Requires zx_init; returns ZX_BUSY if the 128K paging lock prevents a change. */
-zx_status_t bc_select_screen(zx_screen_t screen);
 /* Select 128 KiB (including the 7FFD lock bit) or 1024 KiB interpretation of
  * paging bits through EFF7. Requires zx_init; returns ZX_BUSY during video
  * operations and propagates errors when the register cannot be safely changed. */

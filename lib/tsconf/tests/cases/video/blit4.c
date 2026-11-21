@@ -4,14 +4,12 @@
 #define SCREEN_HEIGHT 512
 #include "../../../../common/tests/support/blit4_checks.h"
 int main(void) {
-    const zx_video_surface_t surface = {TS_VIDEO_16C_256X192, 0x50, 0};
-    const zx_video_surface_t other = {TS_VIDEO_256C_256X192, 0x40, 0};
     ts_window_lease_t lease;
     zx_bitmap4_t unsafe = image4;
     volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
     zx_test_init();
     ZX_ASSERT(zx_blit4(&image4, 0, 0) == ZX_NOT_INITIALIZED);
-    ZX_ASSERT(zx_draw_surface(&surface, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_16C_256X192, 0x50, NULL) == ZX_OK);
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     w3[0] = 0x69;
     check_blit_pixels();
@@ -36,7 +34,7 @@ int main(void) {
     ZX_ASSERT(ts_window_release(&lease) == ZX_OK);
     unsafe.pixels = (const uint8_t *)0xbfff;
     ZX_ASSERT(zx_blit4(&unsafe, 0, 0) == ZX_UNSAFE_CONTEXT);
-    ZX_ASSERT(zx_draw_surface(&other, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_256C_256X192, 0x40, NULL) == ZX_OK);
     ZX_ASSERT(zx_blit4(&image4, 0, 0) == ZX_UNSUPPORTED);
     zx_test_step_marker("pages-and-leases");
     zx_test_finish();

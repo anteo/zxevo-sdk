@@ -4,7 +4,6 @@ SECTION code_clib
 PUBLIC _bc__video_commit_surface
 EXTERN _bc_video_draw_surface_state
 EXTERN _bc_video_surface_selected
-EXTERN _bc__video_invalidate_cache
 EXTERN _bc__console_set_geometry
 IFDEF BASECONF_VIDEO_TEXT_PARTIAL_GRAPHICS
 IFDEF BASECONF_VIDEO_TEXT_GRAPHICS
@@ -12,12 +11,11 @@ EXTERN bc__console_update_text_backend
 ENDIF
 ENDIF
 
-; Publish a draw surface, update console dimensions and invalidate the cache.
+; Publish a newly prepared draw surface and update its console geometry.
 ; Model:
 ;
 ; draw_surface = *surface;
 ; surface_selected = 1;
-; invalidate_cache();
 ; update_text_backend_availability();
 ; if (draw_surface.mode < BC_VIDEO_ATM_320) set_geometry(32, 24);
 ; else set_geometry(draw_surface.mode == BC_VIDEO_ATM_320 ? 40 : 80, 25);
@@ -31,7 +29,6 @@ _bc__video_commit_surface:
         ldir
         ld a,1
         ld (_bc_video_surface_selected),a
-        call _bc__video_invalidate_cache
 IFDEF BASECONF_VIDEO_TEXT_PARTIAL_GRAPHICS
 IFDEF BASECONF_VIDEO_TEXT_GRAPHICS
         call bc__console_update_text_backend

@@ -96,10 +96,12 @@ static void check_addressing(void) {
     /* In 128K mode bit 5 locks paging writes, including screen selection. */
     {
         uint8_t locked = (uint8_t)((original_paging & 0x18u) | 0x22u);
-        zx_screen_t other = BC_PAGING_SCREEN(locked) == ZX_SCREEN_0 ? ZX_SCREEN_1 : ZX_SCREEN_0;
+        zx_ram_page_t current_page = BC_PAGING_SCREEN(locked) == ZX_SCREEN_0 ? 5 : 7;
+        zx_ram_page_t other_page = current_page == 5 ? 7 : 5;
         z80_outp(PORT_PAGING, locked);
         ZX_ASSERT(bc_readback_register(REG_PAGING) == locked);
-        ZX_ASSERT(bc_select_screen(other) == ZX_BUSY);
+        ZX_ASSERT(zx_display_page(current_page) == ZX_OK);
+        ZX_ASSERT(zx_display_page(other_page) == ZX_BUSY);
         ZX_ASSERT(bc_readback_register(REG_PAGING) == locked);
         ZX_ASSERT(*probe == 0xa9);
     }
@@ -116,6 +118,7 @@ int main(void) {
     if (bc_case_init() == ZX_OK) {
         check_readback();
         check_resync();
+        ZX_ASSERT(zx_set_video_mode(ZX_VIDEO_ZX_256) == ZX_OK);
         check_addressing();
     }
     zx_test_finish();

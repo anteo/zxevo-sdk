@@ -17,8 +17,7 @@ static void check_x_major(uint8_t expected) {
 int main(void) {
     int y;
 
-    if (bc_case_init() != ZX_OK || bc_select_screen(ZX_SCREEN_0) != ZX_OK ||
-        bc_case_select_video_mode(BC_VIDEO_ZX_256) != ZX_OK) {
+    if (bc_case_init() != ZX_OK || bc_case_select_video_mode(BC_VIDEO_ZX_256) != ZX_OK) {
         ZX_ASSERT(0);
         zx_test_finish();
         return 0;

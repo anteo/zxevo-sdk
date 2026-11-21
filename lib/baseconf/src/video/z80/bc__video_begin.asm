@@ -32,7 +32,7 @@ EXTERN _bc__video_sync_cache
 ; SDCC no arguments; status in L, flags unspecified. Preserve IX/IY; clobber
 ; AF/BC/DE/HL. No frame or outgoing arguments. Only the outermost operation
 ; reads the cache or invokes its C synchronizer; no hardware page remapping.
-; Surface changes invalidate the cache when the new descriptor is published.
+; Successful buffer selection prepares the cache before the next begin.
 _bc__video_begin:
         ld a,(_bc_mem_initialized)
         or a

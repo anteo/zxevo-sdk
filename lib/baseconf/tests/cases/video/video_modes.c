@@ -20,13 +20,18 @@ static const mode_case_t modes[] = {
 };
 
 static void check_mode(const mode_case_t *test) {
-    zx_video_surface_t front = bc_screen_surface(test->mode, ZX_SCREEN_0);
-    zx_video_surface_t back = bc_screen_surface(test->mode, ZX_SCREEN_1);
     zx_video_size_t size = {0, 0};
-    ZX_ASSERT(front.mode == test->mode && front.page0 == test->page0 && front.page1 == test->page1);
-    ZX_ASSERT(back.mode == test->mode && back.page0 == test->page0 + 2 &&
-              back.page1 == (test->page1 ? test->page1 + 2u : 0u));
-    ZX_ASSERT(bc_case_select_video_mode(test->mode) == ZX_OK);
+    ZX_ASSERT(zx_set_video_mode(test->mode) == ZX_OK);
+    ZX_ASSERT(zx_display_page(test->page0 + 2u) == ZX_OK);
+    ZX_ASSERT(BC_PAGING_SCREEN(bc_readback_register(0x0a)) == ZX_SCREEN_1);
+    ZX_ASSERT(zx_display_page(test->page0) == ZX_OK);
+    ZX_ASSERT(BC_PAGING_SCREEN(bc_readback_register(0x0a)) == ZX_SCREEN_0);
+    if (test->page1) {
+        ZX_ASSERT(zx_set_split_draw_buffer(test->mode, test->page0, ZX_WINDOW_3, test->page1,
+                                           ZX_WINDOW_2) == ZX_OK);
+    } else {
+        ZX_ASSERT(zx_set_draw_buffer(test->mode, test->page0, ZX_WINDOW_3) == ZX_OK);
+    }
     ZX_ASSERT(zx_get_video_mode() == test->mode);
     if (test->mode < BC_VIDEO_ATM_TEXT_80) {
         ZX_ASSERT(zx_graphics_get_size(&size) == ZX_OK);
@@ -47,7 +52,6 @@ static void check_mode(const mode_case_t *test) {
 int main(void) {
     uint8_t i;
     if (bc_case_init() == ZX_OK) {
-        ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
         for (i = 0; i < sizeof(modes) / sizeof(modes[0]); ++i) check_mode(&modes[i]);
     }
     zx_test_finish();

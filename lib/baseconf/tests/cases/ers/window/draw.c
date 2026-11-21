@@ -45,9 +45,6 @@ static void check_draw(void) {
     status = bc_case_select_video_mode(BC_VIDEO_ZX_256);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) return;
-    status = bc_select_screen(ZX_SCREEN_0);
-    ZX_ASSERT(status == ZX_OK);
-    if (status != ZX_OK) return;
     memset((void *)0x4000u, 0, 6912u);
 
     status = bc_ers_draw_window(&empty_window);

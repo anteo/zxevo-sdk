@@ -12,7 +12,6 @@ static uint8_t pixel(uint8_t x, uint8_t y) {
 
 int main(void) {
     uint8_t i, index;
-    const zx_video_surface_t surface = {TS_VIDEO_ZX_256X192, 0x60, 0};
 
     zx_test_init();
     ts_map_ram_page(ZX_WINDOW_3, 0x60);
@@ -20,7 +19,7 @@ int main(void) {
     screen[0x1800] = 0xa5;
     screen[0x1aff] = 0x5a;
 
-    ZX_ASSERT(zx_draw_surface(&surface, screen, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_ZX_256X192, 0x60, screen) == ZX_OK);
     zx_draw_plot(255, 191);
     zx_draw_plot(0, 192);
     zx_draw_plot(-1, 0);

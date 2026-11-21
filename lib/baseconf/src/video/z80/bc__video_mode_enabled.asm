@@ -1,6 +1,7 @@
         MODULE bc__video_mode_enabled
 SECTION code_clib
 PUBLIC _bc__video_mode_enabled
+PUBLIC bc__video_mode_enabled_regs
 
 ; Each bit corresponds to the bc_video_mode_t value in baseconf.h.
 IFDEF BASECONF_VIDEO_MODE_ENABLED_ZX_256
@@ -48,7 +49,8 @@ defc BC_MODE_MASK = BC_MODE_MASK_0 + BC_MODE_MASK_3 + BC_MODE_MASK_6
 ;
 ; return mode < 7 && ((enabled_mask >> mode) & 1);
 ;
-; SDCC mode:8 at SP+2, boolean result in L. Preserve C/DE/IX/IY,
+; SDCC mode:8 at SP+2, or A for the register entry.
+; Boolean result in L. Preserve C/DE/IX/IY,
 ; clobber AF/B/HL. Full masks need only the range comparison.
 _bc__video_mode_enabled:
 IF BC_MODE_MASK
@@ -56,6 +58,7 @@ IF BC_MODE_MASK
         add hl,sp
         ld a,(hl)
 ENDIF
+bc__video_mode_enabled_regs:
         ld l,0
 IF BC_MODE_MASK
         cp 7

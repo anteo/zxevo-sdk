@@ -2,8 +2,6 @@
 #include <zx_test.h>
 
 int main(void) {
-    const zx_video_surface_t packed = {TS_VIDEO_16C_360X288, 0x50, 0};
-    const zx_video_surface_t text = {TS_VIDEO_TEXT_720X288, 0x60, 0};
     zx_video_size_t raster = {1, 2};
     zx_video_size_t canvas = {3, 4};
     zx_console_size_t grid = {5, 6};
@@ -21,7 +19,7 @@ int main(void) {
     ZX_ASSERT(zx_console_get_size(&grid) != ZX_OK && grid.columns == 5 && grid.rows == 6);
 
     zx_set_video_mode(TS_VIDEO_TEXT_720X288 | TS_VIDEO_FLAG_HIDE_GFX);
-    ZX_ASSERT(zx_draw_surface(&packed, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_16C_360X288, 0x50, NULL) == ZX_OK);
     ZX_ASSERT(ts_video_get_raster_size(&raster) == ZX_OK && raster.width == 720 &&
               raster.height == 240);
     ZX_ASSERT(zx_graphics_get_size(&canvas) == ZX_OK && canvas.width == 512 &&
@@ -30,7 +28,7 @@ int main(void) {
     ZX_ASSERT(zx_console_gotoxy(44, 29) == ZX_OK && zx_console_gotoxy(44, 30) != ZX_OK);
 
     zx_set_video_mode(TS_VIDEO_256C_320X200 | TS_VIDEO_FLAG_HIDE_GFX);
-    ZX_ASSERT(zx_draw_surface(&text, (volatile void *)0xc000, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_TEXT_720X288, 0x60, ZX_WINDOW_3) == ZX_OK);
     ZX_ASSERT(ts_video_get_raster_size(&raster) == ZX_OK && raster.width == 320 &&
               raster.height == 200);
     ZX_ASSERT(zx_graphics_get_size(&canvas) == ZX_UNSUPPORTED && canvas.width == 512 &&

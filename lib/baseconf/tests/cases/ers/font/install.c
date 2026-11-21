@@ -19,7 +19,6 @@ static void check_fonts(void) {
     status = bc_case_select_video_mode(BC_VIDEO_EVO_TEXT_80);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) return;
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     zx_set_ink(15);
     zx_set_paper(0);
     ZX_ASSERT(zx_console_clear() == ZX_OK);

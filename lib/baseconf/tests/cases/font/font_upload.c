@@ -26,7 +26,6 @@ int main(void) {
     uint16_t i;
     uint8_t bf;
     if (bc_case_init() == ZX_OK) {
-        ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
         ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_EVO_TEXT_80) == ZX_OK);
         ZX_ASSERT(bc_map_ram_page(ZX_WINDOW_2, 48) == ZX_OK);
         ZX_ASSERT(zx_console_clear() == ZX_OK);

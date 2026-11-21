@@ -33,15 +33,12 @@ static void put_char(uint8_t code) {
 
 int main(void) {
     uint8_t i, key, down;
-    const zx_video_surface_t surface = {
-        .mode = TS_VIDEO_16C_320X200 | TS_VIDEO_FLAG_HIDE_GFX,
-        .page0 = SCREEN_PAGE,
-    };
     const char *greeting = "HELLO WORLD\n\n";
     demo_begin();
     upload(&image_resources[0], ATLAS_PAGE);
     /* Current SDK clear handles packed page mapping; no duplicate blitter. */
-    if (zx_draw_surface(&surface, NULL, NULL) != ZX_OK || zx_display_surface(&surface) != ZX_OK) {
+    if (zx_set_draw_buffer(TS_VIDEO_16C_320X200, SCREEN_PAGE, NULL) != ZX_OK ||
+        zx_display_page(SCREEN_PAGE) != ZX_OK) {
         demo_end();
         return 1;
     }

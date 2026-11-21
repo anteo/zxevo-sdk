@@ -96,7 +96,6 @@ int main(void) {
         zx_test_finish();
         return 0;
     }
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     check_font_ioctl();
     draw_graphics_case(BC_VIDEO_ZX_256, &zx_font5, "zx256_font5");
     draw_graphics_case(BC_VIDEO_ATM_640, &zx_font5, "atm640_font5");

@@ -39,7 +39,6 @@ zx_status_t bc_map_ram_page(zx_window_t window, zx_ram_page_t page);
 zx_status_t bc_map_flash_bank(zx_window_t window, bc_flash_bank_t bank);
 zx_status_t bc_set_write_protection(zx_window_t window, uint8_t protected);
 zx_status_t bc_select_map(bc_map_t map);
-zx_status_t bc_select_screen(zx_screen_t screen);
 zx_status_t bc_set_addressing(bc_addressing_t addressing);
 zx_status_t bc_set_page_manager_enabled(uint8_t enabled);
 zx_status_t bc_set_shadow_ports_override(uint8_t enabled);

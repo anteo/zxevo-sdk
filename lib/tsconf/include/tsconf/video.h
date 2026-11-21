@@ -36,6 +36,10 @@
  * and draw surface alone. Prepare an aligned display page for the new layout
  * before exposing it. Serialize video changes with drawing. */
 
+/* For zx_set_draw_buffer, pass a CPU window address for ZX and text and
+ * NULL for packed modes. The physical base must be aligned to 8 pages for
+ * 16 colors and 16 pages for 256 colors. */
+
 #define TS_TSU_TILE0_INDEX0 0x04u
 #define TS_TSU_TILE1_INDEX0 0x08u
 #define TS_TSU_TILE0 0x20u
@@ -104,10 +108,6 @@ zx_status_t ts_video_fill_16c_screen(uint8_t page, uint8_t color);
 zx_status_t ts_video_draw_16c_tile(uint8_t source_page, uint16_t tile, uint8_t destination_page,
                                    uint8_t x, uint8_t y);
 
-/* Shared surface operations use page0 as the physical base and require
- * page1 == 0. For ZX and text, pass one CPU window address for drawing.
- * For packed modes, pass NULL for both windows. The physical base must be
- * aligned to 8 pages for 16 colors and 16 pages for 256 colors. */
 /* Report the native TSConf raster area in pixels for the last VConfig set
  * by this library. Hardware text doubles the horizontal pixel count.
  * With TSCONF_VIDEO_60HZ=1 at library build time, 360x288 has 240 lines.

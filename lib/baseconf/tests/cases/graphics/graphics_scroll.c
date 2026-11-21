@@ -199,7 +199,6 @@ int main(void) {
         return 0;
     }
 
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     show_mode(BC_VIDEO_ZX_256, 1);
     show_mode(BC_VIDEO_ZX_MULTICOLOR, 0);
     show_mode(BC_VIDEO_PENTAGON_256, 0);

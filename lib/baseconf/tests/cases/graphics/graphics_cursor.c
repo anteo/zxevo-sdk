@@ -18,7 +18,6 @@ static uint8_t lines_match(void) {
 
 int main(void) {
     if (bc_case_init() == ZX_OK) {
-        ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
         ZX_ASSERT(bc_case_select_video_mode(BC_VIDEO_ZX_256) == ZX_OK);
         clg();
 

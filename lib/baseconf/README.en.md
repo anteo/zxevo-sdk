@@ -194,13 +194,8 @@ Set the display mode, prepare writable CPU mappings, then select the draw screen
 assumes BASIC's writable mapping of ZX screen 0 (page 5) is already in place.
 
 ```c
-const zx_video_surface_t screen = {
-    .mode = ZX_VIDEO_ZX_256,
-    .page0 = 5,
-};
-
-if (zx_display_surface(&screen) != ZX_OK ||
-    zx_draw_surface(&screen, ZX_WINDOW_1, NULL) != ZX_OK) return 1;
+if (zx_set_video_mode(ZX_VIDEO_ZX_256) != ZX_OK || zx_display_page(5) != ZX_OK ||
+    zx_set_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_1) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 if (zx_console_clear() != ZX_OK) return 1;
@@ -210,11 +205,19 @@ zx_draw_circle(96, 64, 16);
 if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
-For double buffering, select the back surface for drawing, draw the frame, then pass the same
-descriptor to `zx_display_surface()`. If the mode is already set, use `zx_display_page()` with the
-first physical page. Obtain the physical pages of a hardware screen from `bc_screen_surface()`. In
-ZX mode, primitives update the bitmap and preserve the attributes.
+For double buffering, set the mode once, select the back buffer for drawing, and pass its first
+page to `zx_display_page()` once the frame is ready. Use `zx_set_split_draw_buffer()` with both
+page and CPU window pairs in two-page modes. Drawing also accepts arbitrary writable RAM pages.
+The display uses the hardware page layouts below. In ZX mode, primitives update the bitmap and
+preserve the attributes.
 [video.h](include/baseconf/video.h) · [graphics.h](../common/include/zx/graphics.h)
+
+| Mode | Screen 0 pages | Screen 1 pages |
+| --- | --- | --- |
+| ZX 256, ZX Multicolor | 5 | 7 |
+| Pentagon 16-color | 4, 5 | 6, 7 |
+| ATM 320, ATM 640, ATM text | 1, 5 | 3, 7 |
+| Evo text | 8 | 10 |
 
 `zx_blit4()` and `zx_blit4_key()` copy linear high-nibble-first 4bpp images to an ATM320 draw
 surface. The shared `zx_bitmap4_t` describes pixels, dimensions and byte stride; the keyed call
@@ -239,12 +242,8 @@ integers without stdio. This example uses an archive built with Evo 80×25 text 
 
 ```c
 /* W3 is available for the screen page in this example. */
-const zx_video_surface_t text = {
-    .mode = BC_VIDEO_EVO_TEXT_80,
-    .page0 = 8,
-};
-if (zx_display_surface(&text) != ZX_OK ||
-    zx_draw_surface(&text, ZX_WINDOW_3, NULL) != ZX_OK) return 1;
+if (zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK || zx_display_page(8) != ZX_OK ||
+    zx_set_draw_buffer(BC_VIDEO_EVO_TEXT_80, 8, ZX_WINDOW_3) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 zx_console_size_t grid;

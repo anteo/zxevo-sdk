@@ -1,7 +1,16 @@
         MODULE zx_get_video_mode
 SECTION code_clib
 PUBLIC _zx_get_video_mode
+PUBLIC _bc__video_read_mode_and_eff7
+PUBLIC bc__video_read_mode_regs
 EXTERN bc__mem_readback_register_regs
+
+; Return the sampled mode in L and EFF7 in H for C callers.
+; SDCC no arguments. Preserve IX/IY, clobber AF/BC/DE/HL.
+_bc__video_read_mode_and_eff7:
+        call bc__video_read_mode_regs
+        ld h,b
+        ret
 
 ; Decode the live FPGA video mode. Return BC_VIDEO_UNKNOWN for undocumented
 ; combinations of the mode register and EFF7 layout bits.
@@ -15,8 +24,10 @@ EXTERN bc__mem_readback_register_regs
 ; return layout ? BC_VIDEO_ZX_MULTICOLOR : BC_VIDEO_ZX_256;
 ;
 ; SDCC no arguments, result in HL. Preserve IX/IY, clobber AF/BC/DE/HL.
+; Register entry also returns the sampled EFF7 byte in B.
 ; The readback helper preserves E, which holds the first register's mode bits.
 _zx_get_video_mode:
+bc__video_read_mode_regs:
         ld b,0Ch
         call bc__mem_readback_register_regs
         ld a,l
@@ -24,6 +35,7 @@ _zx_get_video_mode:
         ld e,a
         ld b,0Bh
         call bc__mem_readback_register_regs
+        ld b,l
 
         ld a,e
         cp 3
@@ -58,3 +70,9 @@ SECTION rodata_clib
 ; xx77 modes 0/2/6/7 are ATM320/ATM640/ATM text/EVO text respectively.
 bc_video_mode_by_xx77:
         defb 3,0FFh,4,0FFh,0FFh,0FFh,5,6
+
+PUBLIC _bc__video_first_screen_pages
+; ZX, Multicolor, Pentagon, ATM320, ATM640, ATM text and Evo text.
+; Screen 1 adds two to each of these first physical pages.
+_bc__video_first_screen_pages:
+        defb 5,5,4,1,1,1,8

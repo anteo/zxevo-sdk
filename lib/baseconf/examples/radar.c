@@ -17,14 +17,10 @@ static void sweep(uint8_t bearing) {
 }
 
 int main(void) {
-    const zx_video_surface_t screen = {
-        .mode = ZX_VIDEO_ZX_256,
-        .page0 = 5,
-    };
     uint8_t turn, bearing;
     zx_status_t status;
 
-    status = zx_draw_surface(&screen, ZX_WINDOW_1, NULL);
+    status = zx_set_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_1);
     if (status != ZX_OK) return status;
     zx_set_colors(COLOR_BLACK, COLOR_GREEN | COLOR_BRIGHT, COLOR_BLACK);
     status = zx_console_clear();

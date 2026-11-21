@@ -20,14 +20,15 @@ typedef enum {
  * zx_init and returns ZX_UNSAFE_CONTEXT if the register update fails.
  * Mode changes preserve the displayed screen number and the draw target. */
 
+/* Prepared slots cache the screen bit and addressing mode for zx_display_buffer.
+ * zx_set_video_mode refreshes these for existing slots. zx_display_buffer reads
+ * the current 7FFD byte and changes only its screen bit. After changing the video
+ * or paging configuration outside the SDK, call bc_resync and prepare the slots
+ * again. zx_display_page reads the live mode and paging registers. */
+
 /* Read the current beam color through 0DBD; it is raster-phase dependent. */
 zx_status_t bc_read_beam_color(uint8_t *color);
 /* Read the glyph-row byte currently exposed by port 0EBDh, not a row selected by
  * character code. The result depends on raster phase. NULL returns ZX_INVALID_ARGUMENT. */
 zx_status_t bc_read_font_row(uint8_t *row);
-/* Describe a standard hardware screen without changing paging or video state.
- * Supply a mode included in the library build and ZX_SCREEN_0 or ZX_SCREEN_1;
- * arguments are not validated. Single-page modes return page1 == 0. */
-zx_video_surface_t bc_screen_surface(bc_video_mode_t mode, zx_screen_t screen);
-
 #endif

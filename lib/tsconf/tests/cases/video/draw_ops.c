@@ -4,9 +4,10 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 static void check_zx(void) {
-    const zx_video_surface_t bitmap = {TS_VIDEO_ZX_256X192, 5, 0};
     ts_map_ram_page(ZX_WINDOW_3, 5);
-    ZX_ASSERT(zx_draw_surface(&bitmap, w3, NULL) == ZX_OK);
+    ZX_ASSERT(zx_prepare_draw_buffer(0, TS_VIDEO_ZX_256X192, 5, ZX_WINDOW_3) == ZX_OK);
+    ZX_ASSERT(zx_graphics_begin() == ZX_NOT_INITIALIZED);
+    ZX_ASSERT(zx_select_draw_buffer(0) == ZX_OK);
     w3[0] = 0;
     w3[0x100] = 0;
     w3[0x200] = 0;
@@ -33,22 +34,24 @@ static void check_zx(void) {
 }
 
 static void check_group(void) {
-    const zx_video_surface_t canvas = {TS_VIDEO_16C_256X192, 0x50, 0};
-    const zx_video_surface_t other = {TS_VIDEO_256C_256X192, 0x40, 0};
     ts_window_lease_t other_lease;
     uint8_t index = 0x69;
 
     ts_map_ram_page(ZX_WINDOW_3, 0x50);
+    ZX_ASSERT(zx_select_draw_buffer(0) == ZX_UNAVAILABLE);
     w3[0] = 0xab;
     w3[0x3f00] = 0;
     ts_map_ram_page(ZX_WINDOW_3, 0x51);
     w3[0] = 0;
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     w3[0] = 0x69;
-    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_prepare_draw_buffer(0, TS_VIDEO_16C_256X192, 0x50, NULL) == ZX_OK);
+    ZX_ASSERT(zx_prepare_draw_buffer(1, TS_VIDEO_256C_256X192, 0x40, NULL) == ZX_OK);
+    ZX_ASSERT(zx_select_draw_buffer(0) == ZX_OK);
     zx_set_paper(7);
 
     ZX_ASSERT(ts_window_acquire(ZX_WINDOW_3, 0x7d, &other_lease) == ZX_OK);
+    ZX_ASSERT(zx_select_draw_buffer(1) == ZX_BUSY);
     ZX_ASSERT(zx_shutdown() == ZX_BUSY);
     ZX_ASSERT(zx_graphics_begin() == ZX_BUSY);
     ZX_ASSERT(zx_console_putc('A') == ZX_BUSY);
@@ -61,7 +64,7 @@ static void check_group(void) {
     ZX_ASSERT(zx_graphics_begin() == ZX_OK);
     ZX_ASSERT(zx_graphics_begin() == ZX_OK);
     ZX_ASSERT(zx_shutdown() == ZX_BUSY);
-    ZX_ASSERT(zx_draw_surface(&other, NULL, NULL) == ZX_BUSY);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_256C_256X192, 0x40, NULL) == ZX_BUSY);
     ZX_ASSERT(ts_window_acquire(ZX_WINDOW_3, 0x7d, &other_lease) == ZX_BUSY);
     zx_set_ink(0xf3);
     zx_draw_plot_xor(0, 0);
@@ -81,9 +84,8 @@ static void check_group(void) {
 }
 
 static void check_shapes(void) {
-    const zx_video_surface_t canvas = {TS_VIDEO_256C_256X192, 0x40, 0};
 
-    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_select_draw_buffer(1) == ZX_OK);
     ts_map_ram_page(ZX_WINDOW_3, 0x40);
     w3[0] = 0;
     w3[1] = 0xb3;
@@ -129,12 +131,15 @@ static void check_shapes(void) {
 
 int main(void) {
     zx_test_init();
+    ZX_ASSERT(zx_select_draw_buffer(ZX_DRAW_BUFFER_SLOTS) == ZX_INVALID_ARGUMENT);
+    ZX_ASSERT(zx_select_draw_buffer(0) == ZX_UNAVAILABLE);
     ZX_ASSERT(zx_graphics_begin() == ZX_NOT_INITIALIZED);
     ZX_ASSERT(zx_graphics_end() == ZX_NOT_INITIALIZED);
     check_zx();
     check_group();
     check_shapes();
     ZX_ASSERT(zx_shutdown() == ZX_OK);
+    ZX_ASSERT(zx_select_draw_buffer(1) == ZX_UNAVAILABLE);
     ZX_ASSERT(zx_shutdown() == ZX_OK);
     ZX_ASSERT(zx_graphics_begin() == ZX_NOT_INITIALIZED);
     ZX_ASSERT(ts_memory_get_page3() == 0x40);

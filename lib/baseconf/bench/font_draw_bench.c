@@ -39,16 +39,11 @@ int main(void) {
     bc_set_pinned_windows(pinned);
 #if BENCH_MODE == 4
     if (zx_set_video_mode(BC_VIDEO_ATM_640) != ZX_OK) return 2;
-    {
-        const zx_video_surface_t surface = {BC_VIDEO_ATM_640, 1, 5};
-        if (zx_draw_surface(&surface, ZX_WINDOW_3, ZX_WINDOW_1) != ZX_OK) return 4;
-    }
+    if (zx_set_split_draw_buffer(BC_VIDEO_ATM_640, 1, ZX_WINDOW_3, 5, ZX_WINDOW_1) != ZX_OK)
+        return 4;
 #else
-    {
-        const zx_video_surface_t surface = {ZX_VIDEO_ZX_256, 5, 0};
-        if (zx_display_surface(&surface) != ZX_OK) return 2;
-        if (zx_draw_surface(&surface, ZX_WINDOW_1, NULL) != ZX_OK) return 4;
-    }
+    if (zx_set_video_mode(ZX_VIDEO_ZX_256) != ZX_OK || zx_display_page(5) != ZX_OK) return 2;
+    if (zx_set_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_1) != ZX_OK) return 4;
 #endif
     if (zx_console_set_font(&zx_font5) != ZX_OK) return 5;
     if (bc__video_begin() != ZX_OK) return 6;

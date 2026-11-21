@@ -198,13 +198,8 @@ CLEAR и XOR. `zx_draw_fill_rect()` и `zx_draw_clear_rect()` работают �
 примере страница 5 уже отображена в память CPU, как при запуске из BASIC.
 
 ```c
-const zx_video_surface_t screen = {
-    .mode = ZX_VIDEO_ZX_256,
-    .page0 = 5,
-};
-
-if (zx_display_surface(&screen) != ZX_OK ||
-    zx_draw_surface(&screen, ZX_WINDOW_1, NULL) != ZX_OK) return 1;
+if (zx_set_video_mode(ZX_VIDEO_ZX_256) != ZX_OK || zx_display_page(5) != ZX_OK ||
+    zx_set_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_1) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 if (zx_console_clear() != ZX_OK) return 1;
@@ -214,11 +209,19 @@ zx_draw_circle(96, 64, 16);
 if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
-Для двойной буферизации выберите скрытую поверхность для рисования, подготовьте кадр и передайте тот
-же дескриптор в `zx_display_surface()`. Если режим уже установлен, можно передать первую физическую
-страницу в `zx_display_page()`. Страницы аппаратного экрана возвращает `bc_screen_surface()`. В
-режиме ZX графические примитивы меняют битовую карту, сохраняя атрибуты.
+Для двойной буферизации задайте режим один раз, выберите скрытый буфер для рисования и после
+подготовки кадра передайте его первую страницу в `zx_display_page()`. Для двухстраничных режимов
+передайте обе пары страниц и окон CPU в `zx_set_split_draw_buffer()`. Рисовать можно и в
+произвольные доступные для записи страницы. Для показа используются аппаратные пары из таблицы.
+В режиме ZX графические примитивы меняют битовую карту, сохраняя атрибуты.
 [video.h](include/baseconf/video.h) · [graphics.h](../common/include/zx/graphics.h)
+
+| Режим | Страницы экрана 0 | Страницы экрана 1 |
+| --- | --- | --- |
+| ZX 256, ZX Multicolor | 5 | 7 |
+| Pentagon 16 цветов | 4, 5 | 6, 7 |
+| ATM 320, ATM 640, текст ATM | 1, 5 | 3, 7 |
+| Текст Evo | 8 | 10 |
 
 `zx_blit4()` и `zx_blit4_key()` копируют линейные изображения 4bpp со старшим левым полубайтом в
 поверхность ATM320. Общий `zx_bitmap4_t` задаёт пиксели, размеры и шаг строки в байтах; прозрачный
@@ -243,12 +246,8 @@ lease: подготавливайте банковые ресурсы резид
 
 ```c
 /* В этом примере W3 свободно для страницы экрана. */
-const zx_video_surface_t text = {
-    .mode = BC_VIDEO_EVO_TEXT_80,
-    .page0 = 8,
-};
-if (zx_display_surface(&text) != ZX_OK ||
-    zx_draw_surface(&text, ZX_WINDOW_3, NULL) != ZX_OK) return 1;
+if (zx_set_video_mode(BC_VIDEO_EVO_TEXT_80) != ZX_OK || zx_display_page(8) != ZX_OK ||
+    zx_set_draw_buffer(BC_VIDEO_EVO_TEXT_80, 8, ZX_WINDOW_3) != ZX_OK) return 1;
 zx_set_ink(7);
 zx_set_paper(0);
 zx_console_size_t grid;

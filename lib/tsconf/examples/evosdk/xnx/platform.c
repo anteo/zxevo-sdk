@@ -11,8 +11,6 @@ typedef struct {
 } image_t;
 #include "assets.h"
 
-#define SCREEN_FRONT 0x60
-#define SCREEN_BACK 0x68
 #define SPRITES 0x70
 #define SCRATCH 0xd0
 #define MAX_DIRTY_TILES 96
@@ -23,7 +21,8 @@ static uint8_t tile_storage[33];
 static uint8_t *tile_buffer;
 static uint8_t selected_image, palette_id, brightness;
 static uint8_t palette_dirty;
-static uint8_t displayed_page = SCREEN_FRONT, draw_page = SCREEN_BACK, draw_dirty;
+static const zx_ram_page_t screen_pages[ZX_DRAW_BUFFER_SLOTS] = {0x60, 0x68};
+static uint8_t draw_slot, draw_dirty;
 static uint8_t copy_whole_screen, dirty_count, dirty_bits[125];
 static struct {
     uint8_t x, y;
@@ -104,7 +103,8 @@ static void draw_tile(uint8_t x, uint8_t y, uint16_t tile, uint8_t keyed) {
     zx_bitmap4_t bitmap;
     if (x >= 40 || y >= 25 || tile >= (uint16_t)image->columns * image->rows) return;
     if (!keyed) {
-        if (ts_video_draw_16c_tile(image->page, tile, draw_page, x, y) == ZX_OK) mark_tile(x, y);
+        if (ts_video_draw_16c_tile(image->page, tile, screen_pages[draw_slot], x, y) == ZX_OK)
+            mark_tile(x, y);
         return;
     }
     if (ts_window_acquire(ZX_WINDOW_3, image->page + (tile >> 9), &lease) != ZX_OK) return;
@@ -132,7 +132,7 @@ void xnx_draw_image(uint8_t x, uint8_t y, uint8_t image) {
 }
 
 void xnx_clear(uint8_t color) {
-    if (ts_video_fill_16c_screen(draw_page, color & 15) == ZX_OK) {
+    if (ts_video_fill_16c_screen(screen_pages[draw_slot], color & 15) == ZX_OK) {
         draw_dirty = 1;
         copy_whole_screen = 1;
     }
@@ -158,15 +158,17 @@ static void copy_changed_tiles(uint8_t source, uint8_t destination) {
 void xnx_present(void) {
     xnx_frame();
     if (draw_dirty) {
-        const zx_video_surface_t draw = {
-            .mode = TS_VIDEO_16C_320X200,
-            .page0 = displayed_page,
-        };
-        uint8_t old_display = displayed_page;
-        displayed_page = draw_page;
-        draw_page = old_display;
-        zx_display_page(displayed_page);
-        zx_draw_surface(&draw, NULL, NULL);
+        uint8_t next_slot = draw_slot ^ 1u;
+        zx_ram_page_t displayed_page = screen_pages[draw_slot];
+        zx_ram_page_t draw_page = screen_pages[next_slot];
+
+        if (zx_select_draw_buffer(next_slot) != ZX_OK) return;
+        if (zx_display_buffer(draw_slot) != ZX_OK) {
+            zx_select_draw_buffer(draw_slot);
+            return;
+        }
+        draw_slot = next_slot;
+
         if (copy_whole_screen)
             ts_video_copy_16c_screen(displayed_page, draw_page);
         else
@@ -267,14 +269,7 @@ static void frame_hook(void) {
 }
 
 void xnx_init(void) {
-    static const zx_video_surface_t surface = {
-        .mode = TS_VIDEO_16C_320X200,
-        .page0 = SCREEN_BACK,
-    };
-    static const zx_video_surface_t front = {
-        .mode = TS_VIDEO_16C_320X200,
-        .page0 = SCREEN_FRONT,
-    };
+    uint8_t slot;
     tile_buffer = (uint8_t *)(((uint16_t)tile_storage + 1u) & 0xfffeu);
     ts_set_cpu_speed_and_cache(ZX_CPU_14_MHZ, 0);
     ts_fdd_set_config(0);
@@ -288,12 +283,12 @@ void xnx_init(void) {
     ts_map_ram_page(ZX_WINDOW_3, SCRATCH);
     ts_video_upload_sprites(ZX_WINDOW_3, 0, NULL, TS_SPRITE_COUNT);
     ts_video_set_sprite_page(SPRITES);
-    zx_draw_surface(&surface, NULL, NULL);
-    xnx_clear(0);
-    displayed_page = SCREEN_BACK;
-    draw_page = SCREEN_FRONT;
-    zx_draw_surface(&front, NULL, NULL);
-    ts_video_copy_16c_screen(displayed_page, draw_page);
+    for (slot = 0; slot < ZX_DRAW_BUFFER_SLOTS; ++slot)
+        zx_prepare_draw_buffer(slot, TS_VIDEO_16C_320X200, screen_pages[slot], NULL);
+    ts_video_fill_16c_screen(screen_pages[1], 0);
+    ts_video_copy_16c_screen(screen_pages[1], screen_pages[0]);
+    draw_slot = 0;
+    zx_select_draw_buffer(draw_slot);
     draw_dirty = 0;
     copy_whole_screen = 0;
     palette_id = 0;
@@ -304,7 +299,7 @@ void xnx_init(void) {
     zx_pt3_mute();
     zx_ay_select_chip(ZX_AY_CHIP_0);
     zx_ayfx_init(sound_effects);
-    zx_display_surface(&surface);
+    if (zx_display_buffer(1) == ZX_OK) zx_set_video_mode(TS_VIDEO_16C_320X200);
     /* The B9B9 ISR and BE00..BF00 vectors stay outside the linked BSS. The
      * SPG loader stub is at BC80 and the initial stack starts at BDB0. */
     memset((void *)0xbe00, 0xb9, 257);

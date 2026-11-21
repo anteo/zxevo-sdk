@@ -24,7 +24,6 @@ int main(void) {
         zx_test_finish();
         return 0;
     }
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     status = bc_case_select_video_mode(BC_VIDEO_ZX_256);
     if (status == ZX_OK) {
         zx_set_ink(6);

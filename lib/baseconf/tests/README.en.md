@@ -122,7 +122,6 @@ int main(void) {
         return 0;
     }
 
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     if (bc_case_select_video_mode(BC_VIDEO_ATM_640) == ZX_OK) {
         zx_set_ink(7);
         ZX_ASSERT(zx_console_clear() == ZX_OK);
@@ -152,8 +151,8 @@ int main(void) {
 | `zx_test_step_skip(name, reason)`                | SKIP step                                             |
 | `zx_test_finish()`                               | final verdict; the CPU stays in a loop                |
 
-Video tests select screen 0 once for reproducible screenshots. `bc_case_select_video_mode()` sets
-the display mode and prepares the fixture's CPU mappings for drawing.
+`bc_case_select_video_mode()` sets the display mode, shows screen 0 for reproducible screenshots
+and prepares the fixture's CPU mappings for drawing.
 
 ### Result channels
 

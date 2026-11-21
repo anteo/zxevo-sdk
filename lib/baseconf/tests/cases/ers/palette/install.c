@@ -27,7 +27,7 @@ int main(void) {
     status = zx_set_video_mode(BC_VIDEO_ZX_256);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) goto finish;
-    status = bc_select_screen(ZX_SCREEN_0);
+    status = zx_display_page(5);
     ZX_ASSERT(status == ZX_OK);
     if (status != ZX_OK) goto finish;
     status = bc_window_acquire(ZX_WINDOW_3, screen, &lease);

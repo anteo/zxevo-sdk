@@ -20,13 +20,21 @@ Both libraries expose the built-in bitmap fonts as `zx_font8` and `zx_font5`. `z
 defines the descriptor and exposes the narrow glyph table as `zx_font5_data`.
 
 The SDK CRT calls `zx_init()` before `main()` and `zx_shutdown()` on exit. To manage both calls
-explicitly, build with `-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0`. Use `zx_draw_surface()` to choose
-the draw target, `zx_display_surface()` to configure and show a surface, and `zx_display_page()` to
-switch the visible page in the current mode. The console API uses the same cell coordinates and
-`zx_status_t` results on both machines. Use `zx_console_putc()` and `zx_console_puts()` to write at
+explicitly, build with `-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0`. Use `zx_set_draw_buffer()` to choose
+the draw mode and a physical base page, or `zx_set_split_draw_buffer()` for a BaseConf buffer with
+two explicit page and window pairs. `zx_set_video_mode()` sets the display mode and
+`zx_display_page()` selects the visible page in that mode. The console API uses the same cell
+coordinates and `zx_status_t` results on both machines. Use `zx_console_putc()` and `zx_console_puts()` to write at
 the cursor, or `zx_console_draw()` to draw at a cell without moving the cursor. A positioned run
 stops at the right edge or the first byte below 32. [Initialization](include/zx/init.h) ·
 [Video](include/zx/video.h) · [Console](include/zx/console.h)
+
+For double buffering, prepare slots `0` and `1` with `zx_prepare_draw_buffer()` or
+`zx_prepare_split_draw_buffer()`. Switch the draw target with `zx_select_draw_buffer(slot)`,
+and present the frame with `zx_display_buffer(slot)`. The displayed slot's first page is shown
+in the current display mode. Use `zx_display_page(page)` to show a physical page directly.
+Keep the explicit CPU mappings for both slots resident, or prepare a slot again after its
+mapping changes. TSConf packed buffers use `NULL` for the window in both slots.
 
 `zx_console_set_text_bg()` sets the background for character, string, formatted and positioned
 console output. The initial mode is `ZX_TEXT_OPAQUE`. Use `zx_console_draw_op()` to override the

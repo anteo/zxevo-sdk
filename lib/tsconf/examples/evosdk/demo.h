@@ -55,17 +55,13 @@ static void frame(void) {
 }
 
 static void demo_end(void) {
-    const zx_video_surface_t basic_screen = {
-        .mode = ZX_VIDEO_ZX_256,
-        .page0 = 5,
-    };
     ts_dma_wait();
     ts_video_set_tsu_config(0);
     ts_fmaps_disable();
     ts_map_ram_page(ZX_WINDOW_3, saved_w3);
     ts_video_set_palette_select(15);
     ts_video_set_scroll(0, 0);
-    zx_display_surface(&basic_screen);
+    if (zx_set_video_mode(ZX_VIDEO_ZX_256) == ZX_OK) zx_display_page(5);
     ts_video_set_border(240u + saved_border);
 }
 
@@ -136,11 +132,8 @@ static void upload(const image_resource_t *image, uint8_t destination) {
 }
 
 static void show_screen(uint8_t page) {
-    const zx_video_surface_t surface = {
-        .mode = TS_VIDEO_16C_320X200,
-        .page0 = page,
-    };
-    zx_display_surface(&surface);
+    if (zx_display_page(page) == ZX_OK && zx_get_video_mode() != TS_VIDEO_16C_320X200)
+        zx_set_video_mode(TS_VIDEO_16C_320X200);
 }
 
 /* One hardware descriptor per 16x16 source sprite; palette bank 1 keeps

@@ -107,7 +107,6 @@ static void check_packed_transparency(void) {
 
 int main(void) {
     if (bc_case_init() == ZX_OK) {
-        ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
         check_mode(BC_VIDEO_ZX_256, "zx256", 0);
         check_mode(BC_VIDEO_ATM_320, "atm320", CLEAR_PAPER);
         check_atm_full_width();

@@ -91,7 +91,6 @@ int main(void) {
         return 0;
     }
 
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     test_graphics_console();
     test_hardware_text();
     test_cursor_after_mode_change();

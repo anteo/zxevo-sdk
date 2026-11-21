@@ -4,10 +4,9 @@
 static volatile uint8_t *const w3 = (volatile uint8_t *)0xc000;
 
 static void check_text(void) {
-    const zx_video_surface_t text = {TS_VIDEO_TEXT_512X192, 0x70, 0};
 
     ts_map_ram_page(ZX_WINDOW_3, 0x70);
-    ZX_ASSERT(zx_draw_surface(&text, w3, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_TEXT_512X192, 0x70, w3) == ZX_OK);
     ZX_ASSERT(zx_console_gotoxy(4, 3) == ZX_OK);
     zx_set_colors(COLOR_BLUE, COLOR_YELLOW | COLOR_BRIGHT, COLOR_RED);
     w3[0x140] = 0x69;
@@ -41,10 +40,9 @@ static void check_text(void) {
 }
 
 static void check_zx(void) {
-    const zx_video_surface_t zx = {TS_VIDEO_ZX_256X192, 5, 0};
 
     ts_map_ram_page(ZX_WINDOW_3, 5);
-    ZX_ASSERT(zx_draw_surface(&zx, w3, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(TS_VIDEO_ZX_256X192, 5, w3) == ZX_OK);
     ts_console_set_attribute(0x46);
     w3[0] = 0;
     w3[0x20] = 0xa5;
@@ -61,7 +59,6 @@ static void check_zx(void) {
 
 static void check_packed(uint16_t mode, uint8_t base, uint16_t edge, uint16_t width, uint8_t tail,
                          uint8_t blank) {
-    const zx_video_surface_t canvas = {mode, base, 0};
 
     ts_map_ram_page(ZX_WINDOW_3, base);
     w3[edge] = 0;
@@ -73,7 +70,7 @@ static void check_packed(uint16_t mode, uint8_t base, uint16_t edge, uint16_t wi
     w3[edge + width] = 0x69;
     ts_map_ram_page(ZX_WINDOW_3, 0x7e);
     w3[0] = 0x69;
-    ZX_ASSERT(zx_draw_surface(&canvas, NULL, NULL) == ZX_OK);
+    ZX_ASSERT(zx_set_draw_buffer(mode, base, NULL) == ZX_OK);
     zx_set_paper(0xb7);
     ZX_ASSERT(zx_console_gotoxy(0, 23) == ZX_OK);
     zx_console_putc('\n');

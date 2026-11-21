@@ -83,7 +83,6 @@ int main(void) {
         zx_test_finish();
         return 0;
     }
-    ZX_ASSERT(bc_select_screen(ZX_SCREEN_0) == ZX_OK);
     draw_graphics_case(BC_VIDEO_ZX_256, &zx_font8, "zx256_font8");
     draw_graphics_case(BC_VIDEO_ZX_MULTICOLOR, &zx_font8, "multicolor_font8");
     draw_graphics_case(BC_VIDEO_PENTAGON_256, &zx_font8, "pentagon_font8");
