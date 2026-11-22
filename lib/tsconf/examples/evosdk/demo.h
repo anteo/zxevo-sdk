@@ -1,12 +1,12 @@
 #ifndef EVOSDK_DEMO_H
 #define EVOSDK_DEMO_H
 
+#include <zx/basic48.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <input.h>
 #include <games.h>
-#include <intrinsic.h>
 #include <tsconf.h>
 
 typedef struct {
@@ -29,7 +29,6 @@ static uint8_t unpack_storage[2049];
 #endif
 
 enum { SCREEN_PAGE = 0x40, OTHER_SCREEN_PAGE = 0x48, ATLAS_PAGE = 0xb0, SCRATCH_PAGE = 0xc0 };
-#define W3 0xc000u
 
 /* BASIC 48 supplies IM1, ROM and system variables in W0/W1. All demo code,
  * constants and BSS stay in W2; the incoming BASIC stack stays below 8000h.
@@ -40,7 +39,7 @@ static uint8_t saved_border;
 
 static void demo_begin(void) {
     saved_w3 = ts_memory_get_page3();
-    saved_border = (*(const uint8_t *)0x5c48u >> 3) & 7;
+    saved_border = zx_basic48_get_border_color();
     zx_set_video_mode(TS_VIDEO_16C_320X200 | TS_VIDEO_FLAG_HIDE_GFX | TS_VIDEO_FLAG_HIDE_TSU);
     ts_video_set_tsu_config(0);
     ts_video_set_scroll(0, 0);
@@ -51,7 +50,7 @@ static void demo_begin(void) {
 
 /* Frame INT is the only enabled source in the BASIC 48 launch profile. */
 static void frame(void) {
-    intrinsic_halt();
+    zx_basic48_wait_frames(1);
 }
 
 static void demo_end(void) {
@@ -114,7 +113,7 @@ static void upload(const image_resource_t *image, uint8_t destination) {
         const resource_chunk_t *chunk = image->chunks + i;
 #if RESOURCE_PACKED
         ts_map_ram_page(ZX_WINDOW_3, chunk->page);
-        dzx0_standard((void *)(W3 + chunk->offset), unpack_buffer);
+        dzx0_standard((uint8_t *)ZX_WINDOW_3 + chunk->offset, unpack_buffer);
         ts_map_ram_page(ZX_WINDOW_3, SCRATCH_PAGE);
         transfer.source.page = ts_memory_get_page2();
         transfer.source.offset = (uint16_t)unpack_buffer & 0x3fffu;

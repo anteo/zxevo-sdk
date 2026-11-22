@@ -43,13 +43,14 @@ INCLUDE "crt/classic/crt_rules.inc"
 ;
 ; Entry is in writable RAM. USR supplies a return address on the BASIC
 ; stack. Keep the BASIC ROM, workspace and saved stack mapped on return.
-; C uses the incoming SP. Saved IX and IY are below the BASIC return address.
-; The saved SP points at the saved IX word, above any CRT and C stack use.
+; C uses REGISTER_SP when configured, otherwise the incoming BASIC stack.
+; The saved SP points to IX and IY below the BASIC return address.
 ; BASIC receives BC = result, HL' = 2758h, its IX, IY and original stack.
 start:
         push iy
         push ix
         ld (restore_sp+1),sp
+INCLUDE "crt/classic/crt_init_sp.inc"
         call crt0_init
 INCLUDE "crt/classic/crt_init_atexit.inc"
         ZX_CRT_INIT zx_crt_init_failed

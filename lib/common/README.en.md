@@ -110,7 +110,11 @@ This builds the examples in `lib/baseconf/build/examples/` and `lib/tsconf/build
 files use the standard ZX TAP layout. The BASIC loader executes `CLEAR 32767`, loads the flat CODE
 block at `8000h` and calls `RANDOMIZE USR 32768`.
 
-The CRT clears BSS and uses the stack supplied by BASIC below `8000h`. Initialized DATA is part of
+The CRT clears BSS and by default uses the stack supplied by BASIC below `8000h`. Set
+`-pragma-define:REGISTER_SP=0xc000` at link time to place the stack at the top of W2. Leave room
+between the end of the linked image (including BSS) and the downward-growing stack.
+With the BASIC workspace mapped, `<zx/basic48.h>` provides `zx_basic48_wait_frames(count)` and
+`zx_basic48_get_border_color()`. Initialized DATA is part of
 the CODE block. BASIC supplies the paging and interrupt setup. Keep the linked image accessible, and
 restore the BASIC ROM, workspace, stack mapping and interrupt state before returning if the program
 changes them. The CRT restores SP, IX and IY, and returns the exit code in BC. An initialization

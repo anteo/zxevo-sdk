@@ -1,9 +1,8 @@
+#include <zx/basic48.h>
 #include <tsconf.h>
 
-enum { CANVAS_PAGE = 0x40, SCRATCH_PAGE = 0x70, W3 = 0xc000 };
+enum { CANVAS_PAGE = 0x40, SCRATCH_PAGE = 0x70 };
 enum { SKY = 32, WATER = SKY + 16, SUN = WATER + 8, GOLD, LIGHT, INK };
-
-static const volatile uint8_t *const basic_frames = (const volatile uint8_t *)0x5c78u;
 
 static void load_palette(uint8_t saved_w3) {
     uint16_t palette[INK - SKY + 1];
@@ -84,7 +83,7 @@ int main(void) {
         zx_set_border_color(COLOR_BLACK);
         status = zx_display_page(CANVAS_PAGE);
         if (status == ZX_OK) status = zx_set_video_mode(mode);
-        if (status == ZX_OK) status = zx_wait_frames(basic_frames, 250);
+        if (status == ZX_OK) status = zx_basic48_wait_frames(250);
     }
 
     ts_map_ram_page(ZX_WINDOW_3, saved_w3);

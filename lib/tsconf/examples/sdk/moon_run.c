@@ -1,13 +1,11 @@
+#include <zx/basic48.h>
 #include <string.h>
 #include <tsconf.h>
-
-#define W3 0xc000u
 
 enum { ATLAS_PAGE = 0x48, SHIP_PAGE = 0x58, MAP_PAGE = 0x60, SCRATCH_PAGE = 0x70 };
 enum { SKY, STAR, DIM_STAR, SOIL, TERRAIN = 64, EARTH = 192 };
 
-static const volatile uint8_t *const basic_frames = (const volatile uint8_t *)0x5c78u;
-static uint8_t *const work = (uint8_t *)W3;
+static uint8_t *const work = (uint8_t *)ZX_WINDOW_3;
 
 static const uint16_t palette[] = {
     TS_PALETTE_RGB555(0, 0, 0),    TS_PALETTE_RGB555(2, 3, 9),    TS_PALETTE_RGB555(23, 26, 31),
@@ -133,7 +131,7 @@ static void build_moon(void) {
     }
 
     ts_map_ram_page(ZX_WINDOW_3, MAP_PAGE);
-    memset(work, 0, 0x4000);
+    memset(work, 0, ZX_RAM_PAGE_SIZE);
     for (column = 0; column < 64; ++column) {
         for (row = 0; row < 24; ++row) {
             /* Fixed-seed LFSR scatters points without a repeating diagonal. */
@@ -194,7 +192,7 @@ int main(void) {
 
     for (frame = 0; frame < 300; ++frame) {
         uint8_t phase = (uint8_t)frame & 63;
-        status = zx_wait_frame(basic_frames);
+        status = zx_basic48_wait_frames(1);
         if (status != ZX_OK) break;
         ts_video_set_tile0_scroll(frame / 2, 0);
         ts_video_set_tile1_scroll(3 * frame, 0);

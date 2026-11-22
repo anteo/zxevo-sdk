@@ -1,11 +1,9 @@
+#include <zx/basic48.h>
 #include <zx/console.h>
 #include <zx/graphics.h>
-#include <zx/interrupt.h>
 #include <zx/video.h>
 
 enum { CENTER_X = 128, CENTER_Y = 92, RADIUS = 58 };
-
-static const volatile uint8_t *const basic_frames = (const volatile uint8_t *)0x5c78u;
 
 static const int8_t bearings[][2] = {{0, -58},  {29, -50}, {50, -29},  {58, 0},
                                      {50, 29},  {29, 50},  {0, 58},    {-29, 50},
@@ -48,7 +46,7 @@ int main(void) {
         for (bearing = 0; bearing < sizeof(bearings) / sizeof(*bearings); ++bearing) {
             /* Drawing the same XOR ray twice restores the grid and contacts. */
             sweep(bearing);
-            status = zx_wait_frames(basic_frames, 5);
+            status = zx_basic48_wait_frames(5);
             sweep(bearing);
             if (status != ZX_OK) return status;
         }
