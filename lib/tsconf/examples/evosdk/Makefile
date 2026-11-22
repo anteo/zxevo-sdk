@@ -35,9 +35,11 @@ $(BUILD)/compile-flags: FORCE
 $(BUILD)/%/resources.h: assets.py $(ASSETS_TOOLS) $(wildcard assets/*/*.bmp) $(BUILD)/compile-flags
 	$(PYTHON) assets.py $* $(BUILD)/$* --compression $(COMPRESSION) --compressor $(ZX0)
 
-$(BUILD)/%/demo.tap: %.c demo.h $(BUILD)/%/resources.h Makefile $(TSCONF_LIB) $(ZX_APPMAKE_BIN) $(BUILD)/compile-flags | library
-	cd $(BUILD)/$* && $(ZCC) $(APP_FLAGS) -I$(CURDIR) -I. \
-	    -Cz--name=EVODEMO -o demo $(CURDIR)/$*.c resources.asm
+$(TAPS:demo.tap=demo.o): $(BUILD)/%/demo.o: %.c demo.h $(BUILD)/%/resources.h Makefile ../../tsconf.mk $(TSCONF_CFG) $(TSCONF_PUBLIC_HEADERS) $(BUILD)/compile-flags
+	$(ZCC) $(filter-out -L%,$(TSCONF_APP_FLAGS)) -I$(CURDIR) -I$(BUILD)/$* -c -o $@ $<
+
+$(BUILD)/%/demo.tap: $(BUILD)/%/demo.o $(BUILD)/%/resources.h $(TSCONF_LIB) $(ZX_APPMAKE_BIN) | library
+	cd $(BUILD)/$* && $(ZCC) $(APP_FLAGS) -Cz--name=EVODEMO -o demo demo.o resources.asm
 
 $(TSCONF_LIB): | library
 

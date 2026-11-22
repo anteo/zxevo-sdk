@@ -75,6 +75,27 @@ flat image. Use the SDK's appmake targets to load sections into separate RAM pag
 [BaseConf guide](lib/baseconf/README.en.md) · [TSConf guide](lib/tsconf/README.en.md) ·
 [Shared APIs and BASIC 48 startup](lib/common/README.en.md)
 
+## CLion
+
+Open the application's Makefile as a Makefile project. Under **Settings → Build, Execution,
+Deployment → Toolchains → Custom Compiler**, enable **Use custom compiler config** and select
+[tools/clion/z88dk-sdcc.yaml](tools/clion/z88dk-sdcc.yaml) from the SDK checkout.
+Select the z88dk installation's `bin/zcc` as the C compiler, set `PATH` and `ZCCCFG` as in
+Quick start, and reload the Makefile project.
+
+BaseConf and TSConf projects can point to the same file. CLion locates the classic C headers
+relative to `zcc`. The SDK's `BASECONF_APP_FLAGS` and `TSCONF_APP_FLAGS` supply the SDK include
+paths and the target macro for each compile command. If you assemble your own flags, pass
+`-D__BASECONF` or `-D__TSCONF` alongside the matching target's include paths so the editor
+can resolve target-specific `#if` branches.
+
+To edit the SDK's own examples, load the root `Makefile`. Set **Settings → Build,
+Execution, Deployment → Makefile → Build target** to `examples-all`, then select
+**Tools → Makefile → Reload Makefile Project**. This target includes the native BaseConf
+and TSConf examples, five EvoSDK demos, and the XNX game. The ports use generated
+`resources.h` and `assets.h` headers. On a fresh checkout, building
+`make examples-evosdk examples-xnx` once creates them.
+
 ## Program size
 
 The linker pulls in the library objects that satisfy calls from your application, along with their

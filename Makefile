@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all baseconf-lib tsconf-lib examples examples-baseconf examples-tsconf examples-evosdk examples-xnx test test-appmake release clean
+.PHONY: all baseconf-lib tsconf-lib examples examples-all examples-baseconf examples-tsconf examples-evosdk examples-xnx test test-appmake release clean
 
 PYTHON ?= python3
 SUITE ?= all
@@ -15,6 +15,11 @@ tsconf-lib:
 	$(MAKE) -C lib/tsconf all
 
 examples: examples-baseconf examples-tsconf
+
+# The three groups build the same TSConf archive. Finish each before starting the next.
+examples-all: examples
+	$(MAKE) examples-evosdk
+	$(MAKE) examples-xnx
 
 examples-baseconf: appmake
 	$(MAKE) -C lib/baseconf examples

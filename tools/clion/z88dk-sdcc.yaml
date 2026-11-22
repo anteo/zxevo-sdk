@@ -1,0 +1,16 @@
+# Project Makefiles supply the target macro and SDK include paths for each source.
+compilers:
+  - description: z88dk SDCC for Z80 (classic)
+    match-compiler-exe: '(.+[\\/])?zcc(\.exe)?'
+    match-language: C
+    code-insight-target-name: avr  # Models 16-bit int and pointers for the editor.
+    include-dirs: '${compiler-exe-dir}/../include'
+    defines-text: |
+      #define __STDC_VERSION__ 199901L
+      #define __CLION_IDE__ 1
+      #define __SDCC 1
+      #define __SDCC_z80 1
+      #define __critical
+      #define __interrupt(vector)
+      #define __Z80 1
+      #define __Z80__ 1

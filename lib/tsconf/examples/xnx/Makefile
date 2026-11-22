@@ -15,7 +15,7 @@ FLAGS := $(TSCONF_APP_FLAGS) -lzx_clib \
     -Cz--spg-stack=0xbdb0 -Cz--spg-resident=0xbc80 -Cz--spg-clock=2 -Cz--name=XNX \
     -Cz--spg-compression=auto
 
-.PHONY: all library clean
+.PHONY: all library clean FORCE
 all: $(BUILD)/xnx.spg
 
 library:
@@ -24,9 +24,17 @@ library:
 $(BUILD)/assets.h: assets.py $(wildcard assets/gfx/* assets/mus/* assets/sfx/*) $(ASSETS_TOOLS)
 	$(PYTHON) assets.py $(BUILD)
 
-$(BUILD)/xnx.spg: main.c platform.c game.h resources.h Makefile $(BUILD)/assets.h $(TSCONF_LIB) $(ZX_APPMAKE_BIN) | library
-	cd $(BUILD) && $(ZCC) $(FLAGS) -I$(CURDIR) -I. -o xnx \
-	    $(CURDIR)/main.c $(CURDIR)/platform.c assets.asm
+$(BUILD)/compile-flags: FORCE
+	@mkdir -p $(BUILD)
+	@printf '%s\n' '$(FLAGS)' > $@.tmp
+	@cmp -s $@.tmp $@ || mv $@.tmp $@
+	@rm -f $@.tmp
+
+$(BUILD)/%.o: %.c game.h resources.h Makefile ../../tsconf.mk $(TSCONF_CFG) $(TSCONF_PUBLIC_HEADERS) $(BUILD)/assets.h $(BUILD)/compile-flags
+	$(ZCC) $(filter-out -L%,$(TSCONF_APP_FLAGS)) -I$(CURDIR) -I$(BUILD) -c -o $@ $<
+
+$(BUILD)/xnx.spg: $(BUILD)/main.o $(BUILD)/platform.o $(BUILD)/assets.h $(TSCONF_LIB) $(ZX_APPMAKE_BIN) | library
+	cd $(BUILD) && $(ZCC) $(FLAGS) -o xnx main.o platform.o assets.asm
 
 clean:
 	rm -rf -- $(BUILD)

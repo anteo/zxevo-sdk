@@ -91,7 +91,7 @@ $(BUILD)/tsconf.lib: Makefile $(BUILD)/sources $(OBJECTS) $(COMMON_OBJECTS)
 	$(Z80ASM) -x=$@ -mz80 $(OBJECTS) $(COMMON_OBJECTS)
 
 ZX_EXAMPLE_FLAGS = $(TSCONF_BASIC48_FLAGS)
-ZX_EXAMPLE_DIR := $(CURDIR)/examples/sdk
+ZX_EXAMPLE_DIR := examples/sdk
 ZX_EXAMPLE_DEPS := Makefile tsconf.mk $(TSCONF_CFG) $(BUILD)/tsconf.lib \
 	$(ZX_APPMAKE_BIN) $(wildcard $(TSCONF_INCLUDE)/*.h $(TSCONF_INCLUDE)/tsconf/*.h)
 include $(ZX_COMMON_ROOT)/examples.mk

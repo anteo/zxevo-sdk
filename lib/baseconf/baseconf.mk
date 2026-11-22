@@ -45,7 +45,8 @@ BASECONF_INCLUDE_FLAGS = -I$(BASECONF_INCLUDE) -I$(ZX_COMMON_ROOT)/include
 BASECONF_BUILD ?= $(BASECONF_ROOT)/build/default
 BASECONF_LIB ?= $(BASECONF_BUILD)/baseconf.lib
 BASECONF_ABI_FLAGS ?= -clib=classic -compiler=sdcc --reserve-regs-iy
-BASECONF_APP_FLAGS = +$(BASECONF_CFG) $(BASECONF_ABI_FLAGS) $(BASECONF_INCLUDE_FLAGS) -L$(BASECONF_BUILD)
+# Expose the target macro from baseconf.cfg to editors importing compile commands.
+BASECONF_APP_FLAGS = +$(BASECONF_CFG) $(BASECONF_ABI_FLAGS) -D__BASECONF $(BASECONF_INCLUDE_FLAGS) -L$(BASECONF_BUILD)
 BASECONF_BASIC48_FLAGS = $(BASECONF_APP_FLAGS) -subtype=basic48
 
 ifeq ($(strip $(Z88DK_ROOT)),)
