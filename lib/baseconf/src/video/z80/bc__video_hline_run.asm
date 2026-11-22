@@ -35,23 +35,21 @@ bc__video_hline_run:
         ld a,(ix-1)
         call @edge
         inc hl
-@interior:
-        ld a,h
-        cp d
-        jr nz,@full
-        ld a,l
-        cp e
-        jr z,@last
+        jr @interior
 @full:
         ld a,(hl)
         and b
         xor c
         ld (hl),a
         inc hl
-        jr @interior
-@last:
+@interior:
+        ; Each clipped plane row spans at most 40 bytes, so the low byte
+        ; reaches E only at the endpoint, even when the address crosses xxFFh.
+        ld a,l
+        cp e
+        jr nz,@full
         ld a,(ix-2)
-        jp @edge
+        jr @edge
 @single:
         ld a,(ix-1)
         and (ix-2)
