@@ -11,8 +11,8 @@ typedef struct {
 #include "assets.h"
 
 #define SPRITES 0x70
+#define LEVEL_PICTURE_PAGE 0x78
 #define SCRATCH 0xd0
-#define MAX_DIRTY_TILES 96
 
 volatile uint8_t xnx_ticks;
 static uint8_t tile_storage[33];
@@ -21,10 +21,9 @@ static uint8_t selected_image, palette_id, brightness;
 static uint8_t palette_dirty;
 static const zx_ram_page_t screen_pages[ZX_DRAW_BUFFER_SLOTS] = {0x60, 0x68};
 static uint8_t draw_slot, draw_dirty;
-static uint8_t copy_whole_screen, dirty_count, dirty_bits[125];
-static struct {
-    uint8_t x, y;
-} dirty_tiles[MAX_DIRTY_TILES];
+static uint8_t copy_whole_screen;
+/* Right edge is exclusive. Zero marks a clean tile row. */
+static uint8_t dirty_left[25], dirty_right[25];
 static ts_sprite_t sprites[32];
 static uint8_t sprite_count, sprites_enabled;
 static uint8_t pause_previous, pause_edge;
@@ -75,22 +74,45 @@ void xnx_select_image(uint8_t image) {
     selected_image = image;
 }
 
-static void mark_tile(uint8_t x, uint8_t y) {
-    uint16_t tile = (uint16_t)y * 40 + x;
-    uint8_t *bits, mask;
+static void mark_run(uint8_t x, uint8_t y, uint8_t tiles) {
     draw_dirty = 1;
     if (copy_whole_screen) return;
-    bits = dirty_bits + (tile >> 3);
-    mask = 1u << (tile & 7);
-    if (*bits & mask) return;
-    *bits |= mask;
-    if (dirty_count == MAX_DIRTY_TILES) {
-        copy_whole_screen = 1;
-        return;
-    }
-    dirty_tiles[dirty_count].x = x;
-    dirty_tiles[dirty_count].y = y;
-    ++dirty_count;
+    if (!dirty_right[y] || x < dirty_left[y]) dirty_left[y] = x;
+    if (x + tiles > dirty_right[y]) dirty_right[y] = x + tiles;
+}
+
+/* Both rasters use 256-byte scanlines. Eight scanlines at a tile-aligned Y
+ * fit in one 16 KiB page, even when the next tile row starts a new page. */
+static void copy_tile_run(uint8_t source, uint8_t sx, uint8_t sy,
+                          uint8_t destination, uint8_t x, uint8_t y, uint8_t tiles) {
+    ts_dma_transfer_t transfer;
+    transfer.source.page = source + (sy >> 3);
+    transfer.source.offset = ((uint16_t)(sy & 7) << 11) + ((uint16_t)sx << 2);
+    transfer.destination.page = destination + (y >> 3);
+    transfer.destination.offset = ((uint16_t)(y & 7) << 11) + ((uint16_t)x << 2);
+    transfer.words_minus_one = tiles * 2 - 1;
+    transfer.bursts_minus_one = 7;
+    transfer.control = TS_DMA_COPY | TS_DMA_STRIDE_SOURCE | TS_DMA_STRIDE_DESTINATION;
+    ts_dma_wait();
+    ts_dma_start(&transfer);
+    ts_dma_wait();
+}
+
+/* Expand the compact 8x8 tiles once, before the level starts. The 304x176
+ * raster occupies three RAM pages with the TSConf 256-byte scanline stride. */
+void xnx_prepare_picture(uint8_t picture) {
+    const image_t *image = &images[picture];
+    uint16_t tile = 0;
+    uint8_t x, y;
+    for (y = 0; y < image->rows; ++y)
+        for (x = 0; x < image->columns; ++x)
+            ts_video_draw_16c_tile(image->page, tile++, LEVEL_PICTURE_PAGE, x, y);
+}
+
+/* The level picture starts one tile from the left and two from the top. */
+void xnx_draw_picture_run(uint8_t x, uint8_t y, uint8_t tiles) {
+    copy_tile_run(LEVEL_PICTURE_PAGE, x, y, screen_pages[draw_slot], x + 1, y + 2, tiles);
+    mark_run(x + 1, y + 2, tiles);
 }
 
 /* Whole opaque tiles use the SDK's banked tile path. Keyed tiles use its
@@ -102,7 +124,7 @@ static void draw_tile(uint8_t x, uint8_t y, uint16_t tile, uint8_t keyed) {
     if (x >= 40 || y >= 25 || tile >= (uint16_t)image->columns * image->rows) return;
     if (!keyed) {
         if (ts_video_draw_16c_tile(image->page, tile, screen_pages[draw_slot], x, y) == ZX_OK)
-            mark_tile(x, y);
+            mark_run(x, y, 1);
         return;
     }
     if (ts_window_acquire(ZX_WINDOW_3, image->page + (tile >> 9), &lease) != ZX_OK) return;
@@ -111,7 +133,7 @@ static void draw_tile(uint8_t x, uint8_t y, uint16_t tile, uint8_t keyed) {
     bitmap.pixels = tile_buffer;
     bitmap.width = bitmap.height = 8;
     bitmap.stride = 4;
-    if (zx_blit4_key(&bitmap, (uint16_t)x * 8, (uint16_t)y * 8, 1) == ZX_OK) mark_tile(x, y);
+    if (zx_blit4_key(&bitmap, (uint16_t)x * 8, (uint16_t)y * 8, 1) == ZX_OK) mark_run(x, y, 1);
 }
 
 void xnx_draw_tile(uint8_t x, uint8_t y, uint16_t tile) {
@@ -119,14 +141,6 @@ void xnx_draw_tile(uint8_t x, uint8_t y, uint16_t tile) {
 }
 void xnx_draw_tile_key(uint8_t x, uint8_t y, uint16_t tile) {
     draw_tile(x, y, tile, 1);
-}
-
-void xnx_draw_image(uint8_t x, uint8_t y, uint8_t image) {
-    uint16_t row, tile = 0;
-    uint8_t col;
-    selected_image = image;
-    for (row = 0; row < images[image].rows; ++row)
-        for (col = 0; col < images[image].columns; ++col) xnx_draw_tile(x + col, y + row, tile++);
 }
 
 void xnx_clear(uint8_t color) {
@@ -145,10 +159,14 @@ void xnx_delay(uint16_t frames) {
     while (frames--) xnx_frame();
 }
 
-static void copy_changed_tiles(uint8_t source, uint8_t destination) {
-    uint8_t i;
-    for (i = 0; i < dirty_count; ++i) {
-        ts_video_copy_16c_tile(source, destination, dirty_tiles[i].x, dirty_tiles[i].y);
+/* Both buffers matched before drawing. Copying the gap between two
+ * changes on a row also leaves those intervening pixels identical. */
+static void copy_changed_rows(uint8_t source, uint8_t destination) {
+    uint8_t y, left;
+    for (y = 0; y < 25; ++y) {
+        if (!dirty_right[y]) continue;
+        left = dirty_left[y];
+        copy_tile_run(source, left, y, destination, left, y, dirty_right[y] - left);
     }
 }
 
@@ -169,11 +187,10 @@ void xnx_present(void) {
         if (copy_whole_screen)
             ts_video_copy_16c_screen(displayed_page, draw_page);
         else
-            copy_changed_tiles(displayed_page, draw_page);
+            copy_changed_rows(displayed_page, draw_page);
         draw_dirty = 0;
         copy_whole_screen = 0;
-        dirty_count = 0;
-        memset(dirty_bits, 0, sizeof(dirty_bits));
+        memset(dirty_right, 0, sizeof(dirty_right));
     }
     if (sprites_enabled) {
         memset(sprites + sprite_count, 0, sizeof(sprites) - sprite_count * sizeof(ts_sprite_t));

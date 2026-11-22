@@ -40,14 +40,17 @@ after Game Over returns to the title. Reset the machine to exit.
 audio APIs. The Makefile selects the TSConf standalone CRT, `+tsconf --format=spg`, a stack at
 `BDB0h` and an SPG loader resident at `BC80h`.
 
-Opaque 8×8 tiles use `ts_video_draw_16c_tile` and DMA. For a transparent tile, `ts_window_acquire`
+The SPG stores all ten level pictures as packed 4bpp tiles. At level start, DMA expands the
+current picture into a shared buffer with a 256-byte scanline stride. Revealing a horizontal
+run of tiles then takes one DMA transfer from that buffer.
+Opaque tiles use `ts_video_draw_16c_tile` and DMA. For a transparent tile, `ts_window_acquire`
 maps its bank into W3, the tile is copied to a resident buffer, and `zx_blit4_key` draws it with
-palette index 1 as the transparency key. `ts_video_fill_16c_screen` and `ts_video_copy_16c_*` keep
-the two framebuffers in sync. Moving objects and transition masks use TSConf hardware sprites
+palette index 1 as the transparency key. After a buffer swap, one DMA transfer per changed tile
+row synchronizes the two buffers. A clear uses a full-screen copy. Moving objects and transition masks use TSConf hardware sprites
 through `ts_video_upload_sprites` and `ts_video_set_sprite_page`.
 
 The `assets.py` recipe uses [tools/assets](../../../../tools/assets/README.en.md) to convert BMP
-images into 4bpp tiles, assemble the sprite atlas and convert WAV into unsigned PCM8. Generated ASM
+images into 4bpp graphics, assemble the sprite atlas and convert WAV into unsigned PCM8. Generated ASM
 sections place resources directly in physical RAM pages. SDK appmake compresses occupied SPG pages
 with MegaLZ or Hrust; the SPG loader restores them before entry. Joystick and keyboard input use
 z88dk `games.h` and `input.h`.
@@ -72,9 +75,10 @@ and interrupt state. Resident samples can use `zx_covox_play`.
 | Below `BDB0`, growing downward | Stack; keep it above the ISR at B9B9–B9C9                                                         |
 | `B9B9–B9C9`, `BE00–BF00`       | z88dk generic ISR/hooks and vector table                                                          |
 | W3 `C000–FFFF`                 | Temporary resource, tile, framebuffer or scratch mapping                                          |
-| RAM `20h–39h`                  | Tile images loaded by SPG                                                                         |
+| RAM `20h–39h`                  | Packed level pictures, fonts and masks loaded by SPG                                              |
 | RAM `60h–63h`, `68h–6Bh`       | Two 320×200 framebuffers with 256-byte stride                                                     |
 | RAM `70h`                      | Atlas of 43 hardware sprite images                                                                |
+| RAM `78h–7Ah`                  | DMA buffer for the current 304×176 picture, populated at level start                              |
 | RAM `C0h–C2h`                  | PCM8 samples loaded by SPG                                                                        |
 | RAM `D0h`                      | FMAPS/SFILE scratch                                                                               |
 

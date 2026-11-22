@@ -42,7 +42,6 @@ static u16 gameAreaClear;
 static u8 gameStartDelay;
 static u8 gameRestartDelay;
 static u8 gameHitCnt;
-static u8 gameImageID;
 
 static u8 explodeX;
 static u8 explodeY;
@@ -252,13 +251,11 @@ void player_init(u8 x, u8 y) {
 }
 
 void draw_map_part(u8 x, u8 y, u8 w, u8 h, u8 light) {
-    static u8 i, j, mask;
+    static u8 i, j, mask, start;
     static u16 off, soff1, soff2;
 
     soff1 = y * MAP_WDT + x;
     soff2 = soff1;
-
-    xnx_select_image(gameImageID);
 
     ++x;
     y += 2;
@@ -269,12 +266,19 @@ void draw_map_part(u8 x, u8 y, u8 w, u8 h, u8 light) {
         off = soff1;
         soff1 += MAP_WDT;
 
-        for (j = x; j < w; ++j) {
-            if (updmap[off]) {
-                if (map[off]) xnx_draw_tile(j, i, off);
+        j = x;
+        while (j < w) {
+            if (!updmap[off] || !map[off]) {
+                ++j;
+                ++off;
+                continue;
             }
-
-            ++off;
+            start = j;
+            do {
+                ++off;
+                ++j;
+            } while (j < w && updmap[off] && map[off]);
+            xnx_draw_picture_run(start - 1, i - 2, j - start);
         }
     }
 
@@ -311,7 +315,8 @@ void draw_map_part(u8 x, u8 y, u8 w, u8 h, u8 light) {
                     }
 
                     if (light) xnx_draw_tile_key(j, i, 256);
-                    xnx_draw_tile_key(j, i, mask);
+                    /* BGMASK tile 0 is fully transparent inside an open area. */
+                    if (mask) xnx_draw_tile_key(j, i, mask);
                 }
             }
 
@@ -511,61 +516,40 @@ u8 player_set_move(u8 dir) {
     return 0;
 }
 
-u16 area_fill(u16 off, u8 area) {
-    static u16 icnt, tcnt, len, max;
-    static u16 front1[128], front2[128];
-    static u16 *src, *dst;
+/* The solid border bounds the fill. Each open run is marked before it is
+ * queued, so a row holds at most ceil(interior width / 2) distinct runs. */
+static u8 *fill_runs[(MAP_HGT - 2) * ((MAP_WDT - 1) / 2)];
+static u8 **next_run;
 
-    map[off] = area;
-    front1[0] = off;
-    src = front1;
-    dst = front2;
-    tcnt = 0;
-    len = 1;
+static void queue_fill_run(u8 *cell, u8 area) {
+    while (!cell[-1]) --cell;
+    *next_run++ = cell;
+    do {
+        *cell++ = area;
+    } while (!*cell);
+}
 
-    while (1) {
-        icnt = 0;
+static u16 area_fill(u16 off, u8 area) {
+    u8 *cell = map + off;
+    u16 size = 0;
 
-        while (len) {
-            off = *src++ - 1;
-            --len;
-
-            if (!map[off]) {
-                map[off] = area;
-                dst[icnt++] = off;
-            }
-            off += 2;
-            if (!map[off]) {
-                map[off] = area;
-                dst[icnt++] = off;
-            }
-            off -= MAP_WDT + 1;
-            if (!map[off]) {
-                map[off] = area;
-                dst[icnt++] = off;
-            }
-            off += MAP_WDT * 2;
-            if (!map[off]) {
-                map[off] = area;
-                dst[icnt++] = off;
-            }
-        }
-
-        if (!icnt) break;
-
-        len = icnt;
-        tcnt += icnt;
-
-        if (dst == front2) {
-            src = front2;
-            dst = front1;
-        } else {
-            src = front1;
-            dst = front2;
-        }
+    /* Several side markers can refer to the same component. As in the
+     * original rules, relabel that seed without counting it a second time. */
+    if (*cell) {
+        *cell = area;
+        return 0;
     }
-
-    return tcnt;
+    next_run = fill_runs;
+    queue_fill_run(cell, area);
+    do {
+        cell = *--next_run;
+        do {
+            if (!cell[-MAP_WDT]) queue_fill_run(cell - MAP_WDT, area);
+            if (!cell[MAP_WDT]) queue_fill_run(cell + MAP_WDT, area);
+            ++size;
+        } while (*++cell == area);
+    } while (next_run != fill_runs);
+    return size - 1;  /* Side selection counts neighbours, excluding the seed. */
 }
 
 u16 map_fill(void) {
@@ -745,9 +729,9 @@ u8 game_loop(void) {
 
     levelData = levelsData[gameLevel];
     gameClearTarget = levelData[3];
-    gameImageID = levelData[0];
 
     level_screen();
+    xnx_prepare_picture(levelData[0]);
 
     xnx_brightness(0);
     xnx_palette(levelData[1]);
@@ -936,8 +920,6 @@ u8 game_loop(void) {
 
         if (!explodeCnt && !gameRestartDelay && gameDone >= gameClearTarget) break;
 
-        xnx_present();
-
         if (fill) {
             fill = FALSE;
             score = map_fill();
@@ -952,6 +934,7 @@ u8 game_loop(void) {
             draw_map();
         }
 
+        xnx_present();
         if (gameStartDelay) --gameStartDelay;
         if (gameRestartDelay) --gameRestartDelay;
         if (gameHitCnt) --gameHitCnt;
@@ -966,7 +949,7 @@ u8 game_loop(void) {
         memset(map, 1, sizeof(map));
         memset(updmap, 1, sizeof(updmap));
 
-        xnx_draw_image(1, 2, gameImageID);
+        for (i = 0; i < MAP_HGT; ++i) xnx_draw_picture_run(0, i, MAP_WDT);
 
         for (i = 0; i < 15; ++i) {
             xnx_present();
