@@ -21,11 +21,11 @@ make examples-xnx
 ```
 
 Можно также вызвать обычный `make` прямо в этом каталоге.
-[Инструменты ресурсов](../../../../../tools/assets/README.ru.md) автоматически готовят и
+[Инструменты ресурсов](../../../../tools/assets/README.ru.md) автоматически готовят и
 переиспользуют зависимости Python. Активация venv и `PYTHON=...` не нужны; при первой подготовке
 требуется доступ к пакетам.
 
-Результат — `lib/tsconf/examples/evosdk/xnx/build/xnx.spg`. Запускайте SPG через загрузчик TSConf,
+Результат — `lib/tsconf/examples/xnx/build/xnx.spg`. Запускайте SPG через загрузчик TSConf,
 поддерживающий формат SpectrumProg 1.0, либо открывайте в ZEsarUX. Программа использует standalone
 CRT и не возвращается в BASIC. TAP-версия не создаётся.
 
@@ -47,7 +47,7 @@ zxevo-sdk. Makefile выбирает автономный CRT TSConf, `+tsconf -
 `ts_video_copy_16c_*` синхронизируют два экранных буфера. Движущиеся объекты и переходные маски
 используют аппаратные спрайты TSConf через `ts_video_upload_sprites` и `ts_video_set_sprite_page`.
 
-Рецепт `assets.py` через [tools/assets](../../../../../tools/assets/README.ru.md) преобразует BMP в
+Рецепт `assets.py` через [tools/assets](../../../../tools/assets/README.ru.md) преобразует BMP в
 тайлы 4bpp, собирает атлас спрайтов, а WAV преобразует в unsigned PCM8. Созданные ASM-секции
 помещают ресурсы непосредственно в физические страницы RAM. SDK appmake сжимает занятые страницы SPG
 в MegaLZ или Hrust; загрузчик SPG восстанавливает их до запуска программы. Ввод с джойстика и
@@ -84,4 +84,4 @@ Hook вызывает `zx_pt3_play()` и `zx_ayfx_frame()`. `zx_ay_select_chip` 
 независимо от применения clock-поля SPG конкретным загрузчиком.
 
 Исходная лицензия evosdk для игрового кода и ресурсов сохранена
-[здесь](../assets/upstream-license.txt).
+[здесь](../evosdk/assets/upstream-license.txt).

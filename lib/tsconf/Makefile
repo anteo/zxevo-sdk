@@ -109,6 +109,6 @@ else
 endif
 
 FORMAT_FILES := $(wildcard *.md config/*.asm examples/sdk/*.c include/*.h include/tsconf/*.h examples/*.md) $(SOURCES)
-FORMAT_SUBDIRS := examples/evosdk tests
+FORMAT_SUBDIRS := examples/evosdk examples/xnx tests
 FORMATTER_ARGS := --dialect=z80asm
 include ../../tools/formatter/formatter.mk

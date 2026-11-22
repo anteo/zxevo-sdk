@@ -23,7 +23,7 @@ pointer use **TSConf hardware sprites**.
 | `mouse_joystick`        | Original background and 16×16 pointer, button-dependent border color      | Kempston mouse, Kempston joystick or Cursor 5/6/7/8 |
 | `sprites`               | 22 balls of 16×16 pixels, four original images                            | Automatic animation                                 |
 | `slideshow`             | Five original pictures, transitions through black/white                   | Left/right with transitions, up/down without        |
-| [XNX](xnx/README.en.md) | Full ten-level game, hardware sprites, PT3/AYFX/Covox; separate SPG build | Kempston/Cursor, Space, P to pause                  |
+| [XNX](../xnx/README.en.md) | Full ten-level game, hardware sprites, PT3/AYFX/Covox; separate SPG build | Kempston/Cursor, Space, P to pause                  |
 
 CAPS SHIFT + SPACE returns to BASIC in the four TAP demonstrations. XNX starts separately through
 SPG and uses its own IM2 setup. Load TAPs with `LOAD ""` in **BASIC 48 on TSConf**. The pages listed

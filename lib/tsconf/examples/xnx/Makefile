@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 .DELETE_ON_ERROR:
-include ../../../tsconf.mk
+include ../../tsconf.mk
 
 PYTHON ?= python3
 BUILD := $(CURDIR)/build
@@ -35,4 +35,4 @@ $(TSCONF_LIB): | library
 
 FORMAT_FILES := $(wildcard *.c *.h *.md)
 FORMATTER_ARGS := --dialect=z80asm
-include ../../../../../tools/formatter/formatter.mk
+include ../../../../tools/formatter/formatter.mk

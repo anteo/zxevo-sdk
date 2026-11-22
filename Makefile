@@ -27,7 +27,7 @@ examples-evosdk: appmake
 	$(MAKE) -C lib/tsconf/examples/evosdk all
 
 examples-xnx: appmake
-	$(MAKE) -C lib/tsconf/examples/evosdk/xnx all
+	$(MAKE) -C lib/tsconf/examples/xnx all
 
 test: export ZX_TEST_SUITE := $(strip $(SUITE))
 test: export ZX_TEST_CASE := $(strip $(CASE))
@@ -51,7 +51,7 @@ release:
 clean:
 	$(MAKE) -C lib clean
 	$(MAKE) -C lib/tsconf/examples/evosdk clean
-	$(MAKE) -C lib/tsconf/examples/evosdk/xnx clean
+	$(MAKE) -C lib/tsconf/examples/xnx clean
 	$(MAKE) -C tools/appmake clean
 	$(MAKE) -C tools/mhmt clean
 	rm -rf -- build tools/assets/build

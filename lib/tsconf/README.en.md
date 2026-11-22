@@ -96,9 +96,9 @@ Ports of the evosdkts demonstrations from the TSConf repository, using zxevo-sdk
 
 | XNX — title screen                                             | XNX — first level                                                            |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| ![XNX title screen](examples/evosdk/xnx/screenshots/title.png) | ![XNX gameplay on the first level](examples/evosdk/xnx/screenshots/game.png) |
+| ![XNX title screen](examples/xnx/screenshots/title.png) | ![XNX gameplay on the first level](examples/xnx/screenshots/game.png) |
 
-[XNX](examples/evosdk/xnx/README.en.md) is a separate SPG application with hardware sprites, PT3
+[XNX](examples/xnx/README.en.md) is a separate SPG application with hardware sprites, PT3
 music, AYFX effects and PCM8/Covox samples.
 
 ## Hardware APIs

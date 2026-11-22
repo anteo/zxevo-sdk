@@ -95,9 +95,9 @@ make -C lib/tsconf TSCONF_VIDEO_MODES=ZX
 
 | XNX — титульный экран                                             | XNX — первый уровень                                                   |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| ![Титульный экран XNX](examples/evosdk/xnx/screenshots/title.png) | ![Игра XNX на первом уровне](examples/evosdk/xnx/screenshots/game.png) |
+| ![Титульный экран XNX](examples/xnx/screenshots/title.png) | ![Игра XNX на первом уровне](examples/xnx/screenshots/game.png) |
 
-[XNX](examples/evosdk/xnx/README.ru.md) — отдельное приложение SPG с аппаратными спрайтами, музыкой
+[XNX](examples/xnx/README.ru.md) — отдельное приложение SPG с аппаратными спрайтами, музыкой
 PT3, эффектами AYFX и сэмплами PCM8/Covox.
 
 ## Аппаратные интерфейсы

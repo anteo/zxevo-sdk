@@ -47,6 +47,5 @@ clean:
 .SECONDARY:
 
 FORMAT_FILES := $(wildcard *.c *.h *.md)
-FORMAT_SUBDIRS := xnx
 FORMATTER_ARGS := --dialect=z80asm
 include ../../../../tools/formatter/formatter.mk

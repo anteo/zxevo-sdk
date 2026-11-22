@@ -6,13 +6,14 @@
 - `sdk/`: демонстрационные программы zxevo-sdk — `hello.c`, `harbour.c`, `moon_run.c`.
 - [evosdk/](evosdk/README.ru.md): порты демонстраций evosdk из каталога `pentevo/sdk/evosdkts`
   [репозитория TSConf](https://github.com/tslabs/zx-evo), их ресурсы и отдельная сборка ресурсов.
-  [XNX](evosdk/xnx/README.ru.md) — полный игровой пример с самостоятельным SPG-запуском.
+- [xnx/](xnx/README.ru.md) — полная игра XNX с самостоятельным запуском из SPG.
 
 Сборка из корня репозитория:
 
 ```sh
 make examples-tsconf
 make examples-evosdk
+make examples-xnx
 ```
 
 [Инструменты ресурсов](../../../tools/assets/README.ru.md) автоматически готовят зависимости Python.

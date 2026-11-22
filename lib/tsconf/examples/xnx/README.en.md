@@ -21,11 +21,11 @@ make examples-xnx
 ```
 
 Running `make` directly in this directory also works. The
-[asset tools](../../../../../tools/assets/README.en.md) prepare and reuse their Python dependencies
+[asset tools](../../../../tools/assets/README.en.md) prepare and reuse their Python dependencies
 automatically. No venv activation or `PYTHON=...` override is needed; first-time setup requires
 access to the packages.
 
-The result is `lib/tsconf/examples/evosdk/xnx/build/xnx.spg`. Run it with a TSConf loader supporting
+The result is `lib/tsconf/examples/xnx/build/xnx.spg`. Run it with a TSConf loader supporting
 SpectrumProg 1.0, or open it in ZEsarUX. The application uses the standalone CRT and does not return
 to BASIC. No TAP version is generated.
 
@@ -46,7 +46,7 @@ palette index 1 as the transparency key. `ts_video_fill_16c_screen` and `ts_vide
 the two framebuffers in sync. Moving objects and transition masks use TSConf hardware sprites
 through `ts_video_upload_sprites` and `ts_video_set_sprite_page`.
 
-The `assets.py` recipe uses [tools/assets](../../../../../tools/assets/README.en.md) to convert BMP
+The `assets.py` recipe uses [tools/assets](../../../../tools/assets/README.en.md) to convert BMP
 images into 4bpp tiles, assemble the sprite atlas and convert WAV into unsigned PCM8. Generated ASM
 sections place resources directly in physical RAM pages. SDK appmake compresses occupied SPG pages
 with MegaLZ or Hrust; the SPG loader restores them before entry. Joystick and keyboard input use
@@ -83,4 +83,4 @@ assumes 50 Hz frames. Startup explicitly selects 14 MHz and disables caching, in
 whether a particular SPG loader applies the header's clock setting.
 
 The original evosdk license for the game code and assets is retained
-[here](../assets/upstream-license.txt).
+[here](../evosdk/assets/upstream-license.txt).
