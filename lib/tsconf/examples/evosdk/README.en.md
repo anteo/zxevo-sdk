@@ -99,7 +99,7 @@ values and TSConf levels 0/8/16/24.
 - `in_KeyPressed()` with a previous-state table detects new key presses.
 - `joystick(1)` and `joystick(4)` read Kempston and Cursor; Space adds Fire.
 - `in_MouseKemp()` returns coordinates within 256×192 and two buttons. The example recenters the
-  mouse each frame to accumulate relative movement; `inp()` reads the middle button.
+  mouse each frame to accumulate relative movement; `zx_mouse_read()` reads the middle button.
 - `zx_set_video_mode`, `ts_dma_start` and TSU sprite descriptors display the images and moving
   objects. The slideshow draws to the hidden screen before switching VPage.
 

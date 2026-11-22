@@ -2,6 +2,7 @@
  * z88dk supplies mouse/joystick input; TSConf supplies the hardware cursor. */
 #include "demo.h"
 #include <arch/zx/zx_input.h>
+#include <zx/input.h>
 #include "resources.h"
 
 /* Required state for the existing z88dk Kempston driver. */
@@ -12,6 +13,7 @@ int main(void) {
     int16_t x = 80, y = 100;
     uint8_t buttons, joy, border;
     ts_sprite_t cursor;
+    zx_mouse_snapshot_t mouse;
     demo_begin();
     upload(&image_resources[0], SCREEN_PAGE);
     upload(&sprite_resource, ATLAS_PAGE);
@@ -40,9 +42,8 @@ int main(void) {
         if (x > 152) x = 152;
         if (y < 0) y = 0;
         if (y > 184) y = 184;
-        /* Classic in_MouseKemp exposes two buttons. Read the middle button
-         * through z88dk inp(), without adding another SDK input function. */
-        if (!(inp(0xfadfu) & 4u)) buttons |= in_MMID;
+        zx_mouse_read(&mouse);
+        if (mouse.buttons & ZX_MOUSE_MIDDLE) buttons |= in_MMID;
         border = buttons == in_MLEFT ? 12 : buttons == in_MRIGHT ? 15 : buttons == in_MMID ? 14 : 0;
         ts_video_set_border(border);
         cursor.x = (1u << 9) | (2u * x);
