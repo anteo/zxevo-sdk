@@ -1,11 +1,13 @@
 ; Private AYFX channel layout. Pointers are zero only for inactive channels.
-defc AFX_PTR_LO = 0
-defc AFX_PTR_HI = 1
-defc AFX_AGE_LO = 2
-defc AFX_AGE_HI = 3
-defc AFX_VOLUME = 4
-defc AFX_TONE_LO = 5
-defc AFX_TONE_HI = 6
-defc AFX_NOISE = 7
-defc AFX_CHANNEL_SIZE = 8
+DEFVARS 0 {
+    AFX_PTR_LO  ds.b 1
+    AFX_PTR_HI  ds.b 1
+    AFX_AGE_LO  ds.b 1
+    AFX_AGE_HI  ds.b 1
+    AFX_VOLUME  ds.b 1
+    AFX_TONE_LO ds.b 1
+    AFX_TONE_HI ds.b 1
+    AFX_NOISE   ds.b 1
+    AFX_CHANNEL_SIZE
+}
 defc AFX_CHANNEL_BYTES = 3 * AFX_CHANNEL_SIZE

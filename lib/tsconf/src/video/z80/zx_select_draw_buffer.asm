@@ -1,4 +1,5 @@
         MODULE zx_select_draw_buffer
+INCLUDE "video/draw_buffer.inc"
 SECTION code_clib
 PUBLIC _zx_select_draw_buffer
 EXTERN _ts__video_commit_draw_buffer
@@ -23,7 +24,7 @@ _zx_select_draw_buffer:
         ld hl,_ts_video_prepared_buffers
         or a
         jr z,@slot
-        ld hl,_ts_video_prepared_buffers+3
+        ld hl,_ts_video_prepared_buffers+TS_DRAW_SLOT_SIZE
 @slot:
         ld a,(hl)
         cp 0ffh

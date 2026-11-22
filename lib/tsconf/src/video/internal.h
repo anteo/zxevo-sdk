@@ -9,7 +9,7 @@ typedef struct {
     uint8_t window_high;
 } ts__draw_buffer_t;
 
-/* ASM uses this field order and a three-byte stride. Config 0xff is empty. */
+/* ASM layout: video/draw_buffer.inc. Config 0xff marks an empty slot. */
 extern ts__draw_buffer_t ts_video_prepared_buffers[ZX_DRAW_BUFFER_SLOTS];
 
 zx_status_t ts__video_check_mode(uint16_t mode) __z88dk_fastcall;

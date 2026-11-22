@@ -1,6 +1,7 @@
         MODULE zx_display_buffer
 EXTERN _ts_video_prepared_buffers
 EXTERN ts__video_display_page_e
+INCLUDE "video/draw_buffer.inc"
 SECTION code_clib
 PUBLIC _zx_display_buffer
 
@@ -19,7 +20,7 @@ _zx_display_buffer:
         ld hl,_ts_video_prepared_buffers
         or a
         jr z,@slot
-        ld hl,_ts_video_prepared_buffers+3
+        ld hl,_ts_video_prepared_buffers+TS_DRAW_SLOT_SIZE
 @slot:
         ld a,(hl)
         cp 0ffh

@@ -1,15 +1,18 @@
-defc ZX_ELLIPSE_X0 = 0
-defc ZX_ELLIPSE_X1 = 2
-defc ZX_ELLIPSE_Y0 = 4
-defc ZX_ELLIPSE_Y1 = 6
-defc ZX_ELLIPSE_BOTTOM = 8
-defc ZX_ELLIPSE_DX = 10
-defc ZX_ELLIPSE_DY = 14
-defc ZX_ELLIPSE_ERR = 18
-defc ZX_ELLIPSE_DX_STEP = 22
-defc ZX_ELLIPSE_DY_STEP = 26
-defc ZX_ELLIPSE_E2 = 30
-defc ZX_ELLIPSE_FRAME = 34
+; IX-relative midpoint ellipse workspace. The error terms are 32-bit.
+DEFVARS 0 {
+    ZX_ELLIPSE_X0       ds.w 1
+    ZX_ELLIPSE_X1       ds.w 1
+    ZX_ELLIPSE_Y0       ds.w 1
+    ZX_ELLIPSE_Y1       ds.w 1
+    ZX_ELLIPSE_BOTTOM   ds.w 1
+    ZX_ELLIPSE_DX       ds.q 1
+    ZX_ELLIPSE_DY       ds.q 1
+    ZX_ELLIPSE_ERR      ds.q 1
+    ZX_ELLIPSE_DX_STEP  ds.q 1
+    ZX_ELLIPSE_DY_STEP  ds.q 1
+    ZX_ELLIPSE_E2       ds.q 1
+    ZX_ELLIPSE_FRAME
+}
 
 defc ZX_ELLIPSE_CX = ZX_ELLIPSE_FRAME+6
 defc ZX_ELLIPSE_CY = ZX_ELLIPSE_FRAME+8

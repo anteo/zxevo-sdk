@@ -1,4 +1,5 @@
         MODULE ts_map_ram_page
+INCLUDE "video/draw_buffer.inc"
 SECTION code_clib
 PUBLIC _ts_map_ram_page
 EXTERN _ts__memory_window_owner
@@ -42,23 +43,23 @@ _ts_map_ram_page:
         or l
         jr nz,@busy
         out (c),e
-        ld a,(_ts_video_prepared_buffers+2)
+        ld a,(_ts_video_prepared_buffers+TS_DRAW_WINDOW_HIGH)
         cp d
         jr nz,@second
-        ld a,(_ts_video_prepared_buffers+1)
+        ld a,(_ts_video_prepared_buffers+TS_DRAW_PAGE)
         cp e
         jr z,@second
         ld a,0ffh
         ld (_ts_video_prepared_buffers),a
 @second:
-        ld a,(_ts_video_prepared_buffers+5)
+        ld a,(_ts_video_prepared_buffers+TS_DRAW_SLOT_SIZE+TS_DRAW_WINDOW_HIGH)
         cp d
         ret nz
-        ld a,(_ts_video_prepared_buffers+4)
+        ld a,(_ts_video_prepared_buffers+TS_DRAW_SLOT_SIZE+TS_DRAW_PAGE)
         cp e
         ret z
         ld a,0ffh
-        ld (_ts_video_prepared_buffers+3),a
+        ld (_ts_video_prepared_buffers+TS_DRAW_SLOT_SIZE),a
         ret                          ; L is zero from the null owner pointer
 @invalid:
         ld l,1                       ; ZX_INVALID_ARGUMENT

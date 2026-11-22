@@ -38,6 +38,8 @@ COMMON_ASM := $(sort $(wildcard ../common/src/*/z80/*.asm))
 COMMON_C := $(sort $(wildcard ../common/src/*/c/*.c))
 COMMON_OBJECTS := $(patsubst ../common/src/%.asm,$(BUILD)/common/%.o,$(COMMON_ASM)) \
 	$(patsubst ../common/src/%.c,$(BUILD)/common/%.o,$(COMMON_C))
+TSCONF_ASM_INCLUDE := $(TSCONF_ROOT)/src
+TSCONF_ASM_HEADERS := $(wildcard $(TSCONF_ASM_INCLUDE)/*/*.inc)
 COMMON_ASM_INCLUDE := $(ZX_COMMON_ROOT)/src
 COMMON_ASM_HEADERS := $(wildcard $(COMMON_ASM_INCLUDE)/*/z80/*.inc)
 COMMON_C_HEADERS := $(wildcard $(ZX_COMMON_ROOT)/include/zx/*.h $(ZX_COMMON_ROOT)/src/*/*.h)
@@ -68,9 +70,9 @@ $(BUILD)/compile-flags: FORCE
 	@cmp -s $@.tmp $@ || mv $@.tmp $@
 	@rm -f $@.tmp
 
-$(BUILD)/%.o: src/%.asm Makefile $(BUILD)/compile-flags $(COMMON_ASM_HEADERS)
+$(BUILD)/%.o: src/%.asm Makefile $(BUILD)/compile-flags $(TSCONF_ASM_HEADERS) $(COMMON_ASM_HEADERS)
 	@mkdir -p $(dir $@)
-	$(Z80ASM) -mz80 -I$(COMMON_ASM_INCLUDE) $(VIDEO_ASMFLAGS) -o=$@ $<
+	$(Z80ASM) -mz80 -I$(TSCONF_ASM_INCLUDE) -I$(COMMON_ASM_INCLUDE) $(VIDEO_ASMFLAGS) -o=$@ $<
 
 $(BUILD)/%.o: src/%.c Makefile $(BUILD)/compile-flags $(HEADERS)
 	@mkdir -p $(dir $@)

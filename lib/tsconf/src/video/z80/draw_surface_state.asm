@@ -1,4 +1,5 @@
         MODULE ts_draw_surface_state
+INCLUDE "video/draw_buffer.inc"
 SECTION data_clib
 PUBLIC ts_draw_config
 PUBLIC ts_draw_page
@@ -17,7 +18,10 @@ ts_draw_base:   defb 0
 
 ; Two prepared records: config, page, window high byte.
 _ts_video_prepared_buffers:
-        defb 0ffh,0,0, 0ffh,0,0
+        REPT 2
+        defb 0ffh                    ; empty config
+        defs TS_DRAW_SLOT_SIZE-1
+        ENDR
 
 SECTION bss_clib
 PUBLIC ts__graphics_group_depth

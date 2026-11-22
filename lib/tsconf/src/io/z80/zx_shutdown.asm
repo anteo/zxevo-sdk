@@ -1,4 +1,5 @@
         MODULE zx_shutdown
+INCLUDE "video/draw_buffer.inc"
 SECTION code_clib
 PUBLIC _zx_shutdown
 EXTERN _ts__memory_window_owner
@@ -25,7 +26,7 @@ _zx_shutdown:
         ld a,0ffh
         ld (ts_draw_config),a
         ld (_ts_video_prepared_buffers),a
-        ld (_ts_video_prepared_buffers+3),a
+        ld (_ts_video_prepared_buffers+TS_DRAW_SLOT_SIZE),a
         ld l,0                       ; ZX_OK
         ret
 @busy:

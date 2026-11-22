@@ -67,11 +67,11 @@ ready:
         or 1
         out (0bfh),a
 opened:
-        ld de,(slot+BC_DRAW_PAGES)
+        ld de,(slot+BC_DRAW_PAGE0)
         ld (_bc_video_draw_surface_state+1),de
         ld c,0f7h
-        SELECT_PAGE slot,   _bc_video_slot_banks+4*bit_number,   _bc_video_page0_base, e
-        SELECT_PAGE slot+1, _bc_video_slot_banks+4*bit_number+2, _bc_video_page1_base, d
+        SELECT_PAGE slot+BC_DRAW_WINDOW0_HIGH, _bc_video_slot_banks+4*bit_number,   _bc_video_page0_base, e
+        SELECT_PAGE slot+BC_DRAW_WINDOW1_HIGH, _bc_video_slot_banks+4*bit_number+2, _bc_video_page1_base, d
         pop af
         jp finish
         ENDM

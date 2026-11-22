@@ -1,8 +1,13 @@
 ; SDCC zx_font_t layout. The two presets share metrics and glyph data;
 ; each platform supplies the draw callback.
-defc ZX_FONT_ADVANCE_OFFSET = 4
-defc ZX_FONT_FLAGS_OFFSET = 5
-defc ZX_FONT_DRAW_OFFSET = 6
+DEFVARS 0 {
+    ZX_FONT_GLYPHS_OFFSET  ds.w 1
+    ZX_FONT_WIDTH_OFFSET   ds.b 1
+    ZX_FONT_HEIGHT_OFFSET  ds.b 1
+    ZX_FONT_ADVANCE_OFFSET ds.b 1
+    ZX_FONT_FLAGS_OFFSET   ds.b 1
+    ZX_FONT_DRAW_OFFSET    ds.w 1
+}
 defc ZX_TEXT_BACKGROUND_ARG = 13    ; callback frame after saving IX
 
         MACRO ZX_FONT8_DESCRIPTOR glyph_table, renderer, flags

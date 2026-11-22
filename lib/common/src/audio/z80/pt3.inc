@@ -14,39 +14,33 @@ DEFC AmplC = 10
 DEFC Env   = 11
 DEFC EnvTp = 13
 
-;ChannelsVars
-;	STRUCT	CHP
-;reset group
-DEFC CHP_PsInOr = 0
-DEFC CHP_PsInSm = 1
-DEFC CHP_CrAmSl = 2
-DEFC CHP_CrNsSl = 3
-DEFC CHP_CrEnSl = 4
-DEFC CHP_TSlCnt = 5
-DEFC CHP_CrTnSl = 6
-DEFC CHP_TnAcc  = 8
-DEFC CHP_COnOff = 10
-;reset group
-
-DEFC CHP_OnOffD = 11
-
-;IX for PTDECOD here (+12)
-DEFC CHP_OffOnD = 12
-DEFC CHP_OrnPtr = 13
-DEFC CHP_SamPtr = 15
-DEFC CHP_NNtSkp = 17
-DEFC CHP_Note   = 18
-DEFC CHP_SlToNt = 19
-DEFC CHP_Env_En = 20
-DEFC CHP_Flags  = 21
- ;Enabled - 0,SimpleGliss - 2
-DEFC CHP_TnSlDl = 22
-DEFC CHP_TSlStp = 23
-DEFC CHP_TnDelt = 25
-DEFC CHP_NtSkCn = 27
-DEFC CHP_Volume = 28
-;	ENDS
-DEFC CHP = 29
+; PT3 channel record. The pattern decoder addresses fields with IX = channel + 12.
+DEFVARS 0 {
+    CHP_PsInOr   ds.b 1
+    CHP_PsInSm   ds.b 1
+    CHP_CrAmSl   ds.b 1
+    CHP_CrNsSl   ds.b 1
+    CHP_CrEnSl   ds.b 1
+    CHP_TSlCnt   ds.b 1
+    CHP_CrTnSl   ds.w 1
+    CHP_TnAcc    ds.w 1
+    CHP_COnOff   ds.b 1
+    CHP_OnOffD   ds.b 1
+    CHP_OffOnD   ds.b 1
+    CHP_OrnPtr   ds.w 1
+    CHP_SamPtr   ds.w 1
+    CHP_NNtSkp   ds.b 1
+    CHP_Note     ds.b 1
+    CHP_SlToNt   ds.b 1
+    CHP_Env_En   ds.b 1
+    CHP_Flags    ds.b 1    ; bit 0: enabled, bit 2: simple glissando
+    CHP_TnSlDl   ds.b 1
+    CHP_TSlStp   ds.w 1
+    CHP_TnDelt   ds.w 1
+    CHP_NtSkCn   ds.b 1
+    CHP_Volume   ds.b 1
+    CHP
+}
 
 ; The ROM player keeps channels, AY registers and generated tables in one RAM
 ; block. Several original fields intentionally overlap. L3/M2 and the saved
