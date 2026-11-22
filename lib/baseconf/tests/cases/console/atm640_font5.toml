@@ -1,0 +1,2 @@
+description = "Narrow glyphs across ATM640 bitmap and attribute planes"
+profile = "no-stdio+no-font8"

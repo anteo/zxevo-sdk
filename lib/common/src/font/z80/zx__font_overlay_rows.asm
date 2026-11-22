@@ -13,9 +13,22 @@ PUBLIC zx__font_overlay_rows
 ;
 ; HL=glyph, DE=first bitmap byte, A=shift (0..7), C=glyph mask.
 ; The complete glyph fits, and Y is aligned to an eight-line character row.
-; AF/BC/DE/HL volatile, IX/IY preserved. Stack saves shift, mask and row count.
+; AF/BC/DE/HL volatile, IX/IY preserved. Shifted rows save shift, mask and
+; row count on the stack. Byte-aligned glyphs need only one bitmap byte per row.
 zx__font_overlay_rows:
         ld b,8
+        or a
+        jr nz,@row
+        ex de,hl                     ; HL=bitmap, DE=glyph
+@aligned:
+        ld a,(de)
+        inc de
+        and c
+        or (hl)
+        ld (hl),a
+        inc h
+        djnz @aligned
+        ret
 @row:
         push bc
         push af
@@ -24,12 +37,9 @@ zx__font_overlay_rows:
         inc hl
         and c
         ld c,0
-        inc b
-        jr @shift_test
 @shift:
         srl a
         rr c
-@shift_test:
         djnz @shift
         ld b,a
         ld a,(de)
