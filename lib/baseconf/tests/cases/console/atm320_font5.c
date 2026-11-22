@@ -16,10 +16,9 @@ static void draw_samples(void) {
     /* Each group starts on a different packed pair. The right group also
      * crosses x=255, exercising the high byte of the horizontal coordinate. */
     for (y = 0; y < 4; ++y) {
-        ZX_ASSERT(zx_console_draw_op(y, 2 + 5 * y, "MW.p# @0123456789", ZX_TEXT_OPAQUE) ==
+        ZX_ASSERT(zx_console_draw_op(y, 2 + 5 * y, "MW.p# @0123456789", ZX_TEXT_OPAQUE) == ZX_OK);
+        ZX_ASSERT(zx_console_draw_op(27 + y, 2 + 5 * y, "MW.p# @0123456789", ZX_TEXT_TRANSPARENT) ==
                   ZX_OK);
-        ZX_ASSERT(zx_console_draw_op(27 + y, 2 + 5 * y, "MW.p# @0123456789",
-                                     ZX_TEXT_TRANSPARENT) == ZX_OK);
     }
     zx_set_ink(0);
     zx_set_paper(13);

@@ -11,7 +11,8 @@ uint8_t bc__video_refresh_display_buffers(void) {
 
     if (mode == ZX_VIDEO_UNKNOWN) status = ZX_UNAVAILABLE;
 #ifndef BASECONF_VIDEO_ALL_MODES
-    else if (!bc__video_mode_enabled((bc_video_mode_t)mode)) status = ZX_UNSUPPORTED;
+    else if (!bc__video_mode_enabled((bc_video_mode_t)mode))
+        status = ZX_UNSUPPORTED;
 #endif
     for (index = 0; index < ZX_DRAW_BUFFER_SLOTS; ++index) {
         bc__draw_buffer_t *buffer = &bc_video_prepared_buffers[index];

@@ -80,10 +80,10 @@ Rebuild the archive and relink after changing these options. In hardware text mo
 
 ## Initialization and setup
 
-The SDK CRT calls `zx_init()` before `main()`, after the stack and static storage are ready.
-On startup, `zx_init()` probes BD, then tries BE if BD returns only `0xFF`. It saves the
-responding port and uses it to read the FPGA state. If both probes fail, it returns
-`ZX_UNSAFE_CONTEXT`. The default ERS profile is the service ROM.
+The SDK CRT calls `zx_init()` before `main()`, after the stack and static storage are ready. On
+startup, `zx_init()` probes BD, then tries BE if BD returns only `0xFF`. It saves the responding
+port and uses it to read the FPGA state. If both probes fail, it returns `ZX_UNSAFE_CONTEXT`. The
+default ERS profile is the service ROM.
 
 The application is responsible for memory maps and screen surfaces. Alongside initialization, an
 application can choose an ERS profile with `bc_ers_set_profile()`, override the pinned-window mask
@@ -94,10 +94,9 @@ it returns `ZX_UNSAFE_CONTEXT` because the hardware would replace all RAM window
 pages must be mapped as writable RAM in windows W1–W3. Normal drawing operations do not remap
 windows or change memory protection.
 
-For manual startup, compile with
-`-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0` and call `zx_init()` and `zx_shutdown()` explicitly.
-Shutdown returns `ZX_BUSY` while a window lease or graphics group is active. Hardware mappings and
-display settings stay in effect, so `zx_init()` can read them again.
+For manual startup, compile with `-pragma-define:CRT_ENABLE_ZX_LIFECYCLE=0` and call `zx_init()` and
+`zx_shutdown()` explicitly. Shutdown returns `ZX_BUSY` while a window lease or graphics group is
+active. Hardware mappings and display settings stay in effect, so `zx_init()` can read them again.
 
 If the application needs the page manager, configure both maps and pin every window that must remain
 accessible. Then report map readiness and enable the page manager.
@@ -206,23 +205,23 @@ zx_draw_circle(96, 64, 16);
 if (zx_graphics_end() != ZX_OK) return 1;
 ```
 
-For double buffering, prepare both frames once. They may share CPU windows.
-Select the hidden slot with `zx_select_draw_buffer()`. To present it,
-`zx_display_buffer()` uses the slot's first page and the current display mode. In split modes
-the hardware determines the second displayed page from the table below. Drawing also accepts
-arbitrary writable RAM pages. In ZX mode, primitives update the bitmap and preserve the attributes.
-[video.h](include/baseconf/video.h) · [graphics.h](../common/include/zx/graphics.h)
+For double buffering, prepare both frames once. They may share CPU windows. Select the hidden slot
+with `zx_select_draw_buffer()`. To present it, `zx_display_buffer()` uses the slot's first page and
+the current display mode. In split modes the hardware determines the second displayed page from the
+table below. Drawing also accepts arbitrary writable RAM pages. In ZX mode, primitives update the
+bitmap and preserve the attributes. [video.h](include/baseconf/video.h) ·
+[graphics.h](../common/include/zx/graphics.h)
 
-| Mode | Screen 0 pages | Screen 1 pages |
-| --- | --- | --- |
-| ZX 256, ZX Multicolor | 5 | 7 |
-| Pentagon 16-color | 4, 5 | 6, 7 |
-| ATM 320, ATM 640, ATM text | 1, 5 | 3, 7 |
-| Evo text | 8 | 10 |
+| Mode                       | Screen 0 pages | Screen 1 pages |
+| -------------------------- | -------------- | -------------- |
+| ZX 256, ZX Multicolor      | 5              | 7              |
+| Pentagon 16-color          | 4, 5           | 6, 7           |
+| ATM 320, ATM 640, ATM text | 1, 5           | 3, 7           |
+| Evo text                   | 8              | 10             |
 
-In ATM320 both slots can use W2 and W3. Preparation checks the stack location.
-Keep code, the full stack and resident data outside W2/W3 while using the slots.
-Draw the hidden frame and present it at the frame boundary.
+In ATM320 both slots can use W2 and W3. Preparation checks the stack location. Keep code, the full
+stack and resident data outside W2/W3 while using the slots. Draw the hidden frame and present it at
+the frame boundary.
 
 ```c
 uint8_t back = 1;

@@ -28,7 +28,8 @@ int main(void) {
         zx_draw_hline(32, 80, 80);
         ZX_ASSERT(zx_graphics_end() == ZX_OK);
         ZX_ASSERT(zx_graphics_end() == ZX_NOT_INITIALIZED);
-        ZX_ASSERT(zx_set_split_draw_buffer(BC_VIDEO_ATM_320, 1, ZX_WINDOW_3, 5, ZX_WINDOW_2) == ZX_OK);
+        ZX_ASSERT(zx_set_split_draw_buffer(BC_VIDEO_ATM_320, 1, ZX_WINDOW_3, 5, ZX_WINDOW_2) ==
+                  ZX_OK);
         zx_draw_vline(32, 48, 80);
 
         ZX_ASSERT(point(56, 48) == 1);

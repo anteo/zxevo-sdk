@@ -30,7 +30,8 @@ int main(void) {
         ZX_ASSERT(bc_palette_load_rgb222(invalid) == ZX_INVALID_ARGUMENT);
         ZX_ASSERT(bc_palette_load_rgb222(colors) == ZX_UNSAFE_CONTEXT); /* AVR unknown */
         ZX_ASSERT(zx_avr_window_select(ZX_AVR_WINDOW_VERSION) == ZX_OK);
-        ZX_ASSERT(zx_set_split_draw_buffer(BC_VIDEO_ATM_320, 3, ZX_WINDOW_2, 7, ZX_WINDOW_3) == ZX_OK);
+        ZX_ASSERT(zx_set_split_draw_buffer(BC_VIDEO_ATM_320, 3, ZX_WINDOW_2, 7, ZX_WINDOW_3) ==
+                  ZX_OK);
         ZX_ASSERT(zx_graphics_begin() == ZX_OK);
         ZX_ASSERT(bc_palette_load_rgb222(colors) == ZX_BUSY);
         ZX_ASSERT(zx_graphics_end() == ZX_OK);

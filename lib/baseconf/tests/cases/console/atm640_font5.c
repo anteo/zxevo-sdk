@@ -19,10 +19,9 @@ static void draw_samples(void) {
     /* Eight consecutive cells start at all even positions within a 16-pixel
      * group. The right-hand samples cross x=512 and reach the bottom row. */
     for (y = 0; y < 8; ++y) {
-        ZX_ASSERT(zx_console_draw_op(y, 2 + 2 * y, "MW.p# @0123456789", ZX_TEXT_OPAQUE) ==
+        ZX_ASSERT(zx_console_draw_op(y, 2 + 2 * y, "MW.p# @0123456789", ZX_TEXT_OPAQUE) == ZX_OK);
+        ZX_ASSERT(zx_console_draw_op(72 + y, 2 + 2 * y, "MW.p# @0123456789", ZX_TEXT_TRANSPARENT) ==
                   ZX_OK);
-        ZX_ASSERT(zx_console_draw_op(72 + y, 2 + 2 * y, "MW.p# @0123456789",
-                                     ZX_TEXT_TRANSPARENT) == ZX_OK);
     }
     ZX_ASSERT(zx_console_draw_op(100, 23, "p #.MW", ZX_TEXT_OPAQUE) == ZX_OK);
     ZX_ASSERT(zx_console_draw_op(100, 24, "p #.MW", ZX_TEXT_TRANSPARENT) == ZX_OK);

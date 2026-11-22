@@ -28,7 +28,9 @@ zx_status_t bc__mem_configure_window(bc_map_t map, zx_window_t window,
         uint8_t paging = bc_readback_register(0x0a);
         z80_outp(0x7ffd, (uint8_t)((paging & 0xefu) | (old_map << 4)));
     }
-    if (old_map != bc_mem_active_map) bc__video_invalidate_cache();
-    else if (!temporary && old_map == (uint8_t)map) bc__video_invalidate_window(window);
+    if (old_map != bc_mem_active_map)
+        bc__video_invalidate_cache();
+    else if (!temporary && old_map == (uint8_t)map)
+        bc__video_invalidate_window(window);
     return ZX_OK;
 }

@@ -94,12 +94,12 @@ Ports of the evosdkts demonstrations from the TSConf repository, using zxevo-sdk
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | ![Animated balls using TSConf hardware sprites](examples/evosdk/screenshots/sprites.png) | ![Original slideshow picture](examples/evosdk/screenshots/slideshow.png) |
 
-| XNX — title screen                                             | XNX — first level                                                            |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| XNX — title screen                                      | XNX — first level                                                     |
+| ------------------------------------------------------- | --------------------------------------------------------------------- |
 | ![XNX title screen](examples/xnx/screenshots/title.png) | ![XNX gameplay on the first level](examples/xnx/screenshots/game.png) |
 
-[XNX](examples/xnx/README.en.md) is a separate SPG application with hardware sprites, PT3
-music, AYFX effects and PCM8/Covox samples.
+[XNX](examples/xnx/README.en.md) is a separate SPG application with hardware sprites, PT3 music,
+AYFX effects and PCM8/Covox samples.
 
 ## Hardware APIs
 
@@ -163,8 +163,8 @@ The console and drawing primitives share a draw surface. `zx_init()` has no setu
 ended. Set the display layout with `zx_set_video_mode` and query it with `zx_get_video_mode`. Use
 `ZX_VIDEO_ZX_256` for the standard ZX mode or select a TSConf layout such as `TS_VIDEO_16C_320X200`.
 To hide layers, OR in `TS_VIDEO_FLAG_*`. Show physical pages with `zx_display_page`. In ZX mode,
-pages 5 and 7 are the standard screen pages. Use `zx_set_draw_buffer` to choose a draw target with its
-own mode.
+pages 5 and 7 are the standard screen pages. Use `zx_set_draw_buffer` to choose a draw target with
+its own mode.
 
 `zx_graphics_get_size` reports pixel bounds on the selected draw surface, and
 `ts_video_get_raster_size` reports the native TSConf display area from the last VConfig written
@@ -190,16 +190,16 @@ zx_draw_line(16, 16, 96, 64);
 ```
 
 Pass the physical base page of the buffer, including standard ZX screen pages or arbitrary RAM
-pages. Use a CPU window address for ZX and text, and `NULL` for packed 16- and 256-color formats.
-In packed modes the library borrows W3 during drawing.
+pages. Use a CPU window address for ZX and text, and `NULL` for packed 16- and 256-color formats. In
+packed modes the library borrows W3 during drawing.
 
 Native text stores 128 character bytes and 128 attribute bytes per row. Map the font page
 `page ^ 1`, where `page` is the text buffer's base, and call `ts_console_load_text_font` to install
 the default ASCII glyphs. Then map and select the text page. The console takes its grid size from
-the selected surface's raster. In
-ZX and packed modes, pass `&zx_font8`, `&zx_font5` or a custom descriptor to `zx_console_set_font`.
-Use `zx_set_ink` and `zx_set_paper` to set the console colors. These values persist across
-draw-surface changes. The console uses canvas coordinates starting at the origin.
+the selected surface's raster. In ZX and packed modes, pass `&zx_font8`, `&zx_font5` or a custom
+descriptor to `zx_console_set_font`. Use `zx_set_ink` and `zx_set_paper` to set the console colors.
+These values persist across draw-surface changes. The console uses canvas coordinates starting at
+the origin.
 
 `zx_console_clear` clears the selected surface and homes the cursor. In 16c/256c it fills the entire
 512×512 canvas with paper. Use `zx_draw_fill_rect` or `zx_draw_clear_rect` for an area of the bitmap

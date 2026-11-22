@@ -1,5 +1,54 @@
 # Changelog
 
+## v0.2.1
+
+### Features
+
+- (video) use shared draw buffers and prepared slots
+- (test-runner) run emulator sessions in parallel
+- (baseconf) **Breaking.** detect the FPGA readback port at startup
+- (baseconf) share CPU windows between prepared draw buffers
+- (clion) index SDK examples with the shared z88dk profile
+- (basic48) expose frame waits and saved border color
+- (baseconf) manage BASIC 48 screen switching in the SDK
+
+### Fixes
+
+- (tsconf) suspend drawing while its RAM window is leased
+- (baseconf) group readback macro arguments explicitly
+
+### Other changes
+
+- (vscode) remove the C/C++ configuration
+- (examples) remove unused interrupt headers
+
+### Performance
+
+- (baseconf) pass window addresses directly to the pager
+- (tsconf) pass window addresses directly to FMAPS uploads
+- (audio) compare window bases during banked PCM setup
+- (test-runner) reuse BaseConf archives by library flags
+- (baseconf) inline FPGA register reads in Z80 assembly
+- (baseconf) streamline ATM640 and ZX bitmap glyph rendering
+- (baseconf) accelerate multicolor glyph rendering
+- (baseconf) accelerate packed glyphs on ATM320 and Pentagon
+- (baseconf) shorten horizontal line fills
+- (tsconf) speed up native text runs and packed glyphs
+- (tsconf) copy aligned opaque 4bpp spans by byte
+
+### Refactoring
+
+- (baseconf) remove unused BASECONF_INLINE macro
+- (lib) split callable functions into named source files
+- (lib) define shared Z80 record layouts with DEFVARS
+- (xnx) move the game alongside the EvoSDK examples
+- (evosdk) read the middle mouse button through the SDK
+- (xnx) use SDK frame waits and window addresses
+
+### Tests
+
+- (baseconf) use the ZX screen page in the bitmap console case
+
 ## v0.2.0
 
 ### Features

@@ -16,13 +16,13 @@ pointer use **TSConf hardware sprites**.
 | ------------------------------------------------- | ------------------------------------------------------ |
 | ![Hardware ball sprites](screenshots/sprites.png) | ![Original slideshow image](screenshots/slideshow.png) |
 
-| Example                 | Demonstrates                                                              | Controls                                            |
-| ----------------------- | ------------------------------------------------------------------------- | --------------------------------------------------- |
-| `empty`                 | Minimal BASIC 48 project                                                  | Returns to BASIC immediately                        |
-| `font_keyboard`         | Original color 8×8 font, line breaks, key press events                    | A–Z, 0–9, Space, Enter                              |
-| `mouse_joystick`        | Original background and 16×16 pointer, button-dependent border color      | Kempston mouse, Kempston joystick or Cursor 5/6/7/8 |
-| `sprites`               | 22 balls of 16×16 pixels, four original images                            | Automatic animation                                 |
-| `slideshow`             | Five original pictures, transitions through black/white                   | Left/right with transitions, up/down without        |
+| Example                    | Demonstrates                                                              | Controls                                            |
+| -------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------- |
+| `empty`                    | Minimal BASIC 48 project                                                  | Returns to BASIC immediately                        |
+| `font_keyboard`            | Original color 8×8 font, line breaks, key press events                    | A–Z, 0–9, Space, Enter                              |
+| `mouse_joystick`           | Original background and 16×16 pointer, button-dependent border color      | Kempston mouse, Kempston joystick or Cursor 5/6/7/8 |
+| `sprites`                  | 22 balls of 16×16 pixels, four original images                            | Automatic animation                                 |
+| `slideshow`                | Five original pictures, transitions through black/white                   | Left/right with transitions, up/down without        |
 | [XNX](../xnx/README.en.md) | Full ten-level game, hardware sprites, PT3/AYFX/Covox; separate SPG build | Kempston/Cursor, Space, P to pause                  |
 
 CAPS SHIFT + SPACE returns to BASIC in the four TAP demonstrations. XNX starts separately through

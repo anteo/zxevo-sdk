@@ -7,7 +7,8 @@ int main(void) {
     bc_window_lease_t lease;
     bc_window_config_t config;
     if (bc_case_init() == ZX_OK) {
-        ZX_ASSERT(zx_set_split_draw_buffer(BC_VIDEO_ATM_320, 3, ZX_WINDOW_2, 7, ZX_WINDOW_3) == ZX_OK);
+        ZX_ASSERT(zx_set_split_draw_buffer(BC_VIDEO_ATM_320, 3, ZX_WINDOW_2, 7, ZX_WINDOW_3) ==
+                  ZX_OK);
         check_blit_pixels();
         check_blit_arguments();
         ZX_ASSERT(zx_graphics_begin() == ZX_OK);

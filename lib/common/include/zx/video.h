@@ -32,7 +32,7 @@ zx_status_t zx_set_draw_buffer(uint16_t mode, zx_ram_page_t page, zx_window_t wi
  * requires a two-page format and distinct pages and writable windows.
  * TSConf returns ZX_UNSUPPORTED. The same paging rules apply as above. */
 zx_status_t zx_set_split_draw_buffer(uint16_t mode, zx_ram_page_t page0, zx_window_t window0,
-                                    zx_ram_page_t page1, zx_window_t window1);
+                                     zx_ram_page_t page1, zx_window_t window1);
 
 #define ZX_DRAW_BUFFER_SLOTS 2u
 

@@ -151,8 +151,8 @@ int main(void) {
 | `zx_test_step_skip(name, reason)`                | SKIP step                                             |
 | `zx_test_finish()`                               | final verdict; the CPU stays in a loop                |
 
-`bc_case_select_video_mode()` sets the display mode, shows screen 0 for reproducible screenshots
-and prepares the fixture's CPU mappings for drawing.
+`bc_case_select_video_mode()` sets the display mode, shows screen 0 for reproducible screenshots and
+prepares the fixture's CPU mappings for drawing.
 
 ### Result channels
 
@@ -237,7 +237,7 @@ Profile fields:
 | Field                  | Purpose                                             |
 | ---------------------- | --------------------------------------------------- |
 | `layout`               | addresses, pages, windows; inherited from `default` |
-| `library.build_dir`    | parent directory for library builds                  |
+| `library.build_dir`    | parent directory for library builds                 |
 | `library.make_targets` | `make` targets                                      |
 | `library.make_args`    | `make` arguments                                    |
 | `library.extra_libs`   | additional `-l<name>` options                       |
@@ -245,9 +245,9 @@ Profile fields:
 | `defines`              | additional `-D` options                             |
 
 Under `lib/baseconf/build/tests/`, the runner builds `baseconf.lib` in `default/` when
-`library.make_args` is empty. Each combination of library flags gets a `flags-<hash>/`
-directory. For example, `stdio+no-font8` and `no-stdio+no-font8` reuse the same archive.
-Each directory contains a `compile-flags` file with the compiler and assembler options.
+`library.make_args` is empty. Each combination of library flags gets a `flags-<hash>/` directory.
+For example, `stdio+no-font8` and `no-stdio+no-font8` reuse the same archive. Each directory
+contains a `compile-flags` file with the compiler and assembler options.
 
 `newirq`: `src/newirq` objects are part of `baseconf.lib`; `<baseconf/newirq.h>` is always
 available.

@@ -75,24 +75,23 @@ make
 
 ## CLion
 
-Откройте Makefile приложения как Makefile-проект. В **Settings → Build, Execution,
-Deployment → Toolchains → Custom Compiler** включите **Use custom compiler config** и выберите
-[tools/clion/z88dk-sdcc.yaml](tools/clion/z88dk-sdcc.yaml) из рабочей копии SDK.
-Укажите `bin/zcc` из своей установки z88dk как компилятор C, задайте `PATH` и `ZCCCFG`
-как в разделе «Быстрый старт» и перезагрузите Makefile-проект.
+Откройте Makefile приложения как Makefile-проект. В **Settings → Build, Execution, Deployment →
+Toolchains → Custom Compiler** включите **Use custom compiler config** и выберите
+[tools/clion/z88dk-sdcc.yaml](tools/clion/z88dk-sdcc.yaml) из рабочей копии SDK. Укажите `bin/zcc`
+из своей установки z88dk как компилятор C, задайте `PATH` и `ZCCCFG` как в разделе «Быстрый старт» и
+перезагрузите Makefile-проект.
 
-Проекты BaseConf и TSConf могут ссылаться на один файл. CLion находит заголовки библиотеки
-classic относительно `zcc`. Переменные SDK `BASECONF_APP_FLAGS` и `TSCONF_APP_FLAGS`
-передают пути к заголовкам SDK и макрос машины в команду компиляции. Если вы формируете флаги
-самостоятельно, передайте `-D__BASECONF` или `-D__TSCONF` вместе с путями к заголовкам
-выбранной машины, чтобы редактор распознавал активные ветки `#if`.
+Проекты BaseConf и TSConf могут ссылаться на один файл. CLion находит заголовки библиотеки classic
+относительно `zcc`. Переменные SDK `BASECONF_APP_FLAGS` и `TSCONF_APP_FLAGS` передают пути к
+заголовкам SDK и макрос машины в команду компиляции. Если вы формируете флаги самостоятельно,
+передайте `-D__BASECONF` или `-D__TSCONF` вместе с путями к заголовкам выбранной машины, чтобы
+редактор распознавал активные ветки `#if`.
 
-Для работы с примерами самого SDK загрузите корневой `Makefile`. В **Settings → Build,
-Execution, Deployment → Makefile → Build target** выберите `examples-all` и выполните
-**Tools → Makefile → Reload Makefile Project**. Эта цель включает штатные примеры BaseConf
-и TSConf, пять демопрограмм EvoSDK и игру XNX. Для портов используются генерируемые заголовки
-`resources.h` и `assets.h`. В свежей рабочей копии их создаёт первая сборка
-`make examples-evosdk examples-xnx`.
+Для работы с примерами самого SDK загрузите корневой `Makefile`. В **Settings → Build, Execution,
+Deployment → Makefile → Build target** выберите `examples-all` и выполните **Tools → Makefile →
+Reload Makefile Project**. Эта цель включает штатные примеры BaseConf и TSConf, пять демопрограмм
+EvoSDK и игру XNX. Для портов используются генерируемые заголовки `resources.h` и `assets.h`. В
+свежей рабочей копии их создаёт первая сборка `make examples-evosdk examples-xnx`.
 
 ## Размер программы
 

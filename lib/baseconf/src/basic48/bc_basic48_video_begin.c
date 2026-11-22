@@ -51,11 +51,11 @@ zx_status_t bc_basic48_video_begin(bc_video_mode_t mode) {
         w3_page = (eff7 & 4u) ? (w3_page & 0xf8u) | BC_PAGING_RAM_PAGE_128K(paging)
                               : (w3_page & 0xc0u) | BC_PAGING_RAM_PAGE_1024K(paging);
     if ((uint8_t)mode_and_eff7 != ZX_VIDEO_ZX_256 || BC_PAGING_SCREEN(paging) != ZX_SCREEN_0 ||
-        BC_PAGING_ACTIVE_MAP(paging) != bc_mem_active_map ||
-        windows[1].kind != BC_RAM || windows[1].physical_page != 5 ||
-        windows[1].substitute_from_7ffd_or_dos || windows[1].write_protected ||
-        windows[2].kind != BC_RAM || windows[2].substitute_from_7ffd_or_dos ||
-        windows[2].physical_page == page || (split && windows[2].physical_page == 7) ||
+        BC_PAGING_ACTIVE_MAP(paging) != bc_mem_active_map || windows[1].kind != BC_RAM ||
+        windows[1].physical_page != 5 || windows[1].substitute_from_7ffd_or_dos ||
+        windows[1].write_protected || windows[2].kind != BC_RAM ||
+        windows[2].substitute_from_7ffd_or_dos || windows[2].physical_page == page ||
+        (split && windows[2].physical_page == 7) ||
         (windows[3].kind == BC_RAM && (w3_page == page || (split && w3_page == 7))) ||
         ZX__WINDOW_BASE(zx__mem_read_sp()) != ZX_WINDOW_2 ||
         (bc_mem_pinned_window_mask & (ZX_WINDOW_MASK(ZX_WINDOW_1) | ZX_WINDOW_MASK(ZX_WINDOW_3)))) {

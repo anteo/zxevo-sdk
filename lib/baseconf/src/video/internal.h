@@ -25,9 +25,9 @@ extern bc__draw_buffer_t bc_video_prepared_buffers[ZX_DRAW_BUFFER_SLOTS];
 
 /* Preparation may defer a page change in the active draw target until select. */
 zx_status_t bc__video_prepare_draw_buffer(bc__draw_buffer_t *buffer, uint16_t mode,
-                                         zx_ram_page_t page0, zx_window_t window0,
-                                         zx_ram_page_t page1, zx_window_t window1,
-                                         const bc__draw_buffer_t *other);
+                                          zx_ram_page_t page0, zx_window_t window0,
+                                          zx_ram_page_t page1, zx_window_t window1,
+                                          const bc__draw_buffer_t *other);
 zx_status_t bc__video_publish_draw_buffer(const bc__draw_buffer_t *buffer) __z88dk_fastcall;
 zx_status_t bc__video_bind_draw_buffer(const bc__draw_buffer_t *slot) __z88dk_fastcall;
 
