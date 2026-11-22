@@ -1,17 +1,9 @@
-#include <baseconf/memory.h>
-#include <baseconf/video.h>
+#include <baseconf/basic48.h>
+#include <zx/basic48.h>
 #include <zx/console.h>
 #include <zx/graphics.h>
-#include <zx/interrupt.h>
-
-#define PAINT_STACK_SIZE 512
 
 enum { SKY = COLOR_BLUE, RIDGE = COLOR_MAGENTA, LAMP = COLOR_YELLOW | COLOR_BRIGHT };
-
-static const volatile uint8_t *const basic_frames = (const volatile uint8_t *)0x5c78u;
-static const volatile uint8_t *const basic_border = (const volatile uint8_t *)0x5c48u;
-
-uint8_t night_train_stack[PAINT_STACK_SIZE];
 
 static void draw_carriage(int16_t x) {
     uint8_t window;
@@ -75,92 +67,15 @@ static zx_status_t draw_station(void) {
     return zx_console_draw_op(2, 22, "23:48  LAST TRAIN TO THE COAST", ZX_TEXT_TRANSPARENT);
 }
 
-/* BASIC 48 can leave 7FFD locked. Unlock only around the display change. */
-static zx_status_t show_page(uint16_t mode, zx_ram_page_t page) {
-    zx_status_t status, restore;
-
-    status = zx_set_video_mode(mode);
-    if (status != ZX_OK) return status;
-    status = zx_display_page(page);
-    if (status != ZX_BUSY) return status;
-
-    status = bc_set_addressing(BC_ADDRESSING_1024K);
-    if (status != ZX_OK) return status;
-    status = zx_display_page(page);
-    restore = bc_set_addressing(BC_ADDRESSING_128K);
-    return restore != ZX_OK ? restore : status;
-}
-
-/* Paint the alternate hardware screen (pages 3 and 7) with W1 and W3 free.
- * Code and the temporary stack are in W2. INT stays masked until W1 again
- * maps BASIC's system variables and caller stack. */
-zx_status_t night_train_paint(void) {
-    bc_window_config_t saved_w1, saved_w2, saved_w3;
-    const zx_ram_page_t page0 = 3, page1 = 7;
-    bc_map_t map = bc_get_active_map();
-    uint8_t pins = bc_get_pinned_windows();
-    zx_status_t status, w1_status, w3_status;
-
-    status = bc_get_window_config(map, ZX_WINDOW_1, &saved_w1);
-    if (status != ZX_OK) return status;
-    status = bc_get_window_config(map, ZX_WINDOW_2, &saved_w2);
-    if (status != ZX_OK) return status;
-    status = bc_get_window_config(map, ZX_WINDOW_3, &saved_w3);
-    if (status != ZX_OK) return status;
-    if (saved_w1.kind != BC_RAM || saved_w1.physical_page != 5 ||
-        saved_w2.physical_page == page0 || saved_w2.physical_page == page1 ||
-        saved_w3.physical_page == page0 || saved_w3.physical_page == page1)
-        return ZX_UNSAFE_CONTEXT;
-
-    bc_set_pinned_windows(ZX_WINDOW_MASK(ZX_WINDOW_0) | ZX_WINDOW_MASK(ZX_WINDOW_2));
-    status = zx_set_split_draw_buffer(BC_VIDEO_ATM_320, page0, ZX_WINDOW_1, page1, ZX_WINDOW_3);
-    if (status == ZX_OK) status = draw_station();
-    if (status == ZX_OK) status = show_page(BC_VIDEO_ATM_320, page0);
-
-    w1_status = bc_configure_window(map, ZX_WINDOW_1, &saved_w1);
-    w3_status = bc_configure_window(map, ZX_WINDOW_3, &saved_w3);
-    bc_set_pinned_windows(pins);
-    if (w1_status != ZX_OK) return w1_status;
-    return w3_status != ZX_OK ? w3_status : status;
-}
-
-/* Call the painter on its private stack and restore BASIC's stack on return.
- * The painter restores W1 before returning. SDCC status is returned in L. */
-/* clang-format off */
-static zx_status_t paint_on_private_stack(void) __naked {
-    __asm
-        ld hl,0
-        add hl,sp
-        ld sp,_night_train_stack + PAINT_STACK_SIZE
-        push hl
-        call _night_train_paint
-        ld a,l
-        pop hl
-        ld sp,hl
-        ld l,a
-        ret
-    __endasm;
-}
-/* clang-format on */
-
 int main(void) {
-    uint8_t irq, border;
-    zx_status_t status, restore;
+    zx_status_t status = bc_basic48_video_begin(BC_VIDEO_ATM_320);
+    zx_status_t restore;
+    if (status != ZX_OK) return status;
 
-    if (zx_get_video_mode() != BC_VIDEO_ZX_256 ||
-        BC_PAGING_SCREEN(bc_readback_register(0x0a)) != ZX_SCREEN_0)
-        return ZX_UNSAFE_CONTEXT;
+    status = draw_station();
+    if (status == ZX_OK) status = bc_basic48_video_present();
+    if (status == ZX_OK) status = zx_basic48_wait_frames(250);
 
-    border = (*basic_border >> 3) & 7;
-    irq = zx_interrupt_save_disable();
-    status = paint_on_private_stack();
-    zx_interrupt_restore(irq);
-    if (status == ZX_OK) status = zx_wait_frames(basic_frames, 250);
-
-    irq = zx_interrupt_save_disable();
-    restore = show_page(ZX_VIDEO_ZX_256, 5);
-    if (restore == ZX_OK) restore = zx_set_draw_buffer(ZX_VIDEO_ZX_256, 5, ZX_WINDOW_1);
-    zx_set_border_color(border);
-    zx_interrupt_restore(irq);
+    restore = bc_basic48_video_end();
     return restore != ZX_OK ? restore : status;
 }

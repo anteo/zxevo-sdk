@@ -25,4 +25,4 @@ $(ZX_EXAMPLE_OBJECTS): $(ZX_EXAMPLE_BUILD)/obj/%.o: $(ZX_EXAMPLE_DIR)/%.c $(ZX_E
 	$(ZCC) $(filter-out -L%,$(ZX_EXAMPLE_FLAGS)) $(ZX_EXAMPLE_EXTRA_FLAGS) -c -o $@ $<
 
 $(ZX_EXAMPLE_BUILD)/%.tap: $(ZX_EXAMPLE_BUILD)/obj/%.o $(ZX_EXAMPLE_INPUTS) $(ZX_EXAMPLE_DEPS) $(ZX_EXAMPLE_BUILD)/compile-flags
-	$(ZCC) $(ZX_EXAMPLE_FLAGS) $(ZX_EXAMPLE_EXTRA_FLAGS) -m -create-app -Cz--blockname="$*" -o $(basename $@) $<
+	$(ZCC) $(ZX_EXAMPLE_FLAGS) $(ZX_EXAMPLE_EXTRA_FLAGS) $(ZX_EXAMPLE_LINK_FLAGS) -m -create-app -Cz--blockname="$*" -o $(basename $@) $<

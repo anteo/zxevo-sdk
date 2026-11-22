@@ -112,6 +112,8 @@ ZX_EXAMPLE_FLAGS = $(BASECONF_BASIC48_FLAGS)
 ZX_EXAMPLE_DEPS := Makefile baseconf.mk $(BASECONF_CFG) $(BUILD)/baseconf.lib \
 	$(ZX_APPMAKE_BIN) $(wildcard $(BASECONF_INCLUDE)/*.h $(BASECONF_INCLUDE)/baseconf/*.h)
 include $(ZX_COMMON_ROOT)/examples.mk
+# Night Train borrows W1 and W3. Its application stack grows down into W2.
+$(ZX_EXAMPLE_BUILD)/night_train.tap: ZX_EXAMPLE_LINK_FLAGS += -pragma-define:REGISTER_SP=0xc000
 $(ZX_EXAMPLE_BUILD)/%.tap: BASECONF_BUILD := $(abspath $(BUILD))
 
 clean:

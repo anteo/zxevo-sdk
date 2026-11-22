@@ -467,8 +467,9 @@ support. Its README describes the case structure and how to run the suite:
 - [`hello`](examples/hello.c) sets console colors, clears the ZX screen and prints a greeting.
 - [`radar`](examples/radar.c) shows a coastal radar with a frame-paced XOR sweep over a fixed grid.
 - [`night_train`](examples/night_train.c) draws a railway scene in ATM 320 on the alternate screen.
-  A private drawing stack keeps BASIC's workspace intact. The example pauses for 250 frames, then
-  returns to the original ZX screen.
+  The CRT places the application stack in W2. `bc_basic48_video_begin()` prepares the drawing
+  windows, and `bc_basic48_video_present()` restores the BASIC workspace before frame interrupts
+  resume. After 250 frames, `bc_basic48_video_end()` restores the ZX screen, border and paging lock.
 
 [Startup and launch instructions](../common/README.en.md#basic-48-startup-profile)
 
