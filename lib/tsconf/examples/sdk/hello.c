@@ -1,7 +1,6 @@
 #include <tsconf/memory.h>
 #include <zx/console.h>
 #include <zx/video.h>
-#include <zx/interrupt.h>
 #include <stdlib.h>
 
 int main(void) {
