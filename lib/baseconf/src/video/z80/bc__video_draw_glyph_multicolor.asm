@@ -27,26 +27,20 @@ bc__video_draw_glyph_multicolor:
         bit 7,d
         jp nz,bc__video_glyph_overlay_zx
         call zx__encode_attribute
-        push hl                      ; glyph
         push af                      ; attribute
         ld de,(_bc_video_page0_base)
         call zx__cell_bitmap_address
         pop af
         ld c,a
-        pop hl
         ld b,8
 @row:
         ld a,(hl)
         inc hl
         ld (de),a
-        ld a,d
-        add a,20h
-        ld d,a
+        set 5,d                      ; second 8 KiB of the same aligned window
         ld a,c
         ld (de),a                    ; attribute for this scanline
-        ld a,d
-        sub 20h
-        ld d,a
+        res 5,d
         inc d
         djnz @row
         ret
