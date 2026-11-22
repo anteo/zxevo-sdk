@@ -1,14 +1,18 @@
         MODULE zx__console_draw_run
 SECTION code_clib
 PUBLIC _zx__console_draw_run
-EXTERN ts__console_write_cell
 EXTERN _ts__draw_window_leased
 IFDEF TSCONF_VIDEO_TEXT
+EXTERN ts_draw_base
+EXTERN ts_console_text_attribute
 EXTERN ts_draw_config
 ELSE
 IFDEF TSCONF_VIDEO_PACKED
 EXTERN ts_draw_config
 ENDIF
+ENDIF
+IFDEF TSCONF_VIDEO_BITMAP
+EXTERN ts__console_write_cell
 ENDIF
 IFDEF TSCONF_VIDEO_PACKED
 EXTERN ts_draw_page
@@ -20,14 +24,16 @@ ENDIF
 ;
 ; if (draw_window_leased) return BUSY;
 ; if (native_text && transparent) return UNSUPPORTED;
+; if (native_text) write codes and one common attribute along the row, then return OK;
 ; if (packed && !claim_w3()) return BUSY;
 ; while (length--) write_cell(column++, row, *text++, background);
 ; if (packed) release_w3();
 ; return OK;
 ;
 ; SDCC column/row at SP+2/+3, text at +4, length at +6 (nonzero), background +7.
-; Return status in L, preserve IX/IY. IX holds the string pointer. Preserve
-; D=remaining, E=background and BC=cell across each writer.
+; Return status in L, preserve IX/IY. Native text uses DE=source, HL=cell,
+; B=count and C=attribute. Bitmap output keeps the string pointer in IX and
+; saves D=remaining, E=background and BC=cell across each font callback.
 _zx__console_draw_run:
         ld a,(_ts__draw_window_leased)
         or a
@@ -43,6 +49,42 @@ _zx__console_draw_run:
         inc hl
         ld d,(hl)
         inc hl
+IFDEF TSCONF_VIDEO_TEXT
+IFDEF TSCONF_VIDEO_BITMAP
+        ld a,(ts_draw_config)
+        and 3
+        cp 3
+        jr nz,@bitmap
+ENDIF
+        ld a,(hl)                    ; clipped nonempty run fits one text row
+        inc hl
+        bit 0,(hl)
+        ld l,5                       ; ZX_UNSUPPORTED
+        ret nz
+        ld l,c
+        ld c,a
+        ld a,(ts_draw_base)
+        or b
+        ld h,a
+        ld b,c
+        push de                      ; attribute encoder uses E
+        call ts_console_text_attribute
+        pop de
+        ld c,a
+@text:
+        ld a,(de)
+        inc de
+        ld (hl),a
+        set 7,l                      ; attributes start 128 bytes after codes
+        ld (hl),c
+        res 7,l
+        inc l
+        djnz @text
+        ld l,0
+        ret
+ENDIF
+IFDEF TSCONF_VIDEO_BITMAP
+@bitmap:
         ld a,(hl)
         push ix
         push de
@@ -50,15 +92,6 @@ _zx__console_draw_run:
         ld d,a
         inc hl
         ld e,(hl)
-IFDEF TSCONF_VIDEO_TEXT
-        bit 0,e
-        jr z,@draw
-        ld a,(ts_draw_config)
-        and 3
-        cp 3
-        jr z,@unsupported
-@draw:
-ENDIF
 IFDEF TSCONF_VIDEO_PACKED
         call @packed
         jr nc,@next
@@ -89,12 +122,6 @@ ENDIF
         ld l,0                       ; ZX_OK
         pop ix
         ret
-IFDEF TSCONF_VIDEO_TEXT
-@unsupported:
-        ld l,5                       ; ZX_UNSUPPORTED
-        pop ix
-        ret
-ENDIF
 IFDEF TSCONF_VIDEO_PACKED
 @busy:
         ld l,2                       ; ZX_BUSY
@@ -106,4 +133,5 @@ IFDEF TSCONF_VIDEO_PACKED
         dec a
         cp 2                         ; carry for 16c or 256c
         ret
+ENDIF
 ENDIF

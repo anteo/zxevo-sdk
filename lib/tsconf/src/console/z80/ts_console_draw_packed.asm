@@ -20,7 +20,6 @@ ENDIF
 EXTERN zx__font_rows_from_frame
 
 defc TS_GLYPH_WIDTH = -2
-defc TS_GLYPH_SOURCE = -4
 
 ; Draw a glyph on a packed surface with one Page3 mapping.
 ;
@@ -34,14 +33,17 @@ defc TS_GLYPH_SOURCE = -4
 ; Tail entry from either SDCC font callback. IX points at saved IX
 ; (x +4, y +6, font +8, code +10, ink +11, paper +12, background +13), C=width (5 or 8).
 ; Even X and eight-scanline-aligned Y are in bounds. The glyph fits one page.
-; The locals above hold width and next glyph row; temporary stack words
-; retain the row count and destination start. AF/BC/DE/HL volatile, IY preserved.
+; IX-2 holds the width. IY points at the next glyph row. The row count and
+; destination start are saved on the stack while emitting pixels.
+; AF/BC/DE/HL volatile, IX/IY restored on return.
 ts_console_draw_packed:
         push bc
         call zx__font_rows_from_frame
+        push iy
         push hl
-        ld hl,ts_draw_page
-        ld d,(hl)
+        pop iy
+        ld a,(ts_draw_page)
+        ld d,a
         call ts_packed_begin_window
         jp c,@return
         ld l,(ix+4)
@@ -67,7 +69,8 @@ ENDIF
 @row16:
         push af
         push hl
-        call @next_bits
+        ld c,(iy+0)
+        inc iy
         ld b,(ix+TS_GLYPH_WIDTH)
         srl b
 @pair:
@@ -82,12 +85,10 @@ ENDIF
         or d
         jr @put_pair
 @keep_right:
-        push bc
-        ld b,a
-        ld a,(hl)
-        and 0fh
-        or b
-        pop bc
+        ; Replace only the high nibble with the value in A.
+        xor (hl)
+        and 0f0h
+        xor (hl)
 @put_pair:
         ld (hl),a
         inc hl
@@ -96,10 +97,9 @@ ENDIF
         jr z,@next16
         ; The fifth pixel occupies the high nibble. Keep its neighbour.
         call @left_nibble
-        ld c,a
-        ld a,(hl)
-        and 0fh
-        or c
+        xor (hl)
+        and 0f0h
+        xor (hl)
         ld (hl),a
 @next16:
         pop hl
@@ -121,17 +121,16 @@ IFDEF TSCONF_VIDEO_256C
 @row256:
         push af
         push hl
-        call @next_bits
+        ld c,(iy+0)
+        inc iy
         ld b,(ix+TS_GLYPH_WIDTH)
 @pixel:
         sla c
-        jr c,@indexed_ink
+        ld a,e
+        jr c,@put_pixel
         bit 0,(ix+ZX_TEXT_BACKGROUND_ARG)
         jr nz,@advance_pixel
         ld a,d
-        jr @put_pixel
-@indexed_ink:
-        ld a,e
 @put_pixel:
         ld (hl),a
 @advance_pixel:
@@ -147,20 +146,9 @@ ENDIF
 @done:
         call ts_packed_end
 @return:
+        pop iy
         ld sp,ix
         pop ix
-        ret
-
-; Fetch one glyph row into C, keeping the destination in HL.
-@next_bits:
-        push hl
-        ld l,(ix+TS_GLYPH_SOURCE)
-        ld h,(ix+TS_GLYPH_SOURCE+1)
-        ld c,(hl)
-        inc hl
-        ld (ix+TS_GLYPH_SOURCE),l
-        ld (ix+TS_GLYPH_SOURCE+1),h
-        pop hl
         ret
 
 ; Consume the next glyph bit and return its high nibble, including any old pixel.
