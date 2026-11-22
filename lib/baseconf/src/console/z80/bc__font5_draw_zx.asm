@@ -1,18 +1,17 @@
-IFDEF BASECONF_VIDEO_TEXT_ZX_BITMAP
         MODULE bc__font5_draw_zx
-
-SECTION code_clib
-PUBLIC bc__font5_draw_zx
-EXTERN bc__font5_draw_return
+IFDEF BASECONF_VIDEO_TEXT_ZX_BITMAP
+EXTERN _bc_video_page0_base
 EXTERN bc__font5_bitmap_init
 EXTERN bc__font5_bitmap_masks
 EXTERN bc__font5_bitmap_row
-EXTERN zx__bitmap_offset
+EXTERN bc__font5_draw_return
 EXTERN zx__attribute_address
+EXTERN zx__bitmap_offset
 EXTERN zx__draw_font5_cell
-EXTERN zx__font_overlay_rows
 EXTERN zx__encode_attribute
-EXTERN _bc_video_page0_base
+EXTERN zx__font_overlay_rows
+SECTION code_clib
+PUBLIC bc__font5_draw_zx
 
 ; Tail entry from the dispatcher: IX is the callback frame, SP=IX-5,
 ; glyph/width/height/background are initialized. Preserve IX/IY on final return.
@@ -144,11 +143,4 @@ bc__font5_draw_zx:
         sub 8
         ld h,a
         ret
-
-IFDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
-PUBLIC bc__font5_draw_multicolor
-EXTERN bc__font5_draw_pixels
-; Multicolor retains the shared pixel fallback. An alias emits no jump/code.
-defc bc__font5_draw_multicolor = bc__font5_draw_pixels
-ENDIF
 ENDIF

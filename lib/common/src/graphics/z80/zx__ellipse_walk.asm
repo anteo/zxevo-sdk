@@ -1,10 +1,9 @@
         MODULE zx__ellipse_walk
 INCLUDE "graphics/z80/zx__ellipse.inc"
-SECTION code_graphics
-PUBLIC zx__ellipse_walk
-PUBLIC zx__ellipse_endpoints
 EXTERN l_mulu_32_16x16
 EXTERN l_mulu_32_32x32
+SECTION code_graphics
+PUBLIC zx__ellipse_walk
 
 ; Walk an axis-aligned ellipse using signed 32-bit midpoint errors.
 ;
@@ -122,17 +121,6 @@ ellipse_finish:
         jr ellipse_finish
 
 ellipse_done:
-        ret
-
-; HL=center, DE=radius -> HL=center-radius, DE=center+radius. Preserve BC.
-zx__ellipse_endpoints:
-        or a
-        sbc hl,de
-        push hl
-        add hl,de
-        add hl,de
-        ex de,hl
-        pop hl
         ret
 
 ; Emit the four corners in row order. Keep coincident writes for XOR.

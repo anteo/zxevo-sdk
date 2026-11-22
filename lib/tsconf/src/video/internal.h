@@ -15,4 +15,7 @@ extern ts__draw_buffer_t ts_video_prepared_buffers[ZX_DRAW_BUFFER_SLOTS];
 zx_status_t ts__video_check_mode(uint16_t mode) __z88dk_fastcall;
 zx_status_t ts__video_commit_draw_buffer(const ts__draw_buffer_t *buffer) __z88dk_fastcall;
 
+zx_status_t ts__video_prepare_draw_buffer(ts__draw_buffer_t *buffer, uint16_t mode,
+                                          zx_ram_page_t page, zx_window_t window);
+
 #endif

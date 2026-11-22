@@ -1,10 +1,9 @@
         MODULE bc__video_end
+EXTERN _bc_video_cpu_base
+EXTERN _bc_video_mapped_page
+EXTERN _bc_video_operation_depth
 SECTION code_clib
 PUBLIC _bc__video_end
-PUBLIC _zx_graphics_end
-EXTERN _bc_video_operation_depth
-EXTERN _bc_video_mapped_page
-EXTERN _bc_video_cpu_base
 
 ; Close one level of a prepared video operation. Model:
 ;
@@ -15,7 +14,6 @@ EXTERN _bc_video_cpu_base
 ; SDCC no arguments; status in L, flags unspecified. Preserve BC/DE/IX/IY;
 ; clobber AF/HL. The last end clears the current selector, keeping cached
 ; surface bases for the next begin. No stack locals or port writes.
-_zx_graphics_end:
 _bc__video_end:
         ld a,(_bc_video_operation_depth)
         or a

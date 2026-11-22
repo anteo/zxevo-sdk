@@ -9,4 +9,7 @@ uint16_t bc__storage_fdd_system_port(uint8_t config, uint8_t force_palette_close
 zx_status_t bc__storage_fdd_shadow_begin(uint8_t *irq, uint8_t *bf);
 void bc__storage_fdd_shadow_end(uint8_t irq, uint8_t bf);
 
+uint16_t bc__storage_fdd_reg_port(zx_fdd_reg_t reg);
+zx_status_t bc__storage_fdd_reg_context(void);
+
 #endif

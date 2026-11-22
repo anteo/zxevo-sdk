@@ -3,7 +3,7 @@ SECTION code_clib
 PUBLIC bc__text_put
 EXTERN _bc_video_draw_surface_state
 EXTERN _bc__text_cell_write
-EXTERN bc__console_control
+EXTERN bc__console_control_a
 EXTERN bc__console_advance
 EXTERN __console_x
 EXTERN __console_y
@@ -27,7 +27,7 @@ bc__text_put:
         cp 9
         jr z,@tab
         cp 32
-        jp c,bc__console_control
+        jp c,bc__console_control_a
 @write:
         push af
         inc sp                       ; character:8

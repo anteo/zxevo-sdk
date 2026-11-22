@@ -1,28 +1,25 @@
         MODULE bc__font5_draw
 INCLUDE "font/z80/zx_font.inc"
-
-SECTION code_clib
-PUBLIC _bc__font5_draw
-PUBLIC bc__font5_draw_return
+EXTERN bc__font5_draw_return
 IFDEF BASECONF_VIDEO_TEXT_GRAPHICS
-EXTERN zx__font_rows_from_frame
 EXTERN _bc_video_draw_surface_state
-IFDEF BASECONF_VIDEO_TEXT_ZX_BITMAP
 EXTERN bc__font5_draw_zx
-ENDIF
-IFDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
-EXTERN bc__font5_draw_multicolor
-ENDIF
-IFDEF BASECONF_VIDEO_TEXT_PENTAGON_256
-EXTERN bc__font5_draw_pentagon
-ENDIF
+EXTERN zx__font_rows_from_frame
 IFDEF BASECONF_VIDEO_TEXT_ATM_320
 EXTERN bc__font5_draw_atm320
 ENDIF
 IFDEF BASECONF_VIDEO_TEXT_ATM_640
 EXTERN bc__font5_draw_atm640
 ENDIF
+IFDEF BASECONF_VIDEO_TEXT_PENTAGON_256
+EXTERN bc__font5_draw_pentagon
 ENDIF
+IFDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
+EXTERN bc__font5_draw_multicolor
+ENDIF
+ENDIF
+SECTION code_clib
+PUBLIC _bc__font5_draw
 
 ; SDCC callback frame after saving IX: x +4, y +6, font +8,
 ; code +10, ink +11, paper +12, background +13. Preserve IX/IY.
@@ -43,7 +40,9 @@ ENDIF
 ; restored through the shared return. The five-byte persistent context above
 ; may be extended by a backend; it is not an outgoing argument block.
 _bc__font5_draw:
-IFDEF BASECONF_VIDEO_TEXT_GRAPHICS
+IFNDEF BASECONF_VIDEO_TEXT_GRAPHICS
+        jp bc__font5_draw_return
+ELSE
         push ix
         ld ix,0
         add ix,sp
@@ -70,9 +69,28 @@ IFDEF BASECONF_VIDEO_TEXT_GRAPHICS
         ld (ix-5),a
 
         ld a,(_bc_video_draw_surface_state)
-IFDEF BASECONF_VIDEO_TEXT_ZX_256
+IFNDEF BASECONF_VIDEO_TEXT_ZX_256
+IFNDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
+IFNDEF BASECONF_VIDEO_TEXT_PENTAGON_256
+IFNDEF BASECONF_VIDEO_TEXT_ATM_320
+IFNDEF BASECONF_VIDEO_TEXT_ATM_640
+        jp bc__font5_draw_return
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ELSE
         or a
         jp z,bc__font5_draw_zx
+IFNDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
+IFNDEF BASECONF_VIDEO_TEXT_PENTAGON_256
+IFNDEF BASECONF_VIDEO_TEXT_ATM_320
+IFNDEF BASECONF_VIDEO_TEXT_ATM_640
+        jp bc__font5_draw_return
+ENDIF
+ENDIF
+ENDIF
+ENDIF
 ENDIF
 IFDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
         cp 1
@@ -81,27 +99,33 @@ IFDEF BASECONF_VIDEO_TEXT_ZX_MULTICOLOR
         jp nz,bc__font5_draw_zx     ; same bitmap, keep the raster attributes
         jp bc__font5_draw_multicolor
 @other_modes:
+IFNDEF BASECONF_VIDEO_TEXT_PENTAGON_256
+IFNDEF BASECONF_VIDEO_TEXT_ATM_320
+IFNDEF BASECONF_VIDEO_TEXT_ATM_640
+        jp bc__font5_draw_return
+ENDIF
+ENDIF
+ENDIF
 ENDIF
 IFDEF BASECONF_VIDEO_TEXT_PENTAGON_256
         cp 2
         jp z,bc__font5_draw_pentagon
+IFNDEF BASECONF_VIDEO_TEXT_ATM_320
+IFNDEF BASECONF_VIDEO_TEXT_ATM_640
+        jp bc__font5_draw_return
+ENDIF
+ENDIF
 ENDIF
 IFDEF BASECONF_VIDEO_TEXT_ATM_320
         cp 3
         jp z,bc__font5_draw_atm320
+IFNDEF BASECONF_VIDEO_TEXT_ATM_640
+        jp bc__font5_draw_return
+ENDIF
 ENDIF
 IFDEF BASECONF_VIDEO_TEXT_ATM_640
         cp 4
         jp z,bc__font5_draw_atm640
+        jp bc__font5_draw_return
 ENDIF
 ENDIF
-
-; Tail target for all backends; discard their context/outgoing arguments too.
-; Shared epilogue: discard all backend locals/outgoing arguments, restore IX,
-; and return to the original callback caller. No C result; AF/BC/DE/HL volatile.
-bc__font5_draw_return:
-IFDEF BASECONF_VIDEO_TEXT_GRAPHICS
-        ld sp,ix
-        pop ix
-ENDIF
-        ret

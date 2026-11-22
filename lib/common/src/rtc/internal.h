@@ -37,4 +37,9 @@ void zx__avr_decode_version(const uint8_t bytes[16], zx_avr_version_t *version);
 /* Platform backend. The common caller has validated the offset and byte. */
 zx_status_t zx__eeprom_transfer_byte(uint16_t offset, uint8_t *byte, uint8_t writing);
 
+zx_status_t zx__avr_select_window(zx_avr_window_t type, zx__avr_window_scope_t *scope);
+void zx__avr_restore_mux(const zx__avr_window_scope_t *scope);
+
+zx_status_t zx__eeprom_transfer(uint16_t offset, uint8_t *buffer, uint8_t length, uint8_t writing);
+
 #endif

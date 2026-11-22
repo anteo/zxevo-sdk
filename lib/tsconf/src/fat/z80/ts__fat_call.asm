@@ -1,9 +1,8 @@
         MODULE ts__fat_call
+EXTERN ts__cache_mask
+EXTERN ts__cpu_speed
 SECTION code_clib
 PUBLIC ts__fat_call
-PUBLIC ts__fat_call_status
-EXTERN ts__cpu_speed
-EXTERN ts__cache_mask
 
 ; Invoke the selected TS-BIOS FAT service, preserving SDCC's IX and IY.
 ; A = function, remaining registers per ROM ABI. Clobbers AF/BC/DE/HL and
@@ -22,12 +21,4 @@ ts__fat_call:
         pop af
         pop iy
         pop ix
-        ret
-
-; Convert the ROM's Z success flag to ZX_OK or ZX_IO_ERROR in L.
-ts__fat_call_status:
-        call ts__fat_call
-        ld l,0
-        ret z
-        ld l,8
         ret

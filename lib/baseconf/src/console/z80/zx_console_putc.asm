@@ -8,7 +8,7 @@ ENDIF
 EXTERN _bc_console_active_font
 EXTERN zx__ink
 EXTERN zx__paper
-EXTERN bc__console_control
+EXTERN bc__console_control_a
 EXTERN bc__console_advance
 EXTERN zx__font_position
 EXTERN zx__font_call
@@ -64,7 +64,7 @@ ENDIF
         jr nc,@check_font
         cp 9
         jr z,@check_font
-        call bc__console_control
+        call bc__console_control_a
         jr @return
 @check_font:
 IFDEF BASECONF_VIDEO_TEXT_PARTIAL_GRAPHICS
