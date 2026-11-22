@@ -1,0 +1,2 @@
+description = "Opaque and transparent 5x8 glyphs on a striped Pentagon 256 screen"
+profile = "no-stdio+no-font8"

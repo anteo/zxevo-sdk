@@ -1,0 +1,2 @@
+description = "Opaque and transparent 5x8 glyphs in the ATM320 packed planes"
+profile = "no-stdio+no-font8"
