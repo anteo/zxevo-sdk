@@ -9,5 +9,5 @@ INCLUDE "memory/readback.inc"
 _bc_readback_register:
         ld hl,2
         add hl,sp
-        BC_MEM_READBACK (hl), l
+        BC_MEM_READBACK((hl), l)
         ret
