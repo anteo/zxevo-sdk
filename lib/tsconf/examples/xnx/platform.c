@@ -1,6 +1,5 @@
 /* XNX-specific TSConf rendering and resource placement. Game rules are in main.c. */
 #include "game.h"
-#include <intrinsic.h>
 #include <im2.h>
 #include <zx/audio.h>
 #include <zx/interrupt.h>
@@ -14,7 +13,6 @@ typedef struct {
 #define SPRITES 0x70
 #define SCRATCH 0xd0
 #define MAX_DIRTY_TILES 96
-#define WINDOW ((uint8_t *)0xc000)
 
 volatile uint8_t xnx_ticks;
 static uint8_t tile_storage[33];
@@ -108,7 +106,7 @@ static void draw_tile(uint8_t x, uint8_t y, uint16_t tile, uint8_t keyed) {
         return;
     }
     if (ts_window_acquire(ZX_WINDOW_3, image->page + (tile >> 9), &lease) != ZX_OK) return;
-    memcpy(tile_buffer, WINDOW + ((tile & 511u) << 5), 32);
+    memcpy(tile_buffer, (const uint8_t *)ZX_WINDOW_3 + ((tile & 511u) << 5), 32);
     ts_window_release(&lease);
     bitmap.pixels = tile_buffer;
     bitmap.width = bitmap.height = 8;
@@ -139,8 +137,7 @@ void xnx_clear(uint8_t color) {
 }
 
 void xnx_frame(void) {
-    uint8_t previous = xnx_ticks;
-    while (previous == xnx_ticks) intrinsic_halt();
+    zx_wait_frame(&xnx_ticks);
     update_palette();
 }
 
