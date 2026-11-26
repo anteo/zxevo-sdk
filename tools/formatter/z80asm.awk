@@ -13,6 +13,6 @@
                tolower(code) ~ /^[.@$a-z_][[:alnum:]_.@$]*[ \t]+(equ|defc)[ \t]/) {
         print code
     } else {
-        print "        " code
+        printf "%*s%s\n", indent, "", code
     }
 }

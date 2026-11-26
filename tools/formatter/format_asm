@@ -9,6 +9,7 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 me=${0##*/}
 dialect=${FORMAT_ASM_DIALECT:-sjasm}
+indent=8
 check=0
 changed=0
 
@@ -21,6 +22,7 @@ Formats assembly sources with NAME.awk from the tools/formatter directory.
 Options:
   --dialect NAME   Rule set: sjasm (default) or z80asm.
                    The FORMAT_ASM_DIALECT environment variable is the default.
+  --indent N       Spaces per indentation level, a positive integer (default: 8).
   --check          Do not write files; list files that need formatting and
                    exit with status 1 if there are any.
   -h, --help       Show this help and exit.
@@ -30,6 +32,11 @@ Directories are expanded to their immediate *.asm children; explicit file
 arguments are processed regardless of extension. Files are rewritten only when
 their formatted content differs.
 EOF
+}
+
+invalid_indent() {
+    printf '%s: --indent expects a positive integer: %s\n' "$me" "$indent" >&2
+    exit 2
 }
 
 while [ "$#" -gt 0 ]; do
@@ -43,12 +50,21 @@ while [ "$#" -gt 0 ]; do
             dialect=${1#*=}
             shift
             ;;
+        --indent)
+            [ "$#" -ge 2 ] || { printf '%s: --indent needs a value\n' "$me" >&2; usage >&2; exit 2; }
+            indent=$2
+            shift 2
+            ;;
+        --indent=*)
+            indent=${1#*=}
+            shift
+            ;;
         --check)
             check=1
             shift
             ;;
         --options)
-            printf '%s\n' 'dialect' 'check'
+            printf '%s\n' 'dialect' 'indent' 'check'
             exit 0
             ;;
         -h|--help)
@@ -69,6 +85,12 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
+
+case $indent in
+    *[!0-9]*) invalid_indent ;;
+    *[1-9]*) ;;
+    *) invalid_indent ;;
+esac
 
 rules="$script_dir/$dialect.awk"
 if [ ! -f "$rules" ]; then
@@ -96,7 +118,7 @@ trap cleanup 0 1 2 15
 
 format_file() {
     out="$workdir/out"
-    awk -f "$rules" "$1" > "$out"
+    awk -v "indent=$indent" -f "$rules" "$1" > "$out"
     if cmp -s "$1" "$out"; then
         return 0
     fi

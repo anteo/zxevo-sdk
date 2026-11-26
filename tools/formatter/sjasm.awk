@@ -61,7 +61,7 @@ function normalize_hex(s,    i, j, ch, quote, escaped, prev, nextchar, digits, o
 }
 
 function indent_statement() {
-    return sprintf("%*s", 8 * (block_depth + 1), "")
+    return sprintf("%*s", indent * (block_depth + 1), "")
 }
 
 function block_action(code) {

@@ -6,14 +6,14 @@
 | Программа    | Назначение                         | Основные опции                         |
 | ------------ | ---------------------------------- | -------------------------------------- |
 | `formatter`  | Выбирает форматтер по расширению   | `--EXT-formatter=PROGRAM`, `-h`        |
-| `format_asm` | ASM через `awk`                    | `--dialect`, `--check`                 |
+| `format_asm` | ASM через `awk`                    | `--dialect`, `--indent`, `--check`     |
 | `format_c`   | C и заголовки через `clang-format` | `--clang-format`, `--style`, `--check` |
 | `format_md`  | Markdown через Prettier            | `--prettier`, `--config`, `--check`    |
 
 ```sh
 tools/formatter/formatter --dialect=z80asm lib/common/src/color/z80 lib/common/include/zx README.md
 tools/formatter/formatter --check lib/common/include/zx
-tools/formatter/format_asm --dialect z80asm lib/common/src/color/z80
+tools/formatter/format_asm --dialect z80asm --indent 4 lib/common/src/color/z80
 tools/formatter/format_c --clang-format /opt/bin/clang-format examples
 tools/formatter/format_md README.md README.ru.md
 ```
@@ -39,7 +39,9 @@ tools/formatter/format_md README.md README.ru.md
 если его содержимое изменилось.
 
 - `format_asm --dialect NAME` выбирает `sjasm` или `z80asm`. При прямом вызове значение по умолчанию
-  берётся из `FORMAT_ASM_DIALECT`, затем используется `sjasm`.
+  берётся из `FORMAT_ASM_DIALECT`, затем используется `sjasm`. Опция `--indent N` задаёт число
+  пробелов на уровень для обоих диалектов. По умолчанию используется 8 пробелов. Через диспетчер
+  и в `FORMATTER_ARGS` передавайте `--indent=N`.
 - `format_c --clang-format PATH` выбирает исполняемый файл. По умолчанию используется `CLANG_FORMAT`
   или `clang-format`. `--style PATH` заменяет встроенный `z88dk-c.clang-format`.
 - `format_md --prettier PATH` выбирает исполняемый файл. По умолчанию используется `PRETTIER` или
@@ -47,8 +49,9 @@ tools/formatter/format_md README.md README.ru.md
   переносит обычный текст на ширине 100 столбцов. Prettier выравнивает столбцы таблицы и сохраняет
   каждую строку таблицы одной строкой исходника, даже если таблица шире 100 столбцов.
 
-Правила `sjasm` выравнивают инструкции, метки и константы, используют восьмипробельный отступ для
-инструкций и директив и заменяют `#hex` на `0xhex`. Правила `z80asm` меняют отступы и пустые строки.
+Правила `sjasm` выравнивают инструкции, метки и константы. Инструкции и директивы начинаются
+с одного уровня отступа, а каждый вложенный блок добавляет ещё один уровень. Запись `#hex`
+заменяется на `0xhex`. Правила `z80asm` меняют отступы и пустые строки.
 Операнды, литералы `00BFh`, локальные метки, `AF'` и пробелы перед комментариями сохраняются. Стиль
 `z88dk-c` задаёт отступ 4, предел 100 столбцов, открывающие скобки на той же строке и правое
 выравнивание указателей. Он сохраняет порядок `#include` и объявляет `__z88dk_fastcall` макросом

@@ -8,14 +8,14 @@ Four small programs, one job each:
 | Program      | Job                              | Own options                            |
 | ------------ | -------------------------------- | -------------------------------------- |
 | `formatter`  | Dispatches by file extension     | `--EXT-formatter=PROGRAM`, `-h`        |
-| `format_asm` | Assembly via `awk`               | `--dialect`, `--check`                 |
+| `format_asm` | Assembly via `awk`               | `--dialect`, `--indent`, `--check`     |
 | `format_c`   | C and headers via `clang-format` | `--clang-format`, `--style`, `--check` |
 | `format_md`  | Markdown via Prettier            | `--prettier`, `--config`, `--check`    |
 
 ```sh
 tools/formatter/formatter --dialect=z80asm lib/common/src/color/z80 lib/common/include/zx README.md
 tools/formatter/formatter --check lib/common/include/zx
-tools/formatter/format_asm --dialect z80asm lib/common/src/color/z80
+tools/formatter/format_asm --dialect z80asm --indent 4 lib/common/src/color/z80
 tools/formatter/format_c --clang-format /opt/bin/clang-format examples
 tools/formatter/format_md README.md README.ru.md
 ```
@@ -42,7 +42,9 @@ extension. Files are rewritten only when the formatted content differs, and cont
 after the formatter succeeded, so a failing run never leaves a truncated file.
 
 `format_asm --dialect NAME` selects `NAME.awk` (`sjasm` or `z80asm`); the default comes from
-`$FORMAT_ASM_DIALECT`. `format_c --clang-format PATH` selects the executable (default
+`$FORMAT_ASM_DIALECT`. `--indent N` sets the number of spaces per level for both ASM dialects.
+The default is 8. Use `--indent=N` with the dispatcher or in `FORMATTER_ARGS`.
+`format_c --clang-format PATH` selects the executable (default
 `$CLANG_FORMAT`, then `clang-format`), and `--style PATH` replaces the bundled
 `z88dk-c.clang-format`. Each helper lists the options it accepts with `--options`, which is how the
 dispatcher routes forwarded arguments; the environment variables are only the defaults for running a
@@ -56,8 +58,9 @@ a table exceeds that width.
 Rules:
 
 - **sjasm** aligns statements and constants and normalizes hex literals for SjASMPlus: instructions
-  and directives get one 8-space indent, labels and `EQU`/`EVAL` constants go to the left margin
-  with aligned values, `#hex` becomes `0xhex`.
+  and directives start at one indentation level, with an extra level for each nested block.
+  Labels and `EQU`/`EVAL` constants go to the left margin with aligned values. `#hex` becomes
+  `0xhex`.
 - **z80asm** only normalizes leading indentation and blank lines. Operands, `00BFh` literals, local
   `@labels`, `AF'`, quoted semicolons, expressions and the spacing before comments survive byte for
   byte.
