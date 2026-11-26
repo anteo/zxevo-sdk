@@ -21,8 +21,16 @@ read_sdk_version() {
     awk '/^#define ZXEVO_SDK_VERSION_/ { printf "%s%s", separator, $3; separator = "." }'
 }
 
+require_tool() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        printf '%s\n' "Cannot find '$1'. Install $2 or set $3 to its executable path." >&2
+        exit 1
+    fi
+}
+
 case "$version" in
     patch|minor|major)
+        require_tool "$bump_my_version" bump-my-version BUMP_MY_VERSION
         version=$("$bump_my_version" show --config-file "$bump_config" \
             --increment "$version" new_version)
         ;;
@@ -37,6 +45,8 @@ ref="refs/tags/$tag"
 
 commit=$(git rev-parse HEAD)
 if ! git show-ref --verify --quiet "$ref"; then
+    require_tool "$bump_my_version" bump-my-version BUMP_MY_VERSION
+    require_tool "$git_cliff" git-cliff GIT_CLIFF
     if [ -n "$(git status --porcelain)" ]; then
         printf '%s\n' 'Commit local changes before preparing the release.' >&2
         exit 1
