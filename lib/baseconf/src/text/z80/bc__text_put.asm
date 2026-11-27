@@ -6,10 +6,9 @@ EXTERN _bc__text_cell_write
 EXTERN bc__console_control_a
 EXTERN bc__console_advance
 EXTERN __console_x
-EXTERN __console_y
 
 ; A = character, active hardware-text lease. Preserve IX/IY.
-; The leaf alone receives packed SDCC mode/surface/coordinate arguments.
+; The cell writer receives the packed SDCC surface and coordinates.
 ;
 ; Handles one character or cursor control under an existing hardware text
 ; lease.
@@ -21,7 +20,7 @@ EXTERN __console_y
 ; else { write_current_cell(c); advance(); }
 ;
 ; Active hardware-text lease and nonzero geometry are required; A is the
-; input byte. AF/BC/DE/HL volatile, IX/IY preserved. Each write creates seven
+; input byte. AF/BC/DE/HL volatile, IX/IY preserved. Each write creates six
 ; fresh packed C argument bytes; newline/wrapping never scrolls.
 bc__text_put:
         cp 9
@@ -29,24 +28,20 @@ bc__text_put:
         cp 32
         jp c,bc__console_control_a
 @write:
-        push af
-        inc sp                       ; character:8
-        ld a,(__console_y)
         ld b,a
-        ld a,(__console_x)
+        ld hl,(__console_x)          ; adjacent cursor bytes: x in L, y in H
+        ld c,h
+        push bc                      ; y, character
+        ld b,l
+        ld a,(_bc_video_draw_surface_state+2)
         ld c,a
-        push bc                      ; column:8, row:8
-        ld hl,(_bc_video_draw_surface_state+1)
-        push hl                      ; surface.page0, surface.page1
-        ld a,(_bc_video_draw_surface_state)
-        ld h,a
-        ld l,a
-        push hl                      ; mode:8, surface.mode:8
+        push bc                      ; surface.page1, x
+        ld hl,(_bc_video_draw_surface_state)
+        push hl                      ; surface.mode, surface.page0
         call _bc__text_cell_write
         pop bc
         pop bc
         pop bc
-        inc sp
         jp bc__console_advance
 @tab:
         ld a,' '

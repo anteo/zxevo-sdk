@@ -8,15 +8,15 @@ EXTERN _zx__console_text_bg
 ENDIF
 EXTERN _bc__console_graphics_cell_write
 
-; SDCC caller-clean ABI: mode:8 at SP+2, surface:24 at SP+3,
-; x:8 at SP+6, y:8 at SP+7, character:8 at SP+8. Preserve IX/IY.
+; SDCC caller-clean ABI: surface:24 at SP+2,
+; x:8 at SP+5, y:8 at SP+6, character:8 at SP+7. Preserve IX/IY.
 ;
 ; Writes one character to the selected console cell using the hardware text
 ; or bitmap font backend.
 ;
 ; Model:
 ;
-; if (mode == ATM_TEXT_80 || mode == EVO_TEXT_80) text_cell_write(mode,surface,x,y,c);
+; if (surface.mode == ATM_TEXT_80 || surface.mode == EVO_TEXT_80) text_cell_write(surface,x,y,c);
 ; else graphics_cell_write(x,y,c);
 ;
 ; Caller holds the video lease and supplies in-range cells. AF/BC/DE/HL
@@ -36,7 +36,7 @@ IFDEF BASECONF_VIDEO_TEXT_HARDWARE
         jp _bc__text_cell_write      ; identical arguments, no repacking
 @bitmap:
 ENDIF
-        ld hl,6
+        ld hl,5
         add hl,sp
         ld c,(hl)
         inc hl

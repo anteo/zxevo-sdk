@@ -19,10 +19,10 @@ ENDIF
 ; Model:
 ;
 ; if (outside_console || !hardware_text_mode || begin()!=OK) return 0;
-; character=text_cell_read(mode,surface,column,row); end(); return character;
+; character=text_cell_read(surface,column,row); end(); return character;
 ;
 ; Input B=row,C=column, result A=L=character; CF clear, Z reflects character.
-; AF/BC/DE/HL volatile, IX/IY preserved. Six outgoing arguments are separate
+; AF/BC/DE/HL volatile, IX/IY preserved. Five outgoing argument bytes are separate
 ; from the saved character pushed across video_end. The end status is ignored.
 generic_console_vpeek:
 IFDEF BASECONF_VIDEO_TEXT_HARDWARE
@@ -34,17 +34,16 @@ IFDEF BASECONF_VIDEO_TEXT_HARDWARE
         ld a,b
         cp (hl)
         jr nc,@empty
-        ld a,(_bc_video_draw_surface_state)
+        ld hl,(_bc_video_draw_surface_state) ; surface.mode in L, page0 in H
+        ld a,l
         sub 5                        ; ATM_TEXT_80=5, EVO_TEXT_80=6
         cp 2
         jr nc,@empty
-        add a,5
         push bc                      ; x:8, y:8
-        ld hl,(_bc_video_draw_surface_state+1)
-        push hl                      ; surface.page0, surface.page1
-        ld h,a
-        ld l,a
-        push hl                      ; mode:8, surface.mode:8
+        ld a,(_bc_video_draw_surface_state+2)
+        push af
+        inc sp                       ; surface.page1
+        push hl                      ; surface.mode, surface.page0
         call _bc__video_begin
         ld a,l
         or a
@@ -59,7 +58,7 @@ IFDEF BASECONF_VIDEO_TEXT_HARDWARE
 @finish:
         pop bc
         pop bc
-        pop bc                       ; discard the six argument bytes
+        inc sp                       ; discard the fifth argument byte
         ld a,l
         or a
         ret

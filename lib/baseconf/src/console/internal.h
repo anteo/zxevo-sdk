@@ -7,8 +7,7 @@
 
 uint8_t bc__console_is_text_mode(bc_video_mode_t mode);
 void bc__console_graphics_cell_write(uint8_t column, uint8_t row, uint8_t character);
-void bc__console_cell_write(bc_video_mode_t mode, bc__draw_surface_t surface, uint8_t x, uint8_t y,
-                            uint8_t character);
+void bc__console_cell_write(bc__draw_surface_t surface, uint8_t x, uint8_t y, uint8_t character);
 void bc__console_scroll(void);
 
 extern const zx_font_t *bc_console_active_font;

@@ -14,7 +14,7 @@ zx_status_t zx__console_draw_run(uint8_t column, uint8_t row, const char *text, 
         status = bc__video_begin();
         if (status != ZX_OK) return status;
         do {
-            bc__text_cell_write(surface.mode, surface, column++, row, (uint8_t)*text++);
+            bc__text_cell_write(surface, column++, row, (uint8_t)*text++);
         } while (--length);
         return bc__video_end();
     }

@@ -17,11 +17,11 @@ SECTION code_clib
 ; Model:
 ;
 ; if (column>=columns || row>=rows) return 0;
-; if (begin()==OK) { cell_write(mode,surface,column,row,character); end(); } return 0;
+; if (begin()==OK) { cell_write(surface,column,row,character); end(); } return 0;
 ;
 ; Register input B=row,C=column,D=character. Owns the video lease.
-; AF/BC/DE/HL volatile; IX/IY preserved, A=L=0 on every exit. Seven outgoing
-; packed cell arguments are below the caller frame and discarded even if begin
+; AF/BC/DE/HL volatile; IX/IY preserved, A=L=0 on every exit. Six outgoing
+; argument bytes are below the caller frame and discarded even if begin
 ; fails; do not store persistent locals in that callee-owned argument area.
 generic_console_printc:
         ld hl,__console_w
@@ -32,16 +32,15 @@ generic_console_printc:
         ld a,b
         cp (hl)
         jr nc,@done
-        ld a,d
-        push af
-        inc sp                       ; character:8
-        push bc                      ; x:8, y:8
-        ld hl,(_bc_video_draw_surface_state+1)
-        push hl                      ; surface.page0, surface.page1
-        ld a,(_bc_video_draw_surface_state)
-        ld h,a
-        ld l,a
-        push hl                      ; mode:8, surface.mode:8
+        ld h,d
+        ld l,b
+        push hl                      ; y, character
+        ld b,c
+        ld a,(_bc_video_draw_surface_state+2)
+        ld c,a
+        push bc                      ; surface.page1, x
+        ld hl,(_bc_video_draw_surface_state)
+        push hl                      ; surface.mode, surface.page0
         call _bc__video_begin
         ld a,l
         or a
@@ -52,7 +51,6 @@ generic_console_printc:
         pop bc
         pop bc
         pop bc
-        inc sp                       ; discard the seven argument bytes
 @done:
         xor a
         ld l,a
