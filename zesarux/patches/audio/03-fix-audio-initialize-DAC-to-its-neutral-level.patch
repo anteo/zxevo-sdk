@@ -1,0 +1,40 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 31 Oct 2026 20:45:25 +0700
+Subject: [PATCH] fix(audio): initialize DAC to its neutral level
+
+Unsigned 8-bit DAC silence is 128. Initialize that level both at startup
+and on CPU reset to avoid a false full-scale output before the first write.
+
+---
+ src/audio/audio.c | 2 +-
+ src/cpu.c         | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/audio/audio.c b/src/audio/audio.c
+index fa84b8a..a15eb18 100644
+--- a/src/audio/audio.c
++++ b/src/audio/audio.c
+@@ -711,7 +711,7 @@ char audio_valor_enviar_sonido_izquierdo;
+ char audio_valor_enviar_sonido_derecho;
+ 
+ 
+-z80_byte audiodac_last_value_data;
++z80_byte audiodac_last_value_data=128;
+ 
+ z80_bit audiodac_enabled={0};
+ 
+diff --git a/src/cpu.c b/src/cpu.c
+index b0c7b60..5c80e81 100644
+--- a/src/cpu.c
++++ b/src/cpu.c
+@@ -1014,6 +1014,7 @@ void reset_cpu(void)
+ 
+ 
+     debug_printf (VERBOSE_INFO,"Reset cpu");
++    audiodac_last_value_data=128;
+ 
+     if (esxdos_umount_on_reset.v) {
+         if (esxdos_handler_enabled.v) {
+-- 
+2.56.0
+

@@ -1,0 +1,116 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sun, 15 Nov 2026 16:09:31 +0700
+Subject: [PATCH] fix(tsconf): wrap packed graphics within each scanline
+
+The packed graphics renderer checks for X wrap after reading a byte from
+the next scanline. On the last row of the 256-colour bitmap this takes
+one pixel from the RAM page following the bitmap. The 512-byte limit
+also exceeds the 256-byte stride of the 16-colour bitmap.
+
+Wrap the source pointer as it reaches the end of the current row. Derive
+that end from the same byte stride used to find the row.
+
+---
+ src/machines/tsconf.c | 72 +++++++-----------------------------------------------------------------
+ 1 file changed, 7 insertions(+), 65 deletions(-)
+
+diff --git a/src/machines/tsconf.c b/src/machines/tsconf.c
+index fc5738f..cfc90a4 100644
+--- a/src/machines/tsconf.c
++++ b/src/machines/tsconf.c
+@@ -2301,71 +2301,22 @@
+ 
+                 //16 o 256 clores
+                 if (videomode==1 || videomode==2) {
+-                    //puntero a vram
+-                    //Indice a linea
+-                    int offset;
+-
++                    int bytes_por_linea=videomode==1 ? 256 : 512;
++                    int offset=y_origen_pixeles*bytes_por_linea;
+                     int x_offset=tsconf_af_ports[2]+256*(tsconf_af_ports[3]&1);
+-                    //if (x_offset) printf ("x_offset: %d\n",x_offset);
+-                    //edge grinder y 200.spg y lirus y ppal y tcircles y twist0 y unhinged y wavering usan scroll x
+-
+-                    int posicion_byte_inicial;
+-
+-                    //Posicion y inicial
+-                    //16 colores
+-                    if (videomode==1) {
+-                        offset=y_origen_pixeles*256;
+-
+-                        //offset +=x_offset/2;
+-                        //posicion_byte_inicial=x_offset/2;
+-                    }
+-
+-                    //256 colores
+-                    else {
+-                        offset=y_origen_pixeles*512;
+-
+-                        //offset +=x_offset;
+-                        //posicion_byte_inicial=x_offset;
+-                    }
+-
+-
+-                    //Ver cuantas paginas salta esto
+                     int pagina_offset=offset/16384;
+-
+-                    //y offset final
+                     z80_int offset_final=offset % 16384;
+ 
+                     // Los modos gráficos toman VPAGE como base de un bloque completo.
+                     z80_byte vram_base=tsconf_video_render_vpage & (videomode==1 ? 0xF8 : 0xF0);
+                     z80_byte vram_page=vram_base+pagina_offset;
+-                    z80_byte *screen;
+-
+-                    screen=tsconf_ram_mem_table[vram_page]+offset_final;
+-
+-                    z80_byte *screen_izquierda=screen; //primera posicion con x=0
+-
+-
+-                    //Sumamos scrolll x
+-                    //16 colores
+-                    if (videomode==1) {
+-                        screen +=x_offset/2;
+-                        posicion_byte_inicial=x_offset/2;
+-                    }
+-
+-                    //256 colores
+-                    else {
+-                        screen +=x_offset;
+-                        posicion_byte_inicial=x_offset;
+-                    }
+-
+-
++                    const z80_byte *screen_izquierda=tsconf_ram_mem_table[vram_page]+offset_final;
++                    const z80_byte *screen_fin=screen_izquierda+bytes_por_linea;
++                    const z80_byte *screen=screen_izquierda+(videomode==1 ? x_offset/2 : x_offset);
+                     z80_byte color,color_orig;
+                     z80_int color_final;
+ 
+-
+-
+-
+-                    for (x=0;x<tsconf_current_pixel_width;x++,posicion_byte_inicial++) {
++                    for (x=0;x<tsconf_current_pixel_width;x++) {
+                         if (videomode==2) { //256 colores
+                             color=*screen;
+                         }
+@@ -2402,16 +2353,7 @@
+                                                 tsconf_layer_ula[puntero_layer_ula++]=color_final;
+                                                 tsconf_layer_ula[puntero_layer_ula++]=color_final;
+ 
+-                        screen++;
+-
+-
+-                        if (posicion_byte_inicial>=512) {  //Volver a inicial
+-                            //printf ("---LLegado scroll derecha\n");
+-                            screen=screen_izquierda;
+-                            posicion_byte_inicial=0;
+-                        }
+-
+-
++                        if (++screen==screen_fin) screen=screen_izquierda;
+                     }
+                 }
+ 

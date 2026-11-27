@@ -1,0 +1,29 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Wed, 18 Nov 2026 17:07:00 +0700
+Subject: [PATCH] feat(ide): complete ATA flush-cache commands
+
+Make E7h flush the pending IDE image to its backing file and report an
+ATA error when a persistent write fails, matching a physical ATA device.
+
+---
+diff --git a/src/storage/ide.c b/src/storage/ide.c
+index 0773452..d44eec4 100644
+--- a/src/storage/ide.c
++++ b/src/storage/ide.c
+@@ -896,6 +896,16 @@
+                 ide_status_register=(IDE_STATUS_RDY|IDE_STATUS_DSC);
+ 			}
+ 		break;
++
++		case 0xE7: {
++			/* FLUSH CACHE finishes the backing-image write before clearing DRQ. */
++			int persistent=ide_persistent_writes.v;
++			ide_flush_flash_to_disk();
++			ide_status_register=(IDE_STATUS_RDY|IDE_STATUS_DSC);
++			if (persistent && !ide_persistent_writes.v)
++				ide_status_register|=IDE_STATUS_ERR;
++			break;
++		}
+ 
+ 		case 0xEF:
+ 			debug_printf (VERBOSE_PARANOID,"Set features command. NOT implemented");

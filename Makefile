@@ -1,12 +1,15 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all baseconf-lib tsconf-lib examples examples-all examples-baseconf examples-tsconf examples-evosdk examples-xnx test test-appmake release clean
+.PHONY: all submodules baseconf-lib tsconf-lib examples examples-all examples-baseconf examples-tsconf examples-evosdk examples-xnx emulator test test-appmake release clean
 
 PYTHON ?= python3
 SUITE ?= all
 CASE ?=
 
 all: baseconf-lib tsconf-lib
+
+submodules:
+	git submodule update --init --recursive
 
 baseconf-lib:
 	$(MAKE) -C lib/baseconf all
@@ -34,6 +37,13 @@ examples-evosdk: appmake
 examples-xnx: appmake
 	$(MAKE) -C lib/tsconf/examples/xnx all
 
+emulator:
+	$(MAKE) -C zesarux $(if $(ROM),ROM="$(abspath $(ROM))") \
+	  $(if $(ZESARUX_BUILD_DIR),ZESARUX_BUILD_DIR="$(abspath $(ZESARUX_BUILD_DIR))") \
+	  $(if $(ZESARUX_EXTRA_PATCH_DIR),ZESARUX_EXTRA_PATCH_DIR="$(abspath $(ZESARUX_EXTRA_PATCH_DIR))") \
+	  $(if $(ZESARUX_OVERLAY_DIR),ZESARUX_OVERLAY_DIR="$(abspath $(ZESARUX_OVERLAY_DIR))") \
+	  $(if $(ZESARUX_UPSTREAM),ZESARUX_UPSTREAM="$(abspath $(ZESARUX_UPSTREAM))")
+
 test: export ZX_TEST_SUITE := $(strip $(SUITE))
 test: export ZX_TEST_CASE := $(strip $(CASE))
 test: export ZX_TEST_JOBS := $(strip $(JOBS))
@@ -59,8 +69,9 @@ clean:
 	$(MAKE) -C lib/tsconf/examples/xnx clean
 	$(MAKE) -C tools/appmake clean
 	$(MAKE) -C tools/mhmt clean
+	$(MAKE) -C zesarux clean $(if $(ZESARUX_BUILD_DIR),ZESARUX_BUILD_DIR="$(abspath $(ZESARUX_BUILD_DIR))")
 	rm -rf -- build tools/assets/build
-	find . \( -name .git -o -name build -o -name out \) -prune -o \
+	find . \( -name .git -o -path ./upstream -o -name build -o -name out \) -prune -o \
 	  -type d -name __pycache__ -prune -exec rm -rf -- {} +
 
 include tools/appmake/appmake.mk

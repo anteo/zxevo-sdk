@@ -1,0 +1,37 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Wed, 18 Nov 2026 17:00:00 +0700
+Subject: [PATCH] fix(zxevo): keep the NMI port outside the SMUC decoder
+
+Exclude xxBEh from the SMUC mirrors on BaseConf and TSConf so the NMI
+controller can receive port accesses. The xxB6h mirror remains available.
+
+---
+diff --git a/src/storage/ide.c b/src/storage/ide.c
+--- a/src/storage/ide.c
++++ b/src/storage/ide.c
+@@ -1414,7 +1414,11 @@ int ide_smuc_read(z80_int port,z80_byte *value)
+     if (MACHINE_IS_SCORPION_GMX) {
+         if (scorpion_gmx_is_pentagon_scheme()) return 0;
+     }
+-    else if (!(MACHINE_IS_BASECONF || MACHINE_IS_TSCONF)) return 0;
++    else if (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) {
++        /* Reserve xxBEh for NMI. The SMUC decoder also accepts xxB6h. */
++        if ((port & 0xff)==0xbe) return 0;
++    }
++    else return 0;
+ 
+     if ((port & 0x18a3)!=(0xfffe & 0x18a3)) return 0;
+     if ((port & 0xa044)==(0x5fba & 0xa044)) {
+@@ -1469,7 +1473,11 @@ int ide_smuc_write(z80_int port,z80_byte value)
+     if (MACHINE_IS_SCORPION_GMX) {
+         if (scorpion_gmx_is_pentagon_scheme()) return 0;
+     }
+-    else if (!(MACHINE_IS_BASECONF || MACHINE_IS_TSCONF)) return 0;
++    else if (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) {
++        /* Reserve xxBEh for NMI. The SMUC decoder also accepts xxB6h. */
++        if ((port & 0xff)==0xbe) return 0;
++    }
++    else return 0;
+ 
+     if ((port & 0x18a3)!=(0xfffe & 0x18a3)) return 0;
+     if ((port & 0xa044)==(0xffba & 0xa044)) {

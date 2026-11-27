@@ -1,0 +1,142 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sun, 22 Nov 2026 20:10:36 +0700
+Subject: [PATCH] feat(zxevo): persist NVRAM in the emulator configuration
+
+Restore the shared TSConf and BaseConf NVRAM before the machine boots.
+Use the same option for config saves and command-line overrides so a
+test can seed specific cells without loading a user profile or snapshot.
+Store only nonzero rows when rewriting the configuration.
+
+---
+diff --git a/src/machines/zxevo.c b/src/machines/zxevo.c
+index f25d0ce..e08ced3 100644
+--- a/src/machines/zxevo.c
++++ b/src/machines/zxevo.c
+@@ -21,6 +21,8 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <ctype.h>
++#include <string.h>
+ 
+ #include "cpu.h"
+ #include "zxevo.h"
+@@ -32,6 +34,7 @@
+ #include "ula.h"
+ #include "operaciones.h"
+ #include "ide.h"
++#include "utils.h"
+ 
+ 
+ //Comun zxevo, tanto para baseconf como tsconf
+@@ -50,6 +53,24 @@ void zxevo_reset_nvram(void)
+     for (i=0;i<ZXEVO_NVRAM_ELEMENTS;i++) zxevo_nvram[i]=0;
+ }
+ 
++int zxevo_set_nvram_hex(const char *address, const char *bytes)
++{
++    const char *digits="0123456789abcdefABCDEF";
++    if (strlen(address)!=2 || strspn(address,digits)!=2) return 0;
++
++    unsigned int offset=strtoul(address,NULL,16);
++    size_t length=strlen(bytes);
++    if (!length || length%2 || length/2>ZXEVO_NVRAM_ELEMENTS-offset ||
++        strspn(bytes,digits)!=length) return 0;
++
++    for (size_t i=0;i<length;i+=2) {
++        z80_byte high=util_hex_nibble_to_byte(toupper((unsigned char)bytes[i]));
++        z80_byte low=util_hex_nibble_to_byte(toupper((unsigned char)bytes[i+1]));
++        zxevo_nvram[offset++]=(high<<4) | low;
++    }
++    return 1;
++}
++
+ /* Presencia de la interfaz Nemo IDE de ZX Evolution. */
+ z80_bit zxevo_nemo_ide_enabled={0};
+ 
+diff --git a/src/machines/zxevo.h b/src/machines/zxevo.h
+index 4ebad2f..e1585ff 100644
+--- a/src/machines/zxevo.h
++++ b/src/machines/zxevo.h
+@@ -33,6 +33,7 @@ extern z80_byte zxevo_last_port_dff7;
+ #define ZXEVO_NVRAM_ELEMENTS 256
+ 
+ extern void zxevo_reset_nvram(void);
++extern int zxevo_set_nvram_hex(const char *address, const char *bytes);
+ 
+ extern z80_bit zxevo_nemo_ide_enabled;
+ extern int zxevo_nemo_ide_port(z80_byte puerto_l);
+diff --git a/src/start.c b/src/start.c
+index bcb36ab..511dc44 100644
+--- a/src/start.c
++++ b/src/start.c
+@@ -983,6 +983,7 @@ printf (
+         "\n"
+ 
+         "--saveconf-on-exit         Always save configuration when exiting emulator\n"
++        "--zxevo-nvram HH HEXBYTES   Set BaseConf/TSConf NVRAM bytes at hex offset HH (e.g. 20 A1B2). Repeatable\n"
+         "--no-saveconf-on-exit      Do not save configuration when exiting emulator (default setting). Can be used to override a previous --saveconf-on-exit for example\n"
+         "--load-additional-config   Loads an additional .zesaruxdevrc config file (if exists) after loading .zesaruxrc and parsing command line settings\n"
+ 
+@@ -2945,6 +2946,16 @@ int parse_cmdline_options(int desde_commandline)
+                 save_configuration_file_on_exit.v=1;
+             }
+ 
++            else if (!strcmp(argv[puntero_parametro],"--zxevo-nvram")) {
++                siguiente_parametro_argumento();
++                const char *address=argv[puntero_parametro];
++                siguiente_parametro_argumento();
++                if (!zxevo_set_nvram_hex(address,argv[puntero_parametro])) {
++                    debug_printf(VERBOSE_ERR,"--zxevo-nvram expects a two-digit hex offset and hex byte pairs within 00-FF");
++                    if (desde_commandline) return 1;
++                }
++            }
++
+             else if (!strcmp(argv[puntero_parametro],"--no-saveconf-on-exit")) {
+                 save_configuration_file_on_exit.v=0;
+             }
+@@ -9048,6 +9059,7 @@ Also, you should keep the following copyright message, beginning with "Begin Cop
+ 
+ 
+ 
++    zxevo_reset_nvram();
+     if (noconfigfile==0) {
+         //parametros del archivo de configuracion
+         zesarux_first_start=configfile_parse();
+@@ -9185,8 +9197,6 @@ Also, you should keep the following copyright message, beginning with "Begin Cop
+ 
+     inicializa_tabla_contend_speed_higher();
+ 
+-    zxevo_reset_nvram();
+-
+     get_os_release();
+ 
+     get_machine_hardware_name();
+diff --git a/src/utils.c b/src/utils.c
+index 6fb3ac7..0a98884 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -114,6 +114,7 @@
+ #include "esxdos_handler.h"
+ #include "tbblue.h"
+ #include "tsconf.h"
++#include "zxevo.h"
+ #include "kartusho.h"
+ #include "ifrom.h"
+ #include "mdvtool.h"
+@@ -5570,6 +5571,15 @@ int util_write_configfile(void)
+ 
+     if (tsconf_vdac_with_pwm.v)                     ADD_STRING_CONFIG,"--tsconf-vdac-with-pwm");
+ 
++    // Cold boot starts at zero, so only rows containing data need a setting.
++    static const z80_byte empty_row[16]={0};
++    for (size_t offset=0;offset<ZXEVO_NVRAM_ELEMENTS;offset+=sizeof(empty_row)) {
++        if (memcmp(zxevo_nvram+offset,empty_row,sizeof(empty_row))==0) continue;
++        char hex[2*sizeof(empty_row)+1];
++        util_binary_to_hex(zxevo_nvram+offset,hex,sizeof(empty_row),sizeof(empty_row));
++        ADD_STRING_CONFIG,"--zxevo-nvram %02X %s",(unsigned int)offset,hex);
++    }
++
+     if (snow_effect_enabled.v)                      ADD_STRING_CONFIG,"--snoweffect");
+     if (audiovolume!=100)                           ADD_STRING_CONFIG,"--audiovolume %d",audiovolume);
+     if (audio_nagra_effect.v)                       ADD_STRING_CONFIG,"--nagraaudio");

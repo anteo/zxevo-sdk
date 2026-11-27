@@ -1,0 +1,33 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Fri, 20 Nov 2026 18:37:13 +0700
+Subject: [PATCH] fix(audio): flush raw capture blocks after writing
+
+The test runner splits an active raw audio capture by its visible file
+offset. Standard I/O buffering can leave samples from one step hidden
+until a later step. Flush each raw block after writing it so readers can
+see all complete blocks while recording is in progress.
+
+---
+diff --git a/src/audio/audio.c b/src/audio/audio.c
+--- a/src/audio/audio.c
++++ b/src/audio/audio.c
+@@ -1278,14 +1278,11 @@
+ 		//escritos=fwrite(aofile_buffer, 1, AUDIO_BUFFER_SIZE*2, ptr_aofile);  //*2 porque es stereo
+ 		escritos=fwrite(aofile_buffer, 1, AUDIO_BUFFER_SIZE, ptr_aofile);  //es mono el rwa
+ 
+-		//if (escritos!=AUDIO_BUFFER_SIZE*2) {
+-		if (escritos!=AUDIO_BUFFER_SIZE) {
+-                	        debug_printf(VERBOSE_ERR,"Unable to write to aofile %s",aofilename);
+-	                        aofilename=NULL;
+-        	                aofile_inserted.v=0;
+-
+-
+-			//debug_printf(VERBOSE_ERR,"Bytes escritos: %d\n",escritos);
++		// Hacer visible cada bloque a los lectores durante la grabación.
++		if (escritos!=AUDIO_BUFFER_SIZE || fflush(ptr_aofile)==EOF) {
++			debug_printf(VERBOSE_ERR,"Unable to write to aofile %s",aofilename);
++			close_aofile();
++			aofilename=NULL;
+ 		}
+ 	}
+ 

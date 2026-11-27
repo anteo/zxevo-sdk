@@ -17,12 +17,17 @@ import struct
 import subprocess
 import time
 import zlib
+from pathlib import Path
 
 
 def default_emulator():
-    """Find the ZEsarUX executable in PATH or common install locations."""
+    """Find the SDK build or an installed ZEsarUX executable."""
     if os.environ.get("ZESARUX"):
         return os.environ["ZESARUX"]
+    sdk = Path(__file__).resolve().parents[2]
+    local = sdk / "zesarux/build/source/src/zesarux"
+    if local.is_file() and os.access(local, os.X_OK):
+        return str(local)
     on_path = shutil.which("zesarux")
     if on_path:
         return on_path

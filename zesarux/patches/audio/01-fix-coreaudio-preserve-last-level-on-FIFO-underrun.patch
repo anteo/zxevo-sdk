@@ -1,0 +1,192 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 31 Oct 2026 20:04:25 +0700
+Subject: [PATCH] fix(coreaudio): preserve last level on FIFO underrun
+
+CoreAudio reads the FIFO while the emulator writes it. Synchronize the ring
+positions across threads and repeat the last stereo level when the FIFO runs
+empty, instead of exposing stale data or an abrupt jump to zero.
+
+---
+ src/audio/audiocoreaudio.c | 121 ++++++++++++++++---------------------
+ 1 file changed, 52 insertions(+), 69 deletions(-)
+
+diff --git a/src/audio/audiocoreaudio.c b/src/audio/audiocoreaudio.c
+index afd694d..1b8ce28 100644
+--- a/src/audio/audiocoreaudio.c
++++ b/src/audio/audiocoreaudio.c
+@@ -65,6 +65,12 @@ void audiocoreaudio_fifo_write(char *origen,int longitud);
+ 
+ //Tamanyo de fifo. Es un multiplicador de AUDIO_BUFFER_SIZE
+ int audiocoreaudio_fifo_buffer_size_multiplier=2;
++static int coreaudio_fifo_reset_requested;
++static int coreaudio_last_left;
++static int coreaudio_last_right;
++static int audiocoreaudio_fifo_write_position;
++static int audiocoreaudio_fifo_read_position;
++
+ int audiocoreaudio_return_fifo_buffer_size(void)
+ {
+   return AUDIO_BUFFER_SIZE*audiocoreaudio_fifo_buffer_size_multiplier*2; //*2 porque es stereo
+@@ -148,6 +154,10 @@ int audiocoreaudio_init(void)
+ 	debug_printf (VERBOSE_INFO,"Init CoreAudio Driver, %d Hz",FRECUENCIA_SONIDO);
+ 
+ 	buffer_actual=audio_buffer_one;
++	__atomic_store_n(&audiocoreaudio_fifo_write_position,0,__ATOMIC_RELAXED);
++	__atomic_store_n(&audiocoreaudio_fifo_read_position,0,__ATOMIC_RELAXED);
++	__atomic_store_n(&coreaudio_fifo_reset_requested,0,__ATOMIC_RELAXED);
++	coreaudio_last_left=coreaudio_last_right=0;
+ 
+ int *freqptr;
+ int freqqqq;
+@@ -493,13 +503,9 @@ void audiocoreaudio_end(void)
+ 
+ }
+ 
+-int audiocoreaudio_fifo_write_position=0;
+-int audiocoreaudio_fifo_read_position=0;
+-
+ void audiocoreaudio_empty_buffer(void)
+ {
+-  debug_printf(VERBOSE_DEBUG,"Emptying audio buffer");
+-  audiocoreaudio_fifo_write_position=0;
++  __atomic_store_n(&coreaudio_fifo_reset_requested,1,__ATOMIC_RELEASE);
+ }
+ 
+ 
+@@ -507,13 +513,11 @@ void audiocoreaudio_empty_buffer(void)
+ //retorna numero de elementos en la fifo
+ int audiocoreaudio_fifo_return_size(void)
+ {
+-	//si write es mayor o igual (caso normal)
+-	if (audiocoreaudio_fifo_write_position>=audiocoreaudio_fifo_read_position) return audiocoreaudio_fifo_write_position-audiocoreaudio_fifo_read_position;
+-
+-	else {
+-		//write es menor, cosa que quiere decir que hemos dado la vuelta
+-		return (audiocoreaudio_return_fifo_buffer_size()-audiocoreaudio_fifo_read_position)+audiocoreaudio_fifo_write_position;
+-	}
++	int r=__atomic_load_n(&audiocoreaudio_fifo_read_position,__ATOMIC_ACQUIRE);
++	int w=__atomic_load_n(&audiocoreaudio_fifo_write_position,__ATOMIC_ACQUIRE);
++	int size=w-r;
++	if (size<0) size+=audiocoreaudio_return_fifo_buffer_size();
++	return size;
+ }
+ 
+ void audiocoreaudio_get_buffer_info (int *buffer_size,int *current_size)
+@@ -534,24 +538,21 @@ int audiocoreaudio_fifo_next_index(int v)
+ //escribir datos en la fifo
+ void audiocoreaudio_fifo_write(char *origen,int longitud)
+ {
+-	for (;longitud>0;longitud--) {
+-
+-		//ver si la escritura alcanza la lectura. en ese caso, error
+-		if (audiocoreaudio_fifo_next_index(audiocoreaudio_fifo_write_position)==audiocoreaudio_fifo_read_position) {
+-			debug_printf (VERBOSE_DEBUG,"audiocoreaudio FIFO full");
+-      //Si se llena fifo, resetearla a 0 para corregir latencia
+-      if (audio_noreset_audiobuffer_full.v==0) audiocoreaudio_empty_buffer();
+-			return;
+-		}
+-
+-    //Canal izquierdo
+-		audiocoreaudio_fifo_buffer[audiocoreaudio_fifo_write_position]=*origen++;
+-		audiocoreaudio_fifo_write_position=audiocoreaudio_fifo_next_index(audiocoreaudio_fifo_write_position);
+-
+-    //Canal derecho
+-		audiocoreaudio_fifo_buffer[audiocoreaudio_fifo_write_position]=*origen++;
+-		audiocoreaudio_fifo_write_position=audiocoreaudio_fifo_next_index(audiocoreaudio_fifo_write_position);
++	int capacity=audiocoreaudio_return_fifo_buffer_size();
++	int w=__atomic_load_n(&audiocoreaudio_fifo_write_position,__ATOMIC_RELAXED);
++	int r=__atomic_load_n(&audiocoreaudio_fifo_read_position,__ATOMIC_ACQUIRE);
++	int used=w-r;
++	if (used<0) used+=capacity;
++	int bytes=longitud*2;
++	if (bytes>capacity-2-used) {
++		if (audio_noreset_audiobuffer_full.v==0) audiocoreaudio_empty_buffer();
++		return;
+ 	}
++	for (int i=0;i<bytes;i++) {
++		audiocoreaudio_fifo_buffer[w]=origen[i];
++		w=audiocoreaudio_fifo_next_index(w);
++	}
++	__atomic_store_n(&audiocoreaudio_fifo_write_position,w,__ATOMIC_RELEASE);
+ }
+ 
+ 
+@@ -559,32 +560,27 @@ void audiocoreaudio_fifo_write(char *origen,int longitud)
+ //void audiocoreaudio_fifo_read(char *destino,int longitud)
+ void audiocoreaudio_fifo_read(uint8_t *destino,int longitud)
+ {
+-	for (;longitud>0;longitud--) {
+-
+-
+-
+-                if (audiocoreaudio_fifo_return_size()==0) {
+-                        debug_printf (VERBOSE_INFO,"audiocoreaudio FIFO empty");
+-                        return;
+-                }
+-
+-
+-                //ver si la lectura alcanza la escritura. en ese caso, error
+-                //if (audiocoreaudio_fifo_next_index(audiocoreaudio_fifo_read_position)==audiocoreaudio_fifo_write_position) {
+-                //        debug_printf (VERBOSE_DEBUG,"FIFO vacia");
+-                //        return;
+-                //}
+-
+-                //Canal izquierdo
+-
+-                //La lectura nos viene del driver coreaudio, nos pregunta por bytes, independientemente del canal izquierdo o derecho
+-                *destino++=audiocoreaudio_fifo_buffer[audiocoreaudio_fifo_read_position];
+-                audiocoreaudio_fifo_read_position=audiocoreaudio_fifo_next_index(audiocoreaudio_fifo_read_position);
+-
+-                //Canal derecho
+-                //*destino++=audiocoreaudio_fifo_buffer[audiocoreaudio_fifo_read_position];
+-                //audiocoreaudio_fifo_read_position=audiocoreaudio_fifo_next_index(audiocoreaudio_fifo_read_position);
+-        }
++	int capacity=audiocoreaudio_return_fifo_buffer_size();
++	int r=__atomic_load_n(&audiocoreaudio_fifo_read_position,__ATOMIC_RELAXED);
++	int w=__atomic_load_n(&audiocoreaudio_fifo_write_position,__ATOMIC_ACQUIRE);
++	if (__atomic_exchange_n(&coreaudio_fifo_reset_requested,0,__ATOMIC_ACQUIRE)) {
++		r=w;
++		__atomic_store_n(&audiocoreaudio_fifo_read_position,r,__ATOMIC_RELEASE);
++	}
++	int available=w-r;
++	if (available<0) available+=capacity;
++	int bytes=longitud<available ? longitud : available;
++	bytes-=bytes%2;
++	for (int i=0;i<bytes;i++) {
++		destino[i]=audiocoreaudio_fifo_buffer[r];
++		if (i%2==0) coreaudio_last_left=(int8_t)destino[i];
++		else coreaudio_last_right=(int8_t)destino[i];
++		r=audiocoreaudio_fifo_next_index(r);
++	}
++	__atomic_store_n(&audiocoreaudio_fifo_read_position,r,__ATOMIC_RELEASE);
++	for (int i=bytes;i<longitud;i++) {
++		destino[i]=(uint8_t)(int8_t)(i%2==0 ? coreaudio_last_left : coreaudio_last_right);
++	}
+ }
+ 
+ 
+@@ -620,20 +616,7 @@ OSStatus coreaudiowrite( void *inRefCon GCC_UNUSED,
+ 	else {
+ 
+ 		//printf ("coreaudiowrite. longitud pedida: %d AUDIO_BUFFER_SIZE: %d\n",len,AUDIO_BUFFER_SIZE);
+-		if (len>audiocoreaudio_fifo_return_size()) {
+-			//debug_printf (VERBOSE_DEBUG,"FIFO is not big enough. Length asked: %d audiocoreaudio_fifo_return_size: %d",len,audiocoreaudio_fifo_return_size() );
+-			//esto puede pasar con el detector de silencio
+-
+-			//retornar solo lo que tenemos
+-			//audiocoreaudio_fifo_read(out,audiocoreaudio_fifo_return_size() );
+-
+-			return noErr;
+-		}
+-
+-
+-		else {
+-			audiocoreaudio_fifo_read(out,len);
+-		}
++		audiocoreaudio_fifo_read(out,len);
+ 
+ 	}
+ 
+-- 
+2.56.0
+

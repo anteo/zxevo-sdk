@@ -1,0 +1,47 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 15:00:00 +0700
+Subject: [PATCH] feat(zrcp): control MMC insertion and ejection
+
+Expose the existing MMC insert/eject lifecycle through the remote protocol.
+Integration tests can remove and reinsert real images while the CPU is paused
+and verify firmware recovery without replacing ROM code or device registers.
+
+---
+diff --git a/src/zrcp/remote.c b/src/zrcp/remote.c
+--- a/src/zrcp/remote.c
++++ b/src/zrcp/remote.c
+@@ -773,6 +773,8 @@
+     {"load-binary",NULL,"file addr len","Load binary file \"file\" at address \"addr\" with length \"len\", on the current memory zone. Set len to 0 to load the entire file in memory"},
+     {"load-source-code","|lsc","file","Load source file to be used on disassemble opcode functions"},
+     {"ls",NULL,NULL,"Minimal command list"},
++    {"mmc-enable",NULL,"0|1","Insert the configured MMC image in slot 0 or 1"},
++    {"mmc-disable",NULL,"0|1","Eject the MMC image from slot 0 or 1"},
+     {"mmc-reload",NULL,NULL,"Reload MMC file"},
+     {"noop",NULL,NULL,"This command does nothing"},
+     {"open-menu",NULL,NULL,"Triggers action to open menu (like F5)"},
+@@ -5031,6 +5033,25 @@
+             remote_simple_help(misocket);
+     }
+ 
++    else if (!strcmp(comando_sin_parametros,"mmc-enable") ||
++             !strcmp(comando_sin_parametros,"mmc-disable")) {
++        if (strcmp(parametros,"0") && strcmp(parametros,"1")) {
++            escribir_socket(misocket,"ERROR. Expected MMC slot 0 or 1");
++        }
++        else {
++            int slot=parametros[0]-'0';
++            if (!strcmp(comando_sin_parametros,"mmc-enable")) {
++                mmc_enable(slot);
++                escribir_socket(misocket,mmc_enabled[slot].v ?
++                                "OK. MMC inserted" : "ERROR. Could not insert MMC");
++            }
++            else {
++                mmc_disable(slot);
++                escribir_socket(misocket,"OK. MMC ejected");
++            }
++        }
++    }
++
+     //TODO: esto es solo para la primera tarjeta
+     else if (!strcmp(comando_sin_parametros,"mmc-reload")) {
+         if (mmc_enabled[0].v==0) {

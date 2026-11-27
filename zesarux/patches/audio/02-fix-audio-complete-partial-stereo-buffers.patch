@@ -1,0 +1,50 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 31 Oct 2026 20:30:43 +0700
+Subject: [PATCH] fix(audio): complete partial stereo buffers
+
+The wall-clock timer can submit an audio block before the emulator has
+generated every sample. Fill its remaining stereo pairs with the last valid
+pair so the output does not contain stale bytes or mismatched channels.
+
+---
+ src/audio/audio.c | 24 ++++++++----------------
+ 1 file changed, 8 insertions(+), 16 deletions(-)
+
+diff --git a/src/audio/audio.c b/src/audio/audio.c
+index 6a221e1..fa84b8a 100644
+--- a/src/audio/audio.c
++++ b/src/audio/audio.c
+@@ -1379,22 +1379,14 @@ void envio_audio(void)
+ 		//pero... como aqui se llama cada 5 frames de pantalla, esto o bien esta lleno el buffer,
+ 		//o al buffer le faltan 5 bytes para llenar minimo.
+ 
+-		//printf ("audio_buffer_indice: %d AUDIO_BUFFER_SIZE: %d\n",audio_buffer_indice,AUDIO_BUFFER_SIZE);
+-		if (audio_buffer_indice<AUDIO_BUFFER_SIZE-1 && audio_buffer_indice>0) {
+-			//int debug_diferencia=AUDIO_BUFFER_SIZE-1-audio_buffer_indice;
+-			//printf ("entrando %d dif: %d\n",temp_borrarrrr++,debug_diferencia);
+-			//Aqui audio_buffer_indice siempre deberia entrar >0. pero comprobamos por si acaso
+-			char valor_enviar;
+-			valor_enviar=audio_buffer[audio_buffer_indice-1];
+-
+-			//printf ("valor a enviar: %d\n",valor_enviar);
+-
+-	                while (audio_buffer_indice<AUDIO_BUFFER_SIZE) {
+-        	        	audio_buffer[audio_buffer_indice++]=valor_enviar;
+-				//printf ("en envio_audio. audio_buffer_indice: %d\n",audio_buffer_indice);
+-	                }
+-
+-			//printf ("saliendo %d dif: %d\n",temp_borrarrrr++,debug_diferencia);
++		// Completar el bloque con la última pareja estéreo disponible.
++		if (audio_buffer_indice>0 && audio_buffer_indice<AUDIO_BUFFER_SIZE*2-2) {
++			char izquierdo=audio_buffer[audio_buffer_indice-2];
++			char derecho=audio_buffer[audio_buffer_indice-1];
++			while (audio_buffer_indice<AUDIO_BUFFER_SIZE*2) {
++				audio_buffer[audio_buffer_indice++]=izquierdo;
++				audio_buffer[audio_buffer_indice++]=derecho;
++			}
+ 		}
+ 
+ 		//conmutar audio buffer
+-- 
+2.56.0
+

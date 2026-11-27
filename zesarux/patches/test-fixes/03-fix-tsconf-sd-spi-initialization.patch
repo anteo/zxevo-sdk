@@ -1,0 +1,127 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Wed, 11 Nov 2026 05:08:49 +0700
+Subject: [PATCH] fix(tsconf): complete SD SPI initialization responses
+
+TSConf software expects the SD card to answer CMD55, ACMD41, and CMD16
+with the proper R1 idle and ready states. Track this initialization sequence
+without changing the existing MMC data path for other machines.
+
+---
+diff --git a/src/storage/mmc.c b/src/storage/mmc.c
+--- a/src/storage/mmc.c
++++ b/src/storage/mmc.c
+@@ -167,6 +167,18 @@
+ //2 = ident
+ // ....
+ z80_byte mmc_r1=0;
++
++/* Estado de inicialización de SD1 en TSConf. mmc_r1 se conserva como
++   estado interno del emulador, que usa el bit 0 para entregar respuestas. */
++static z80_byte tsconf_mmc_idle=1;
++static z80_byte tsconf_mmc_app_pending;
++static z80_byte tsconf_mmc_app_current;
++static z80_byte tsconf_mmc_reply=0xff;
++
++static int tsconf_mmc_init_command(z80_byte command)
++{
++    return command==0x77 || command==0x69 || command==0x50;
++}
+ 
+ 
+ 
+@@ -633,6 +645,10 @@
+         mmc_index_command=0;
+         mmc_r1=0;
+ 
++        tsconf_mmc_idle=1;
++        tsconf_mmc_app_pending=0;
++        tsconf_mmc_app_current=0;
++        tsconf_mmc_reply=0xff;
+ }
+ 
+ 
+@@ -866,6 +882,14 @@
+ 
+ 	z80_byte value;
+ 
++    if (MACHINE_IS_TSCONF && tsconf_mmc_init_command(mmc_last_command)) {
++        /* R1 solo está disponible después de recibir los seis bytes. */
++        if (mmc_index_command!=0) return 0xff;
++        value=tsconf_mmc_reply;
++        tsconf_mmc_reply=0xff;
++        return value;
++    }
++
+ 	//Si no esta en idle
+ 	if ((mmc_r1&1)==0) {
+ 		return mmc_r1;
+@@ -1251,6 +1275,35 @@
+     if (mmc_sdhc_addressing[mmc_card_selected].v) resultado *=512;
+ 
+ 	return resultado;
++}
++
++
++/* Completa los comandos de inicialización de SD1 en TSConf.
++   Los cuatro bytes del argumento llegan antes del CRC. */
++static void tsconf_mmc_write_init_byte(z80_byte value)
++{
++    if (mmc_index_command<5) {
++        mmc_parameters_sent[mmc_index_command-1]=value;
++        mmc_index_command++;
++        return;
++    }
++
++    tsconf_mmc_reply=tsconf_mmc_idle;
++    switch (mmc_last_command) {
++        case 0x77: /* CMD55: prefijo de un comando de aplicación. */
++            tsconf_mmc_app_pending=1;
++            break;
++        case 0x69: /* ACMD41: la tarjeta queda lista en el primer intento. */
++            if (tsconf_mmc_app_current) tsconf_mmc_idle=tsconf_mmc_reply=0;
++            else tsconf_mmc_reply|=4;
++            break;
++        case 0x50: /* CMD16: el tamaño de bloque fijo es 512 bytes. */
++            if (mmc_parameters_sent[0]!=0 || mmc_parameters_sent[1]!=0 ||
++                mmc_parameters_sent[2]!=2 || mmc_parameters_sent[3]!=0)
++                tsconf_mmc_reply|=0x40;
++            break;
++    }
++    mmc_index_command=0;
+ }
+ 
+ 
+@@ -1281,6 +1334,13 @@
+ 		mmc_last_command=value;
+ 		mmc_index_command++;
+ 
++        if (MACHINE_IS_TSCONF) {
++            /* El prefijo CMD55 sobrevive a CS alto hasta el próximo comando. */
++            tsconf_mmc_app_current=tsconf_mmc_app_pending;
++            tsconf_mmc_app_pending=0;
++            tsconf_mmc_reply=0xff;
++        }
++
+         //Solo mostraremos actividad en footer/icono SD en caso de nuevo comando y no de escritura de parametros
+         //de comando. Esto es suficiente y ademas facilita filtrar los comandos de baseconf aqui abajo
+ 
+@@ -1293,6 +1353,11 @@
+ 	}
+ 
+ 	else {
++        if (MACHINE_IS_TSCONF && tsconf_mmc_init_command(mmc_last_command)) {
++            tsconf_mmc_write_init_byte(value);
++            return;
++        }
++
+         //printf("MMC Se recibe parametro de comando %02XH\n",mmc_last_command);
+ 		//Se recibe parametro de comando
+ 		//Actuar segun mmc_last_command
+@@ -1303,6 +1368,7 @@
+ 				if (mmc_index_command==5) {
+ 					//Estado idle
+ 					mmc_r1=1;
++					if (MACHINE_IS_TSCONF) tsconf_mmc_idle=1;
+ 					//Reseteamos indice
+ 					mmc_index_command=0;
+ 				}

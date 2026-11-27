@@ -1,0 +1,437 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Fri, 6 Nov 2026 17:55:09 +0700
+Subject: [PATCH] feat(baseconf): emulate UART over the host bridge
+
+Expose BaseConf UART registers through the existing host character bridge.
+Buffer RX and TX without blocking the emulated CPU, flush pending output
+once per frame, and expose the bridge through startup and configuration.
+
+---
+ src/chardevice.c          |   9 +++-
+ src/chardevice.h          |   1 +
+ src/configure             |   4 +-
+ src/cores/core_spectrum.c |   1 +
+ src/machines/baseconf.c   | 109 ++++++++++++++++++++++++++++++++++++++
+ src/machines/baseconf.h   |   3 ++
+ src/menu/menu_items.c     |   4 +-
+ src/operaciones.c         |   7 +++
+ src/start.c               |  19 +++++++
+ src/uartbridge.c          |  57 ++++++++------------
+ src/uartbridge.h          |   3 ++
+ 11 files changed, 176 insertions(+), 41 deletions(-)
+
+diff --git a/src/chardevice.c b/src/chardevice.c
+index 4e5e826..488a3c8 100644
+--- a/src/chardevice.c
++++ b/src/chardevice.c
+@@ -165,6 +165,13 @@ int chardevice_status(int handler)
+ 
+ }
+ 
++void chardevice_discard_input(int handler GCC_UNUSED)
++{
++#if !defined(MINGW) && !defined(OTHER_UNIX)
++    tcflush(handler, TCIFLUSH);
++#endif
++}
++
+ int chardevice_getspeed_enum_int(enum chardevice_speed velocidad)
+ {
+     switch (velocidad) {
+@@ -269,4 +276,4 @@ struct termios options;
+     #endif
+ #endif
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/src/chardevice.h b/src/chardevice.h
+index 973fc00..0b4b6e1 100644
+--- a/src/chardevice.h
++++ b/src/chardevice.h
+@@ -38,6 +38,7 @@ extern int chardevice_read(int handler,z80_byte *buffer);
+ extern int chardevice_write(int handler,z80_byte valor_escribir);
+ extern int chardevice_close(int handler);
+ extern int chardevice_status(int handler);
++extern void chardevice_discard_input(int handler);
+ 
+ 
+ enum chardevice_speed {
+diff --git a/src/configure b/src/configure
+index 15c6b7f..d27a1fc 100755
+--- a/src/configure
++++ b/src/configure
+@@ -1383,7 +1383,7 @@ operaciones.o: operaciones.c cpu.h operaciones.h debug.h audio/audio.h storage/t
+ cpu.o: cpu.c cpu.h start.h video/scrnull.h video/scrstdout.h video/scrsimpletext.h operaciones.h debug.h compileoptions.h storage/tape.h storage/tape_tap.h storage/tape_tzx.h audio/audio.h video/screen.h soundchips/ay38912.h machines/chloe.h machines/prism.h machines/tbblue.h mem128.h machines/timex.h video/scrcurses.h video/scraa.h video/scrxwindows.h video/scrsdl.h video/scrfbdev.h audio/audiodsp.h audio/audioonebitspeaker.h audio/audiosdl.h audio/audionull.h audio/audioalsa.h audio/audiopulse.h machines/zx8081.h snap/snap.h zxvision/zxvision.h cores/core_spectrum.h cores/core_zx8081.h cores/core_z88.h storage/tape_smp.h contend.h utils.h utils_text_adventure.h ula.h printers.h joystick.h realjoystick.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h chardetect.h textspeech.h storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/cpc.h machines/sam.h storage/if1.h storage/atomlite.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h storage/superupgrade.h machines/ql.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h machines/chrome.h machines/zxevo.h machines/tsconf.h machines/baseconf.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h storage/betadisk.h storage/pd765.h settings.h datagear.h network.h stats.h storage/hilow_datadrive.h machines/msx.h machines/svi.h machines/coleco.h soundchips/sn76489an.h machines/sg1000.h machines/sms.h machines/ql_qdos_handler.h machines/ql_i8049.h snap/snap_ram.h menu/menu_items.h charset.h menu/menu_filesel.h menu/menu_debug_cpu.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h storage/lec.h audio/audio_ayplayer.h storage/zxmmcplus.h tv.h soundchips/qsound.h cores/core_ql.h machines/scorpion.h machines/atmturbo.h machines/didaktikgama.h
+ 	\$(CC) \$(CFLAGS) -c cpu.c
+ 
+-start.o: start.c start.h cpu.h video/scrnull.h video/scrstdout.h video/scrsimpletext.h operaciones.h debug.h compileoptions.h storage/tape.h storage/tape_tap.h storage/tape_tzx.h audio/audio.h video/screen.h video/screen_fx.h soundchips/ay38912.h machines/chloe.h machines/prism.h machines/tbblue.h mem128.h machines/timex.h video/scrcurses.h video/scraa.h video/scrxwindows.h video/scrsdl.h video/scrfbdev.h audio/audiodsp.h audio/audioonebitspeaker.h audio/audiosdl.h audio/audionull.h audio/audioalsa.h audio/audiopulse.h machines/zx8081.h snap/snap.h snap/snap_zsf.h zxvision/zxvision.h zxvision/zxvision_topbar.h cores/core_spectrum.h cores/core_zx8081.h cores/core_z88.h storage/tape_smp.h contend.h utils.h utils_text_adventure.h ula.h printers.h joystick.h realjoystick.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h chardetect.h textspeech.h storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/cpc.h machines/sam.h storage/if1.h storage/atomlite.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h storage/superupgrade.h machines/ql.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h machines/chrome.h machines/zxevo.h machines/tsconf.h machines/baseconf.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h storage/betadisk.h codetests.h storage/pd765.h settings.h datagear.h network.h stats.h storage/hilow_datadrive.h machines/msx.h machines/svi.h machines/coleco.h soundchips/sn76489an.h machines/sg1000.h machines/sms.h machines/ql_qdos_handler.h machines/ql_i8049.h snap/snap_ram.h menu/menu_items.h charset.h menu/menu_filesel.h menu/menu_debug_cpu.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h zrcp/zeng_online_client.h storage/microdrive.h storage/microdrive_raw.h debug_nested_functions.h audio/audio_ayplayer.h storage/zxmmcplus.h tv.h machines/ql_zx8302.h soundchips/qsound.h
++start.o: start.c start.h cpu.h video/scrnull.h video/scrstdout.h video/scrsimpletext.h operaciones.h debug.h compileoptions.h storage/tape.h storage/tape_tap.h storage/tape_tzx.h audio/audio.h video/screen.h video/screen_fx.h soundchips/ay38912.h machines/chloe.h machines/prism.h machines/tbblue.h mem128.h machines/timex.h video/scrcurses.h video/scraa.h video/scrxwindows.h video/scrsdl.h video/scrfbdev.h audio/audiodsp.h audio/audioonebitspeaker.h audio/audiosdl.h audio/audionull.h audio/audioalsa.h audio/audiopulse.h machines/zx8081.h snap/snap.h snap/snap_zsf.h zxvision/zxvision.h zxvision/zxvision_topbar.h cores/core_spectrum.h cores/core_zx8081.h cores/core_z88.h storage/tape_smp.h contend.h utils.h utils_text_adventure.h ula.h printers.h joystick.h realjoystick.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h chardetect.h textspeech.h storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/cpc.h machines/sam.h storage/if1.h storage/atomlite.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h storage/superupgrade.h machines/ql.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h machines/chrome.h machines/zxevo.h machines/tsconf.h machines/baseconf.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h storage/betadisk.h codetests.h storage/pd765.h settings.h datagear.h network.h stats.h storage/hilow_datadrive.h machines/msx.h machines/svi.h machines/coleco.h soundchips/sn76489an.h machines/sg1000.h machines/sms.h machines/ql_qdos_handler.h machines/ql_i8049.h snap/snap_ram.h menu/menu_items.h charset.h menu/menu_filesel.h menu/menu_debug_cpu.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h zrcp/zeng_online_client.h storage/microdrive.h storage/microdrive_raw.h debug_nested_functions.h audio/audio_ayplayer.h storage/zxmmcplus.h tv.h machines/ql_zx8302.h soundchips/qsound.h uartbridge.h chardevice.h
+ 	\$(CC) \$(CFLAGS) -c start.c
+ 
+ core_reduced_spectrum.o: cores/core_reduced_spectrum.c cores/core_reduced_spectrum.h cores/core_spectrum.h cpu.h debug.h storage/tape.h audio/audio.h video/screen.h soundchips/ay38912.h operaciones.h snap/snap.h timer.h zxvision/zxvision.h chardetect.h compileoptions.h contend.h ula.h utils.h realjoystick.h storage/divmmc.h storage/divide.h storage/diviface.h machines/timex.h machines/zxuno.h machines/prism.h snap/snap_rzx.h storage/superupgrade.h storage/pd765.h machines/zxevo.h machines/tsconf.h machines/baseconf.h settings.h snap/snap_zsf.h zrcp/zeng.h zrcp/zeng_online.h snap/snap_ram.h storage/pd765.h
+@@ -1535,7 +1535,7 @@ zxevo.o: machines/zxevo.c machines/zxevo.h cpu.h mem128.h debug.h contend.h zxvi
+ tsconf.o: machines/tsconf.c machines/tsconf.h cpu.h mem128.h debug.h contend.h zxvision/zxvision.h video/screen.h ula.h operaciones.h machines/zxevo.h chardevice.h uartbridge.h video_chips/video_chips_common.h storage/betadisk.h
+ 	\$(CC) \$(CFLAGS) -c machines/tsconf.c
+ 
+-baseconf.o: machines/baseconf.c machines/baseconf.h cpu.h mem128.h debug.h contend.h zxvision/zxvision.h video/screen.h ula.h operaciones.h machines/zxevo.h
++baseconf.o: machines/baseconf.c machines/baseconf.h cpu.h mem128.h debug.h contend.h zxvision/zxvision.h video/screen.h ula.h operaciones.h machines/zxevo.h uartbridge.h chardevice.h
+ 	\$(CC) \$(CFLAGS) -c machines/baseconf.c
+ 
+ scorpion.o: machines/scorpion.c machines/scorpion.h cpu.h mem128.h debug.h contend.h zxvision/zxvision.h video/screen.h ula.h operaciones.h start.h storage/betadisk.h storage/mmc.h storage/ide.h
+diff --git a/src/cores/core_spectrum.c b/src/cores/core_spectrum.c
+index b630d3c..dae77e3 100644
+--- a/src/cores/core_spectrum.c
++++ b/src/cores/core_spectrum.c
+@@ -367,6 +367,7 @@ void core_spectrum_fin_frame_pantalla(void)
+ 	//Siguiente frame de pantalla
+     timer_get_elapsed_core_frame_post();
+ 
++    if (MACHINE_IS_BASECONF) baseconf_uart_flush_tx();
+ 
+ 
+     if (MACHINE_IS_TBBLUE) {
+diff --git a/src/machines/baseconf.c b/src/machines/baseconf.c
+index 6af19a6..c0e96de 100644
+--- a/src/machines/baseconf.c
++++ b/src/machines/baseconf.c
+@@ -36,6 +36,7 @@
+ #include "mmc.h"
+ #include "betadisk.h"
+ #include "timer.h"
++#include "uartbridge.h"
+ 
+ 
+ // Estado de alimentación SD escrito por el firmware en el puerto 77h.
+@@ -204,6 +205,107 @@ static z80_byte baseconf_change_ram_page_7ffd(z80_byte value);
+ static z80_byte baseconf_change_rom_page_trdos(z80_byte value);
+ void baseconf_ps2_scan_keyboard(void);
+ 
++#define BASECONF_UART_FIFO_SIZE 16
++
++static struct {
++    z80_byte dll, dlm, ier, lcr, mcr, msr, scratch;
++    z80_byte rx[BASECONF_UART_FIFO_SIZE], tx[BASECONF_UART_FIFO_SIZE];
++    unsigned int rx_head, rx_count, tx_head, tx_count;
++} baseconf_uart = { .dll=1, .msr=0xa0, .scratch=0xff };
++
++// Entrega al puente los bytes pendientes, conservándolos si el destino no admite más.
++void baseconf_uart_flush_tx(void)
++{
++    if (!baseconf_uart.tx_count) return;
++    if (!uartbridge_available()) {
++        baseconf_uart.tx_count=0;
++        return;
++    }
++    while (baseconf_uart.tx_count && uartbridge_try_write(baseconf_uart.tx[baseconf_uart.tx_head])) {
++        baseconf_uart.tx_head=(baseconf_uart.tx_head+1)%BASECONF_UART_FIFO_SIZE;
++        baseconf_uart.tx_count--;
++    }
++}
++
++// Muestrea los bytes disponibles sin esperar a que llegue otro byte del host.
++static void baseconf_uart_fill_rx(void)
++{
++    while (baseconf_uart.rx_count<BASECONF_UART_FIFO_SIZE) {
++        unsigned int tail=(baseconf_uart.rx_head+baseconf_uart.rx_count)%BASECONF_UART_FIFO_SIZE;
++        if (!uartbridge_try_read(&baseconf_uart.rx[tail])) break;
++        baseconf_uart.rx_count++;
++    }
++}
++
++z80_byte baseconf_uart_read(z80_byte reg)
++{
++    switch (reg) {
++        case 0: {
++            if (baseconf_uart.lcr&0x80) return baseconf_uart.dll;
++            baseconf_uart_fill_rx();
++            if (!baseconf_uart.rx_count) return 0;
++            z80_byte value=baseconf_uart.rx[baseconf_uart.rx_head];
++            baseconf_uart.rx_head=(baseconf_uart.rx_head+1)%BASECONF_UART_FIFO_SIZE;
++            baseconf_uart.rx_count--;
++            return value;
++        }
++        case 1: return (baseconf_uart.lcr&0x80) ? baseconf_uart.dlm : baseconf_uart.ier;
++        case 2: return 1; // El AVR no genera interrupciones UART para la CPU Z80.
++        case 3: return baseconf_uart.lcr;
++        case 4: return baseconf_uart.mcr;
++        case 5: {
++            baseconf_uart_fill_rx();
++            baseconf_uart_flush_tx();
++            z80_byte status=baseconf_uart.tx_count ? 0 : 0x60;
++            if (baseconf_uart.rx_count) status|=1;
++            if (baseconf_uart.rx_count>=BASECONF_UART_FIFO_SIZE/2) status|=0x80;
++            return status;
++        }
++        case 6: {
++            // El puente indica CTS por disponibilidad del enlace, sin líneas físicas.
++            z80_byte status=uartbridge_available() ? 0xb0 : 0xa0;
++            z80_byte changed=((status^baseconf_uart.msr)&0x10) ? 1 : 0;
++            baseconf_uart.msr=status;
++            return status|changed;
++        }
++        case 7: return baseconf_uart.scratch;
++    }
++    return 0;
++}
++
++void baseconf_uart_write(z80_byte reg,z80_byte value)
++{
++    switch (reg) {
++        case 0:
++            if (baseconf_uart.lcr&0x80) baseconf_uart.dll=value;
++            else {
++                baseconf_uart_flush_tx();
++                if (baseconf_uart.tx_count<BASECONF_UART_FIFO_SIZE) {
++                    unsigned int tail=(baseconf_uart.tx_head+baseconf_uart.tx_count)%BASECONF_UART_FIFO_SIZE;
++                    baseconf_uart.tx[tail]=value;
++                    baseconf_uart.tx_count++;
++                    baseconf_uart_flush_tx();
++                }
++            }
++            break;
++        case 1:
++            if (baseconf_uart.lcr&0x80) baseconf_uart.dlm=value;
++            else baseconf_uart.ier=value&0x0f;
++            break;
++        case 2:
++            if (!(value&1)) break;
++            if (value&2) {
++                baseconf_uart.rx_count=0;
++                uartbridge_discard_input();
++            }
++            if (value&4) baseconf_uart.tx_count=0;
++            break;
++        case 3: baseconf_uart.lcr=value; break;
++        case 4: baseconf_uart.mcr=value&0x1f; break;
++        case 7: baseconf_uart.scratch=value; break;
++    }
++}
++
+ // Reinicia la extensión PS/2 compartida por BaseConf y TSConf.
+ void baseconf_ps2_reset(void)
+ {
+@@ -1479,6 +1581,13 @@ void baseconf_hard_reset(void)
+ 
+     debug_printf(VERBOSE_DEBUG,"BaseConf Hard reset cpu");
+ 
++    baseconf_uart.dll=1;
++    baseconf_uart.dlm=baseconf_uart.ier=baseconf_uart.lcr=baseconf_uart.mcr=0;
++    baseconf_uart.msr=0xa0;
++    baseconf_uart.scratch=0xff;
++    baseconf_uart.rx_head=baseconf_uart.rx_count=baseconf_uart.tx_head=baseconf_uart.tx_count=0;
++    uartbridge_discard_input();
++
+     //Asignar bloques memoria
+     int i;
+     for (i=0;i<8;i++) {
+diff --git a/src/machines/baseconf.h b/src/machines/baseconf.h
+index e19bcfa..f39a87a 100644
+--- a/src/machines/baseconf.h
++++ b/src/machines/baseconf.h
+@@ -85,6 +85,9 @@ extern z80_byte *baseconf_ram_mem_table[];
+ 
+ extern void baseconf_reset_cpu(void);
+ extern void baseconf_hard_reset(void);
++extern z80_byte baseconf_uart_read(z80_byte reg);
++extern void baseconf_uart_write(z80_byte reg,z80_byte value);
++extern void baseconf_uart_flush_tx(void);
+ 
+ extern void lee_byte_evo_aux(z80_int direccion);
+ 
+diff --git a/src/menu/menu_items.c b/src/menu/menu_items.c
+index 853ddd1..7def274 100644
+--- a/src/menu/menu_items.c
++++ b/src/menu/menu_items.c
+@@ -15953,7 +15953,7 @@ void menu_uartbridge(MENU_ITEM_PARAMETERS)
+ 
+ int menu_network_uartbridge_cond(void)
+ {
+-    if (MACHINE_IS_ZXUNO || MACHINE_IS_TBBLUE || MACHINE_IS_TSCONF) return 1;
++    if (MACHINE_IS_ZXUNO || MACHINE_IS_TBBLUE || MACHINE_IS_TSCONF || MACHINE_IS_BASECONF) return 1;
+     else return 0;
+ }
+ 
+@@ -18191,7 +18191,7 @@ void menu_network(MENU_ITEM_PARAMETERS)
+             menu_add_item_menu_tooltip(array_menu_common,"Bridge from emulated machine uart ports to a local serial uart device");
+             menu_add_item_menu_ayuda(array_menu_common,"Bridge from emulated machine uart ports to a local serial uart device\n"
+                 "It does NOT emulate a full uart device, just links from the emulated machine ports to a physical local device\n"
+-                "Available for ZX-Uno, TBBlue and ZX Evolution TSConf");
++                "Available for ZX-Uno, TBBlue and ZX Evolution BaseConf/TSConf");
+             menu_add_item_menu_tiene_submenu(array_menu_common);
+             if_zxvision_topbar_menu_will_not_have_title(array_menu_common);
+ 
+diff --git a/src/operaciones.c b/src/operaciones.c
+index 6e96c3f..8b4460c 100644
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -7025,6 +7025,8 @@ z80_byte lee_puerto_spectrum_no_time(z80_byte puerto_h,z80_byte puerto_l)
+ 
+ 	z80_int puerto=value_8_to_16(puerto_h,puerto_l);
+ 
++    if (MACHINE_IS_BASECONF && puerto_l==0xef) return baseconf_uart_read(puerto_h&7);
++
+     z80_byte valor_smuc;
+     if (ide_smuc_read(puerto,&valor_smuc)) return valor_smuc;
+     if (scorpion_gmx_zcontroller_read(puerto,&valor_smuc)) return valor_smuc;
+@@ -9131,6 +9133,11 @@ void out_port_spectrum_no_time(z80_int puerto,z80_byte value)
+ 	z80_byte puerto_l=puerto&255;
+ 	z80_byte puerto_h=(puerto>>8)&0xFF;
+ 
++        if (MACHINE_IS_BASECONF && puerto_l==0xef) {
++                baseconf_uart_write(puerto_h&7,value);
++                return;
++        }
++
+         if (ide_smuc_write(puerto,value)) return;
+         if (scorpion_gmx_zcontroller_write(puerto,value)) return;
+ 
+diff --git a/src/start.c b/src/start.c
+index 6556d5a..8238249 100644
+--- a/src/start.c
++++ b/src/start.c
+@@ -124,6 +124,7 @@
+ #include "pd765.h"
+ #include "core_reduced_spectrum.h"
+ #include "baseconf.h"
++#include "uartbridge.h"
+ #include "settings.h"
+ #include "datagear.h"
+ #include "network.h"
+@@ -279,6 +280,7 @@ char *driver_audio="";
+ 
+ z80_bit added_some_osd_text_keyboard={0};
+ char dump_ram_file[PATH_MAX]="";
++static int start_uartbridge=0;
+ 
+ //el build number segun la config
+ char last_version_string[255]="";
+@@ -1022,6 +1024,7 @@ printf (
+         "--sendtextkeystrokes-turbo          Allow turbo mode for sending keystrokes on Spectrum models\n"
+         "--sendtextkeystrokes-keylength n    Length of every key pressed. n is in intervals of 1/50 seconds, from 1 to 100. So, a value of 1 means 20 ms, and 100 means 2000 ms\n"
+         "--sendtextkeystrokes-nodelay        Do not send delay after every key press\n"
++        "--uartbridge-file f                 Enable the UART bridge with a host serial device or PTY\n"
+ 
+ #ifdef USE_PTHREADS
+         "--enable-remoteprotocol             Enable ZRCP remote protocol\n"
+@@ -7373,6 +7376,17 @@ int parse_cmdline_options(int desde_commandline)
+                 send_text_as_keystrokes_send_pause.v=0;
+             }
+ 
++         else if (!strcmp(argv[puntero_parametro],"--uartbridge-file")) {
++            siguiente_parametro_argumento();
++            const char *path=argv[puntero_parametro];
++            if (!path[0] || strlen(path)>=PATH_MAX) {
++                debug_printf(VERBOSE_ERR,"Invalid UART bridge path");
++                return 1;
++            }
++            strcpy(uartbridge_name,path);
++            start_uartbridge=1;
++         }
++
+ //Si no hay soporte de pthreads, estas opciones las permitimos pero luego no hace nada
+ 
+             else if (!strcmp(argv[puntero_parametro],"--enable-remoteprotocol")) {
+@@ -8997,6 +9011,11 @@ Also, you should keep the following copyright message, beginning with "Begin Cop
+ 
+     if (test_config_and_exit.v) exit(0);
+ 
++    if (start_uartbridge) {
++        uartbridge_enable();
++        if (!uartbridge_available()) exit(1);
++    }
++
+     //Init random value. Usado en AY Chip y Random ram y mensajes "kidding"
+     init_randomize_noise_value();
+ 
+diff --git a/src/uartbridge.c b/src/uartbridge.c
+index ab775dc..d37f0ab 100644
+--- a/src/uartbridge.c
++++ b/src/uartbridge.c
+@@ -89,48 +89,33 @@ void uartbridge_disable(void)
+ 
+ z80_byte uartbridge_readdata(void)
+ {
+-
+-
+-	//No dispositivo abierto
+-	if (!uartbridge_available()) return 0;
+-
+-    generic_footertext_print_operating("UART");
+-
+-	//printf ("Reading uart data\n");
+-
+-	//Devolver 0 por defecto si error leyendo
+-	z80_byte byte_leido=0;
+-
+-	//printf ("Before chardevice_read\n");
+-	int status=chardevice_read(uartbridge_handler,&byte_leido);
+-	//printf ("After chardevice_read\n");
+-
+-	if (status<1) {
+-		//printf ("Error reading uart data: %d\n",status);
+-		//Error leyendo
+-		//de momento no decir nada
+-	}
+-
+-	return byte_leido;
++	z80_byte value=0;
++	uartbridge_try_read(&value);
++	return value;
+ }
+ 
+-
+ void uartbridge_writedata(z80_byte value)
+ {
++	uartbridge_try_write(value);
++}
+ 
+-	//No dispositivo abierto
+-	if (!uartbridge_available()) return;
+-
+-    generic_footertext_print_operating("UART");
+-
+-	//printf ("Writing uart data\n");
+-
+-	int status=chardevice_write(uartbridge_handler,value);
++int uartbridge_try_read(z80_byte *value)
++{
++	if (!uartbridge_available()) return 0;
++	if (chardevice_read(uartbridge_handler,value)!=1) return 0;
++	generic_footertext_print_operating("UART");
++	return 1;
++}
+ 
+-	if (status<1) {
+-		//Error escribiendo
+-		//de momento no decir nada
+-	}
++int uartbridge_try_write(z80_byte value)
++{
++	if (!uartbridge_available() || chardevice_write(uartbridge_handler,value)!=1) return 0;
++	generic_footertext_print_operating("UART");
++	return 1;
++}
+ 
++void uartbridge_discard_input(void)
++{
++	if (uartbridge_available()) chardevice_discard_input(uartbridge_handler);
+ }
+ 
+diff --git a/src/uartbridge.h b/src/uartbridge.h
+index a9cc007..8d91c14 100644
+--- a/src/uartbridge.h
++++ b/src/uartbridge.h
+@@ -33,6 +33,9 @@ extern void uartbridge_disable(void);
+ 
+ extern z80_byte uartbridge_readdata(void);
+ extern void uartbridge_writedata(z80_byte value);
++extern int uartbridge_try_read(z80_byte *value);
++extern int uartbridge_try_write(z80_byte value);
++extern void uartbridge_discard_input(void);
+ extern int uartbridge_available(void);
+ 
+ extern enum chardevice_speed uartbridge_speed;
+-- 
+2.56.0
+

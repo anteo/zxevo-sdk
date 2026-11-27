@@ -1,0 +1,84 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 17:22:00 +0700
+Subject: [PATCH] fix(zxevo): preserve PS/2 modifiers across idle polls
+
+Wild Commander reads PS/2 set 2 scan codes. The real AVR returns 00h
+when its keyboard log is empty; the emulator returned FFh, which Wild
+Commander treats as overflow and clears all held modifiers. Return 00h
+on an idle poll. Deliver host Shift, Alt and Ctrl in event order before
+function keys, then synchronize the ZX matrix snapshot to avoid replay.
+
+---
+diff --git a/src/machines/baseconf.c b/src/machines/baseconf.c
+--- a/src/machines/baseconf.c
++++ b/src/machines/baseconf.c
+@@ -676,6 +676,22 @@
+     baseconf_ps2_enqueue(codes[function-1]);
+ }
+ 
++// Entrega Shift (12h), Alt (11h) y Ctrl (14h) en orden de eventos del host.
++void baseconf_ps2_modifier_event(int scancode,int pressed)
++{
++    if (baseconf_cmos_extension_type!=2 ||
++        (scancode!=0x11 && scancode!=0x12 && scancode!=0x14)) return;
++
++    /* La matriz ZX no distingue Alt de Ctrl. Sincronizar su fila evita que
++       el escaneo repita el modificador después de la tecla de función. */
++    if (scancode==0x12)
++        baseconf_ps2_previous_rows[0]=(baseconf_ps2_previous_rows[0]&~1)|(puerto_65278&1);
++    else
++        baseconf_ps2_previous_rows[7]=(baseconf_ps2_previous_rows[7]&~2)|(puerto_32766&2);
++    if (!pressed) baseconf_ps2_enqueue(0xf0);
++    baseconf_ps2_enqueue(scancode);
++}
++
+ // Detecta cambios de la matriz y genera códigos PS/2 set 2; sin retorno.
+ void baseconf_ps2_scan_keyboard(void)
+ {
+@@ -721,12 +737,12 @@
+     }
+ }
+ 
+-// Extrae un código PS/2 del FIFO del AVR; devuelve FFH si no hay teclas.
++// Extrae un código PS/2 del FIFO del AVR; devuelve 00H si no hay teclas.
+ static z80_byte baseconf_ps2_read(void)
+ {
+     z80_byte value;
+     baseconf_ps2_scan_keyboard();
+-    if (!baseconf_ps2_fifo_count) return 0xff;
++    if (!baseconf_ps2_fifo_count) return 0x00;
+     value=baseconf_ps2_fifo[baseconf_ps2_fifo_read];
+     baseconf_ps2_fifo_read=(baseconf_ps2_fifo_read+1)%sizeof(baseconf_ps2_fifo);
+     baseconf_ps2_fifo_count--;
+diff --git a/src/machines/baseconf.h b/src/machines/baseconf.h
+--- a/src/machines/baseconf.h
++++ b/src/machines/baseconf.h
+@@ -135,6 +135,7 @@
+ extern void baseconf_check_pending_nmi(void);
+ extern void baseconf_ps2_cursor_event(int direction,int pressed);
+ extern void baseconf_ps2_function_event(int function,int pressed);
++extern void baseconf_ps2_modifier_event(int scancode,int pressed);
+ extern void baseconf_ps2_clear_fifo(void);
+ extern void baseconf_ps2_scan_keyboard(void);
+ extern void baseconf_ps2_reset(void);
+diff --git a/src/utils.c b/src/utils.c
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -11086,6 +11086,17 @@
+ 
+ 
+ 
++    }
++
++    /* La matriz ZX no distingue Alt de Ctrl y se escanea sólo al leer PS/2.
++       Enviar cada modificador ahora conserva su orden respecto a F1-F10. */
++    if (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) {
++        if (tecla==UTIL_KEY_SHIFT_L || tecla==UTIL_KEY_SHIFT_R)
++            baseconf_ps2_modifier_event(0x12,pressrelease);
++        if (tecla==UTIL_KEY_ALT_L || tecla==UTIL_KEY_ALT_R)
++            baseconf_ps2_modifier_event(0x11,pressrelease);
++        if (tecla==UTIL_KEY_CONTROL_L || tecla==UTIL_KEY_CONTROL_R)
++            baseconf_ps2_modifier_event(0x14,pressrelease);
+     }
+ }
+ 

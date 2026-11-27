@@ -1,0 +1,177 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 2 Nov 2026 12:05:46 +0700
+Subject: [PATCH] feat(baseconf): emulate flash autoselect on rom writes
+
+Answer the 29F040 autoselect probe from the rom windows so the evotest
+rom write enable test can read the chip id.
+
+The chip state is global to the device, not to a window or page: the
+AAh/55h/90h unlock sequence is decoded on A10..A0 of the linear rom
+offset, so both the byte addresses (555h/2AAh) and the word ones
+(1555h/2AAAh) reach the same sequencer. While autoselect is on, reads
+from a rom window return 01h/A4h/00h/00h instead of the array; F0h and
+FFh return to array reads.
+
+Writes only reach the chip with BF.1 (romrw_en) set and the #xBF7
+window protection released. No cell is ever programmed or erased, so
+the array is never modified and reads keep coming from the loaded rom
+image.
+---
+ src/machines/baseconf.c | 93 +++++++++++++++++++++++++++++++++++++++++
+ src/machines/baseconf.h |  2 +
+ src/operaciones.c       |  8 ++++
+ 3 files changed, 103 insertions(+)
+
+diff --git a/src/machines/baseconf.c b/src/machines/baseconf.c
+index 1890b9a..a5bd3e7 100644
+--- a/src/machines/baseconf.c
++++ b/src/machines/baseconf.c
+@@ -385,6 +385,97 @@ int baseconf_memory_write_allowed(z80_int direccion)
+     return (baseconf_mmu_flags[mapa+(direccion>>14)]&32)==0;
+ }
+ 
++/* Emulación mínima del chip flash de 512 KiB (29F040) que hay detrás de las
++   ventanas de ROM. Sólo se decodifica lo necesario para leer los
++   identificadores: la secuencia de desbloqueo AAh/55h/90h, el comando de
++   reinicio F0h/FFh y el modo autoselect en lectura. No se programa ni se
++   borra ninguna celda. El estado es único para todo el chip, de modo que la
++   secuencia puede empezar en una página y terminar en otra. */
++// 1 cuando el chip responde con sus códigos de identificación en lugar de la matriz.
++static int baseconf_flash_autoselect;
++// Paso de la secuencia de desbloqueo: 0 ninguna, 1 tras AAh, 2 tras 55h.
++static int baseconf_flash_unlock_step;
++
++// Direcciones (A10..A0) donde el chip acepta la secuencia de comandos.
++#define BASECONF_FLASH_ADDR_UNLOCK_1 0x555
++#define BASECONF_FLASH_ADDR_UNLOCK_2 0x2AA
++
++// Comprueba si direccion cae en una ventana de ROM; devuelve 1 en ese caso.
++static int baseconf_flash_window_is_rom(z80_int direccion)
++{
++    return baseconf_memory_segments_type[direccion>>14]==0;
++}
++
++/* Devuelve el desplazamiento lineal dentro del chip que ve la CPU en
++   direccion. El chip decodifica A10..A0 para los comandos, así que las
++   direcciones de byte (555h/2AAh) y las de palabra (5555h/2AAAh) coinciden
++   después de aplicar la máscara en el punto de uso. */
++static int baseconf_flash_offset(z80_int direccion)
++{
++    int pagina=baseconf_memory_segments[direccion>>14]&31;
++    return (pagina<<14)+(direccion&0x3fff);
++}
++
++// Decodifica una escritura de la CPU en una ventana de ROM como comando flash; sin retorno.
++void baseconf_flash_write(z80_int direccion,z80_byte valor)
++{
++    int comando;
++
++    /* BF.1 (romrw_en) es el único camino para que una escritura llegue al
++       chip; la protección de ventana #xBF7 se comprueba aparte. */
++    if (!(baseconf_last_port_bf&2)) return;
++    if (!baseconf_flash_window_is_rom(direccion)) return;
++    if (!baseconf_memory_write_allowed(direccion)) return;
++
++    /* El reinicio no necesita desbloqueo y devuelve el chip a la lectura de
++       la matriz desde cualquier ventana. FFh se acepta porque algunos
++       programas lo usan para salir del modo autoselect. */
++    if (valor==0xf0 || valor==0xff) {
++        baseconf_flash_autoselect=0;
++        baseconf_flash_unlock_step=0;
++        return;
++    }
++
++    comando=baseconf_flash_offset(direccion)&0x7ff;
++
++    if (baseconf_flash_unlock_step==1 &&
++        comando==BASECONF_FLASH_ADDR_UNLOCK_2 && valor==0x55) {
++        baseconf_flash_unlock_step=2;
++        return;
++    }
++
++    if (baseconf_flash_unlock_step==2 &&
++        comando==BASECONF_FLASH_ADDR_UNLOCK_1 && valor==0x90) {
++        baseconf_flash_autoselect=1;
++        baseconf_flash_unlock_step=0;
++        return;
++    }
++
++    // AAh en 555h reinicia la secuencia; cualquier otro dato la anula.
++    if (comando==BASECONF_FLASH_ADDR_UNLOCK_1 && valor==0xaa) baseconf_flash_unlock_step=1;
++    else baseconf_flash_unlock_step=0;
++}
++
++// Lee un byte del chip flash; devuelve 1 si ha respondido y 0 si no interviene.
++int baseconf_flash_read(z80_int direccion,z80_byte *valor)
++{
++    int comando;
++
++    if (!baseconf_flash_autoselect) return 0;
++    if (!baseconf_flash_window_is_rom(direccion)) return 0;
++
++    /* En autoselect el chip ignora la matriz: A1:A0 = 00 devuelve el
++       fabricante (01h), 01 el dispositivo (A4h) y el resto el estado de
++       protección del sector, que en este chip nunca está protegido. */
++    comando=baseconf_flash_offset(direccion)&3;
++
++    if (comando==0) *valor=0x01;
++    else if (comando==1) *valor=0xa4;
++    else *valor=0x00;
++
++    return 1;
++}
++
+ // Lee el registro de configuración indicado por puerto_h; devuelve su valor.
+ z80_byte baseconf_read_config_port(z80_byte puerto_h)
+ {
+@@ -1519,6 +1610,8 @@ void baseconf_hard_reset(void)
+     baseconf_last_port_77=3;
+     baseconf_shadow_mode_port_77=0x40;
+     baseconf_last_port_bf=0;
++    baseconf_flash_autoselect=0;
++    baseconf_flash_unlock_step=0;
+     baseconf_last_port_eff7=0;
+ 
+     baseconf_last_port_bd=0;
+diff --git a/src/machines/baseconf.h b/src/machines/baseconf.h
+index e19bcfa..b11e35b 100644
+--- a/src/machines/baseconf.h
++++ b/src/machines/baseconf.h
+@@ -136,6 +136,8 @@ extern void baseconf_ps2_clear_fifo(void);
+ extern void baseconf_ps2_scan_keyboard(void);
+ extern void baseconf_ps2_reset(void);
+ extern int baseconf_memory_write_allowed(z80_int direccion);
++extern void baseconf_flash_write(z80_int direccion,z80_byte valor);
++extern int baseconf_flash_read(z80_int direccion,z80_byte *valor);
+ extern int baseconf_text_mode_active(void);
+ extern z80_byte baseconf_get_video_mode(void);
+ extern z80_int baseconf_get_palette_entry(z80_byte indice);
+diff --git a/src/operaciones.c b/src/operaciones.c
+index 49ff17f..2d1037c 100644
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -3013,6 +3013,9 @@ void poke_byte_no_time_baseconf(z80_int dir,z80_byte valor)
+ #endif
+ 
+                 baseconf_write_memory_aux(dir,valor);
++		/* Una escritura en ventana de ROM puede ser un comando del chip
++		   flash: la función comprueba BF.1 y la protección de ventana. */
++		baseconf_flash_write(dir,valor);
+ 
+ 		z80_byte *puntero;
+ 		puntero=baseconf_return_segment_memory(dir);
+@@ -3060,6 +3063,11 @@ z80_byte peek_byte_no_time_baseconf(z80_int dir)
+ 		set_visualmemreadbuffer(dir);
+ 	#endif
+ 
++		/* En modo autoselect el chip flash responde con sus
++		   identificadores en lugar de la matriz de ROM. */
++		z80_byte valor_flash;
++		if (baseconf_flash_read(dir,&valor_flash)) return valor_flash;
++
+ 		z80_byte *puntero;
+ 		puntero=baseconf_return_segment_memory(dir);
+ 
+-- 
+2.56.0
+

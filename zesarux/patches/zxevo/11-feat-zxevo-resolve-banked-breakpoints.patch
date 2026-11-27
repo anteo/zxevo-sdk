@@ -1,0 +1,26 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Fri, 20 Nov 2026 00:00:00 +0700
+Subject: [PATCH] feat(zxevo): resolve banked debugger breakpoints
+
+Expose the currently mapped BaseConf or TSConf page through EPC so a
+breakpoint can distinguish ROM and RAM at the same Z80 address.
+
+---
+diff --git a/src/expression_parser.c b/src/expression_parser.c
+--- a/src/expression_parser.c
++++ b/src/expression_parser.c
+@@ -1596,6 +1596,14 @@ int exp_par_calculate_numvarreg(token_parser *token)
+ 
+                         return (banco<<20) | (romram<<16) | offset;
+                     }
++
++                    if (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) {
++                        // Use the same EPC format with ZX Evolution's live page map.
++                        int mapped_page=debug_paginas_memoria_mapeadas[reg_pc/16384];
++                        int bank=mapped_page & DEBUG_PAGINA_MAP_MASK;
++                        int rom=(mapped_page & DEBUG_PAGINA_MAP_ES_ROM) != 0;
++                        return (bank<<20) | (rom<<16) | (reg_pc & 16383);
++                    }
+                 break;
+ 
+ 

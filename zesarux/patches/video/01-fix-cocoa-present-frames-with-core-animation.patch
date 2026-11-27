@@ -1,0 +1,312 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 14 Nov 2026 21:00:40 +0700
+Subject: [PATCH] fix(cocoa): present frames asynchronously with Core Animation
+
+OpenGL presentation can stall for several frame periods even when
+emulation runs at 50 Hz. Keep one frame pending on the main thread and
+hand it to Core Animation as an immutable image. This removes the wait
+in glFlush from the window thread and avoids reusing image data while
+the compositor still owns it.
+
+---
+diff --git a/src/configure b/src/configure
+index d615b5b..7eb0daa 100755
+--- a/src/configure
++++ b/src/configure
+@@ -1169,7 +1169,7 @@ _EOF
+ 			echo
+ 
+ 			MAINSOURCE="scrcocoa"
+-        	        LIBS="-framework Foundation -framework AppKit -framework OpenGL $LIBS"
++        	        LIBS="-framework Foundation -framework AppKit -framework QuartzCore $LIBS"
+ 
+ 		fi
+         fi
+diff --git a/src/video/scrcocoa.m b/src/video/scrcocoa.m
+index 6b91464..00dde69 100644
+--- a/src/video/scrcocoa.m
++++ b/src/video/scrcocoa.m
+@@ -88,15 +88,8 @@ char **gArgv;
+ 
+ int retorno_start_timer=0;
+ 
+-//Silenciar avisos de OpenGL tipo: scrcocoa.m:638:3: warning: 'glEnable' is deprecated: first deprecated in macOS 10.14 - OpenGL API deprecated. (Define GL_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+-//En algun momento del futuro tocará migrar a Metal...
+-#define GL_SILENCE_DEPRECATION
+-
+ #import <Cocoa/Cocoa.h>
+-
+-#import <OpenGL/gl.h>
+-
+-
++#import <QuartzCore/QuartzCore.h>
+ 
+ #ifndef MAC_OS_X_VERSION_10_4
+ #define MAC_OS_X_VERSION_10_4 1040
+@@ -176,7 +169,6 @@ NSInteger pixel_screen_width;
+ NSInteger pixel_screen_height;
+ 
+ //Para poder escalar a pantallas Retina
+-NSRect vprect;
+ 
+ // keymap conversion
+ 
+@@ -434,6 +426,10 @@ int keymap[] =
+ 
+ ZesaruxCocoaWindow *normalWindow;
+ 
++static UInt8 *cocoa_queued_frame;
++static size_t cocoa_queued_frame_capacity;
++static int cocoa_frame_queued;
++
+ int pendingresize=0;
+ int pendingresize_w,pendingresize_h;
+ 
+@@ -447,7 +443,7 @@ int pendiente_z88_draw_lower=0;
+ */
+ 
+ 
+-@interface ZesaruxCocoaView : NSOpenGLView
++@interface ZesaruxCocoaView : NSView
+ 
+ 
+ 
+@@ -460,7 +456,6 @@ int pendiente_z88_draw_lower=0;
+     BOOL isMouseGrabed;
+     BOOL isAbsoluteEnabled;
+     BOOL isTabletEnabled;
+-    uint texId;
+ }
+ 
+ - (void) resizeContentToWidth:(int)w height:(int)h ;
+@@ -480,6 +475,7 @@ int pendiente_z88_draw_lower=0;
+ - (float) cdy;
+ - (QEMUScreen) gscreen;
+ - (void) setContentDimensions;
++- (void) renderPixels:(const UInt8 *)pixels width:(int)width height:(int)height;
+ @end
+ 
+ 
+@@ -973,10 +969,6 @@ int scrcocoa_ultimo_estado_realjoystick_present=0;
+     pixel_screen_height = screen_get_window_size_height_zoom_border_en();
+     pixel_screen_height += screen_get_ext_desktop_height_zoom();
+ 
+-    // Convert screen width & height to their backing store coordinates
+-    // Support Retina Display
+-    vprect = [normalWindow convertRectToBacking:NSMakeRect(0, 0, pixel_screen_width, pixel_screen_height)];
+-
+     NSInteger dataLength = pixel_screen_width * pixel_screen_height * 4;
+     pixel_screen_data = (UInt8*)malloc(dataLength * sizeof(UInt8));
+     //printf("malloc redimensionaventana %d MiB\n",dataLength * sizeof(UInt8)/1024/1024);
+@@ -1080,120 +1072,32 @@ int scrcocoa_ultimo_estado_realjoystick_present=0;
+ 
+ 
+ 
+--(void)prepareOpenGL
+-{
+-
+-  [super prepareOpenGL];
+-
+-  [self createTexture];
+-
+-}
+-
+-
+--(void)createTexture
++- (void)renderPixels:(const UInt8 *)pixels width:(int)width height:(int)height
+ {
++    // Core Animation conserva la imagen después de liberar el búfer de la cola.
++    size_t row_bytes=(size_t)width*4;
++    CFDataRef data=CFDataCreate(kCFAllocatorDefault,pixels,row_bytes*height);
++    if (!data) return;
+ 
++    CGDataProviderRef provider=CGDataProviderCreateWithCFData(data);
++    CFRelease(data);
++    if (!provider) return;
+ 
+-    NSInteger ancho;
+-    NSInteger alto;
+-
+-    ancho=pixel_screen_width;
+-    alto=pixel_screen_height;
+-
+-    if (ancho==0 || alto==0) {
+-        //Primera vez inicializacion
+-        ancho=400;
+-        alto=300;
+-    }
+-
+-
+-
+-    glEnable(GL_TEXTURE_2D);
+-    glEnable(GL_BLEND);
+-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+-
+-    glGenTextures(1, &texId); //Creamos una textura
+-
+-    glBindTexture(GL_TEXTURE_2D, texId);
+-
+-    //Configuramos la textura
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+-
+-    //No copiamos nada lo haremos luego (le pasamos null)
+-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ancho, alto, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+-}
+-
+-int cocoa_renderizando=0;
+-
+-
+-
+-- (void)render {
+-
+-    //Impedir que se llame cuando se esta dentro. Esto puede pasar si se genera un cpu_panic aqui dentro y el propio cpu_panic vuelve a llamar aqui
+-    if (cocoa_renderizando) {
+-        //printf("###############################No permitir render anidado\n");
+-        return;
+-    }
+-
+-    cocoa_renderizando=1;
+-
+-    // CGLLockContext([[self openGLContext] CGLContextObj]);
+-
+-    [[self openGLContext] makeCurrentContext];
+-
+-    // We set the final size considering if Retina Display present
+-
+-    glViewport(0, 0, vprect.size.width, vprect.size.height);
+-
+-
+-    //NO BORRAMOS el fondo porque ya lo dibujamos más abajo
+-
+-    glBindTexture(GL_TEXTURE_2D, texId);
+-    //Actualizamos la textura
+-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pixel_screen_width, pixel_screen_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixel_screen_data);
+-
+-    glBegin(GL_QUADS);
+-    glColor4d(1.0,1.0,1.0,1.0); //Color blanco se multiplica con el color de los pixeles de la textura.
+-
+-    glTexCoord2d(0,1);
+-    glVertex2d(-1.0, -1.0);
+-
+-    glTexCoord2d(1,1);
+-    glVertex2d(1.0,-1.0);
+-
+-    glTexCoord2d(1,0);
+-    glVertex2d(1.0,1.0);
+-
+-    glTexCoord2d(0,0);
+-    glVertex2d(-1.0,1.0);
+-    glEnd();
+-
+-    [[self openGLContext] flushBuffer];
+-
+-    glFlush();
+-
+-    /*
+-    The documentation for -[NSOpenGLContext flushBuffer] says:
+-
+-    Discussion
++    CGColorSpaceRef colors=CGColorSpaceCreateDeviceRGB();
++    CGImageRef image=colors ? CGImageCreate(width,height,8,32,row_bytes,colors,
++        kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst,provider,
++        NULL,true,kCGRenderingIntentDefault) : NULL;
++    if (colors) CGColorSpaceRelease(colors);
++    CGDataProviderRelease(provider);
++    if (!image) return;
+ 
+-    If the receiver is not a double-buffered context, this call does nothing.
+-    You can cause your context to be double-buffered by including NSOpenGLPFADoubleBuffer in your pixel format attributes.
+-    Alternatively, you can call glFlush() instead of -[NSOpenGLContext flushBuffer] and leave your context single-buffered.
+-    */
+-
+-
+-    // CGLUnlockContext([[self openGLContext] CGLContextObj]);
+-    cocoa_renderizando=0;
++    [CATransaction begin];
++    [CATransaction setDisableActions:YES];
++    self.layer.contents=(id)image;
++    [CATransaction commit];
++    CGImageRelease(image);
+ }
+ 
+-
+-
+-
+-
+ - (id)initWithFrame:(NSRect)frameRect
+ {
+     //COCOA_DEBUG("ZesaruxCocoaView: initWithFrame\n");
+@@ -1201,6 +1105,10 @@ int cocoa_renderizando=0;
+     self = [super initWithFrame:frameRect];
+     if (self) {
+ 
++        [self setWantsLayer:YES];
++        self.layer.contentsGravity=kCAGravityResize;
++        self.layer.opaque=YES;
++
+         screen.bitsPerComponent = 8;
+         screen.bitsPerPixel = 32;
+         screen.width = frameRect.size.width;
+@@ -1573,7 +1481,6 @@ int cocoa_raton_oculto=0;
+ 
+     scr_set_pending_redraw_desktop_windows();
+ 
+-    [self createTexture];
+ 
+ 
+ }
+@@ -2933,9 +2840,28 @@ void scrcocoa_refresca_pantalla(void);
+ 
+ void scrcocoa_refresca_pantalla_solo_driver(void)
+ {
+-
+-    [cocoaView render];
+-
++    if (__atomic_exchange_n(&cocoa_frame_queued, 1, __ATOMIC_ACQ_REL)) return;
++    int width=(int)pixel_screen_width;
++    int height=(int)pixel_screen_height;
++    size_t length=(size_t)width * height * 4;
++    if (!pixel_screen_data || !length) {
++        __atomic_store_n(&cocoa_frame_queued, 0, __ATOMIC_RELEASE);
++        return;
++    }
++    if (length>cocoa_queued_frame_capacity) {
++        UInt8 *buffer=realloc(cocoa_queued_frame,length);
++        if (!buffer) {
++            __atomic_store_n(&cocoa_frame_queued, 0, __ATOMIC_RELEASE);
++            return;
++        }
++        cocoa_queued_frame=buffer;
++        cocoa_queued_frame_capacity=length;
++    }
++    memcpy(cocoa_queued_frame,pixel_screen_data,length);
++    dispatch_async(dispatch_get_main_queue(), ^{
++        [cocoaView renderPixels:cocoa_queued_frame width:width height:height];
++        __atomic_store_n(&cocoa_frame_queued, 0, __ATOMIC_RELEASE);
++    });
+ }
+ 
+ 
+@@ -3310,7 +3236,7 @@ int scrcocoa_init (void)
+ {
+ 
+ 
+-    debug_printf (VERBOSE_INFO,"Init COCOA(OpenGL) Video Driver");
++    debug_printf (VERBOSE_INFO,"Init Cocoa (Core Animation) Video Driver");
+ 
+     //Esto tiene que ir al principio de inicializar driver para leer correctamente el tamaño de ventana
+     screen_este_driver_permite_ext_desktop=1;
+@@ -3365,10 +3291,6 @@ int scrcocoa_init (void)
+     pixel_screen_width = screen_get_window_size_width_zoom_border_en()+screen_get_ext_desktop_width_zoom();
+     pixel_screen_height = screen_get_window_size_height_zoom_border_en()+screen_get_ext_desktop_height_zoom();
+ 
+-    // Convert screen width & height to their backing store coordinates
+-    // Support Retina Display
+-    vprect = [normalWindow convertRectToBacking:NSMakeRect(0, 0, pixel_screen_width, pixel_screen_height)];
+-
+     //screen_get_window_size_width_zoom_border_en(), screen_get_window_size_height_zoom_border_en()
+ 
+     NSInteger dataLength = pixel_screen_width * pixel_screen_height * 4;

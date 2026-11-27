@@ -1,0 +1,28 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 18:00:00 +0700
+Subject: [PATCH] feat(tsconf): emulate the second SD chip select
+
+Route TSConf SD2 on port 77h to ZEsarUX MMC slot 1. Keep SD1 routing and
+the shared SPI data path. When TS-BIOS selects both cards for its cold-start
+CMD0 broadcast, route the command to SD1 as before; later per-card
+initialization selects each slot.
+
+---
+diff --git a/src/operaciones.c b/src/operaciones.c
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -9841,9 +9841,12 @@
+                     if (puerto_l==0x77) {
+                         if (zcontroller_enabled.v) {
+                             baseconf_sd_enabled=value&1;
+-                            baseconf_sd_cs=(value&2) ? 1 : 0;
++                            int sd1_selected=baseconf_sd_enabled && !(value&2);
++                            int sd2_selected=baseconf_sd_enabled && (value&8);
++                            // The MMC model has one active slot; prefer SD1 for TS-BIOS's broadcast CMD0.
++                            baseconf_sd_cs=!(sd1_selected || sd2_selected);
+                             tsconf_sd_read_buffer=0xff;
+-                            mmc_cs(baseconf_sd_cs ? 0xff : 0xfe);
++                            mmc_cs(baseconf_sd_cs ? 0xff : (sd1_selected ? 0xfe : 0xfd));
+                         }
+                     }
+ 

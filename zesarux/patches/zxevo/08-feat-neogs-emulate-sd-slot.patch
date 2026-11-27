@@ -1,0 +1,1200 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 17:22:00 +0700
+Subject: [PATCH] feat(neogs): emulate the SD slot and load NeoGS firmware
+
+Run the external NeoGS flash image on the General Sound Z80 with
+NeoGS memory and port decoding. Model its independent SPI bus and
+support raw read/write media, including the single-block transfers
+used by Wild Commander and the multiple-block transfers used by ERS.
+
+Expose the firmware and SD image in the SD/MMC menu and in startup
+options. Add ZRCP insert/eject commands for repeatable media tests.
+Expose card detect and write protect through SSTAT.
+
+Advance NeoGS up to the Spectrum bus timestamp before every mailbox
+access. Wild Commander reads the data flag immediately after sending
+the last request byte; running NeoGS only at the end of a scanline
+can let the host clear that flag before NeoGS consumes the byte.
+
+---
+diff --git a/src/configure b/src/configure
+index e4e3741..0a80003 100755
+--- a/src/configure
++++ b/src/configure
+@@ -1355,8 +1355,8 @@ INSTALLPREFIX=$INSTALLPREFIX
+ all: zesarux
+ 
+ 
+-zesarux: $OPTIONWINDOWSRESOURCE charset.o $OPTIONOBJSTDOUT $OPTIONOBJSIMPLETEXT $OPTIONOBJCURSES $OPTIONOBJCURSESW $OPTIONOBJAA $OPTIONOBJCACA $OPTIONOBJXWINDOWS $OPTIONOBJSDL $OPTIONOBJFBDEV autoselectoptions.o chardetect.o textspeech.o scrnull.o $OPTIONOBJDSP $OPTIONOBJONEBITSPEAKER $OPTIONOBJALSA $OPTIONOBJPULSE $OPTIONOBJCOREAUDIO $OPTIONLINUXREALJOYSTICK audionull.o ay38912.o qsound.o sn76489an.o vdp_9918a.o vdp_9918a_sms.o video_chips_common.o msx.o svi.o coleco.o sg1000.o sms.o saa_simul.o cpu.o start.o z80_codsinpr.o z80_codprddfd.o z80_codpred.o operaciones.o debug.o debug_timings.o tape.o tape_tap.o tape_tzx.o tape_pzx.o tape_smp.o audio.o audio_ayplayer.o audio_sine_table.o screen.o screen_fx.o mem128.o chloe.o prism.o tbblue.o timex.o zx8081.o tv.o jupiterace.o z88.o cpc.o pcw.o sam.o atomlite.o zxuno.o snap.o snap_nex.o snap_zsf.o snap_ram.o snap_z81.o snap_zx8081.o snap_rzx.o snap_spg.o spg_depack.o zxvision.o zxvision_private.o zxvision_topbar.o menu_items.o menu_items_storage.o menu_filesel.o menu_file_viewer_browser.o menu_zeng_online.o menu_items_settings.o menu_debug_cpu.o menu_bitmaps.o about_logo.o settings.o core_spectrum.o core_reduced_spectrum.o core_zx8081.o core_z88.o core_cpc.o core_pcw.o core_ace.o core_sam.o core_ql.o core_mk14.o core_msx.o core_svi.o core_coleco.o core_sg1000.o core_sms.o mk14.o scmp.o timer.o contend.o disassemble.o utils.o utils_math.o utils_text_adventure.o playtzx.o mdvtool.o ql_extract_img.o ql_extract_win.o joystick.o ula.o mmc.o ide.o pd765.o vg93.o dsk.o plus3dos_handler.o divmmc.o divide.o diviface.o zxpand.o lec.o superupgrade.o dandanator.o gs.o betadisk.o codetests.o kartusho.o samram.o ifrom.o enhanced_zx81_read.o hilow_datadrive.o hilow_barbanegra.o transtape.o mhpokeador.o specmate.o interface007.o dinamid3.o phoenix.o defcon.o ramjet.o datagear.o zxmmcplus.o spritefinder.o multiface.o spectra.o spritechip.o printers.o realjoystick.o ulaplus.o if1.o microdrive.o microdrive_raw.o ds1307.o ql.o ql_qdos_handler.o ql_i8049.o ql_zx8302.o m68kcpu.o m68kdasm.o m68kops.o  m68kopac.o m68kopdm.o m68kopnz.o chrome.o zxevo.o tsconf.o baseconf.o scorpion.o atmturbo.o didaktikgama.o remote.o esxdos_handler.o assemble.o expression_parser.o chardevice.o uartbridge.o network.o zeng.o zeng_online.o zeng_online_client.o zvfs.o atomic.o stats.o sensors.o hilow_datadrive_audio.o scl2trd.o zip.o diskio.o ff.o ffsystem.o ffunicode.o $MAINSOURCE.o
+-	\$(CC) \$(CFLAGS) \$(LDFLAGS) cpu.o $MAINSOURCE.o start.o charset.o $OPTIONOBJSTDOUT $OPTIONOBJSIMPLETEXT $OPTIONOBJCURSES $OPTIONOBJCURSESW $OPTIONOBJAA $OPTIONOBJCACA $OPTIONOBJXWINDOWS $OPTIONOBJSDL $OPTIONOBJFBDEV autoselectoptions.o chardetect.o textspeech.o scrnull.o screen.o screen_fx.o mem128.o chloe.o prism.o tbblue.o timex.o $OPTIONOBJDSP $OPTIONOBJONEBITSPEAKER $OPTIONOBJALSA $OPTIONOBJPULSE $OPTIONOBJCOREAUDIO $OPTIONLINUXREALJOYSTICK audionull.o ay38912.o qsound.o sn76489an.o vdp_9918a.o vdp_9918a_sms.o video_chips_common.o msx.o svi.o coleco.o sg1000.o sms.o saa_simul.o z80_codsinpr.o z80_codprddfd.o z80_codpred.o operaciones.o debug.o debug_timings.o tape.o tape_tap.o tape_tzx.o tape_pzx.o tape_smp.o audio.o audio_ayplayer.o audio_sine_table.o zx8081.o tv.o jupiterace.o z88.o cpc.o pcw.o sam.o atomlite.o zxuno.o snap.o snap_nex.o snap_zsf.o snap_ram.o snap_z81.o snap_spg.o spg_depack.o snap_zx8081.o snap_rzx.o zxvision.o zxvision_private.o zxvision_topbar.o menu_items.o menu_items_storage.o menu_filesel.o menu_file_viewer_browser.o menu_zeng_online.o menu_items_settings.o menu_debug_cpu.o menu_bitmaps.o about_logo.o settings.o core_spectrum.o core_reduced_spectrum.o core_zx8081.o core_z88.o core_cpc.o core_pcw.o core_ace.o core_sam.o core_ql.o core_mk14.o core_msx.o core_svi.o core_coleco.o core_sg1000.o core_sms.o mk14.o scmp.o timer.o contend.o disassemble.o utils.o utils_math.o utils_text_adventure.o playtzx.o mdvtool.o ql_extract_img.o ql_extract_win.o joystick.o ula.o mmc.o ide.o pd765.o vg93.o dsk.o plus3dos_handler.o divmmc.o divide.o diviface.o zxpand.o lec.o superupgrade.o dandanator.o gs.o betadisk.o codetests.o kartusho.o samram.o ifrom.o enhanced_zx81_read.o hilow_datadrive.o hilow_barbanegra.o transtape.o mhpokeador.o specmate.o interface007.o dinamid3.o phoenix.o defcon.o ramjet.o datagear.o spritefinder.o zxmmcplus.o multiface.o spectra.o spritechip.o printers.o realjoystick.o ulaplus.o ds1307.o if1.o microdrive.o microdrive_raw.o ql.o ql_qdos_handler.o ql_i8049.o ql_zx8302.o m68kcpu.o m68kdasm.o m68kops.o  m68kopac.o m68kopdm.o m68kopnz.o chrome.o zxevo.o tsconf.o baseconf.o scorpion.o atmturbo.o didaktikgama.o remote.o esxdos_handler.o assemble.o expression_parser.o chardevice.o uartbridge.o network.o zeng.o zeng_online.o zeng_online_client.o zvfs.o atomic.o stats.o sensors.o hilow_datadrive_audio.o scl2trd.o zip.o diskio.o ff.o ffsystem.o ffunicode.o -o zesarux \$(LIBS)
++zesarux: $OPTIONWINDOWSRESOURCE charset.o $OPTIONOBJSTDOUT $OPTIONOBJSIMPLETEXT $OPTIONOBJCURSES $OPTIONOBJCURSESW $OPTIONOBJAA $OPTIONOBJCACA $OPTIONOBJXWINDOWS $OPTIONOBJSDL $OPTIONOBJFBDEV autoselectoptions.o chardetect.o textspeech.o scrnull.o $OPTIONOBJDSP $OPTIONOBJONEBITSPEAKER $OPTIONOBJALSA $OPTIONOBJPULSE $OPTIONOBJCOREAUDIO $OPTIONLINUXREALJOYSTICK audionull.o ay38912.o qsound.o sn76489an.o vdp_9918a.o vdp_9918a_sms.o video_chips_common.o msx.o svi.o coleco.o sg1000.o sms.o saa_simul.o cpu.o start.o z80_codsinpr.o z80_codprddfd.o z80_codpred.o operaciones.o debug.o debug_timings.o tape.o tape_tap.o tape_tzx.o tape_pzx.o tape_smp.o audio.o audio_ayplayer.o audio_sine_table.o screen.o screen_fx.o mem128.o chloe.o prism.o tbblue.o timex.o zx8081.o tv.o jupiterace.o z88.o cpc.o pcw.o sam.o atomlite.o zxuno.o snap.o snap_nex.o snap_zsf.o snap_ram.o snap_z81.o snap_zx8081.o snap_rzx.o snap_spg.o spg_depack.o zxvision.o zxvision_private.o zxvision_topbar.o menu_items.o menu_items_storage.o menu_filesel.o menu_file_viewer_browser.o menu_zeng_online.o menu_items_settings.o menu_debug_cpu.o menu_bitmaps.o about_logo.o settings.o core_spectrum.o core_reduced_spectrum.o core_zx8081.o core_z88.o core_cpc.o core_pcw.o core_ace.o core_sam.o core_ql.o core_mk14.o core_msx.o core_svi.o core_coleco.o core_sg1000.o core_sms.o mk14.o scmp.o timer.o contend.o disassemble.o utils.o utils_math.o utils_text_adventure.o playtzx.o mdvtool.o ql_extract_img.o ql_extract_win.o joystick.o ula.o mmc.o neogs_sd.o ide.o pd765.o vg93.o dsk.o plus3dos_handler.o divmmc.o divide.o diviface.o zxpand.o lec.o superupgrade.o dandanator.o gs.o betadisk.o codetests.o kartusho.o samram.o ifrom.o enhanced_zx81_read.o hilow_datadrive.o hilow_barbanegra.o transtape.o mhpokeador.o specmate.o interface007.o dinamid3.o phoenix.o defcon.o ramjet.o datagear.o zxmmcplus.o spritefinder.o multiface.o spectra.o spritechip.o printers.o realjoystick.o ulaplus.o if1.o microdrive.o microdrive_raw.o ds1307.o ql.o ql_qdos_handler.o ql_i8049.o ql_zx8302.o m68kcpu.o m68kdasm.o m68kops.o  m68kopac.o m68kopdm.o m68kopnz.o chrome.o zxevo.o tsconf.o baseconf.o scorpion.o atmturbo.o didaktikgama.o remote.o esxdos_handler.o assemble.o expression_parser.o chardevice.o uartbridge.o network.o zeng.o zeng_online.o zeng_online_client.o zvfs.o atomic.o stats.o sensors.o hilow_datadrive_audio.o scl2trd.o zip.o diskio.o ff.o ffsystem.o ffunicode.o $MAINSOURCE.o
++	\$(CC) \$(CFLAGS) \$(LDFLAGS) cpu.o $MAINSOURCE.o start.o charset.o $OPTIONOBJSTDOUT $OPTIONOBJSIMPLETEXT $OPTIONOBJCURSES $OPTIONOBJCURSESW $OPTIONOBJAA $OPTIONOBJCACA $OPTIONOBJXWINDOWS $OPTIONOBJSDL $OPTIONOBJFBDEV autoselectoptions.o chardetect.o textspeech.o scrnull.o screen.o screen_fx.o mem128.o chloe.o prism.o tbblue.o timex.o $OPTIONOBJDSP $OPTIONOBJONEBITSPEAKER $OPTIONOBJALSA $OPTIONOBJPULSE $OPTIONOBJCOREAUDIO $OPTIONLINUXREALJOYSTICK audionull.o ay38912.o qsound.o sn76489an.o vdp_9918a.o vdp_9918a_sms.o video_chips_common.o msx.o svi.o coleco.o sg1000.o sms.o saa_simul.o z80_codsinpr.o z80_codprddfd.o z80_codpred.o operaciones.o debug.o debug_timings.o tape.o tape_tap.o tape_tzx.o tape_pzx.o tape_smp.o audio.o audio_ayplayer.o audio_sine_table.o zx8081.o tv.o jupiterace.o z88.o cpc.o pcw.o sam.o atomlite.o zxuno.o snap.o snap_nex.o snap_zsf.o snap_ram.o snap_z81.o snap_spg.o spg_depack.o snap_zx8081.o snap_rzx.o zxvision.o zxvision_private.o zxvision_topbar.o menu_items.o menu_items_storage.o menu_filesel.o menu_file_viewer_browser.o menu_zeng_online.o menu_items_settings.o menu_debug_cpu.o menu_bitmaps.o about_logo.o settings.o core_spectrum.o core_reduced_spectrum.o core_zx8081.o core_z88.o core_cpc.o core_pcw.o core_ace.o core_sam.o core_ql.o core_mk14.o core_msx.o core_svi.o core_coleco.o core_sg1000.o core_sms.o mk14.o scmp.o timer.o contend.o disassemble.o utils.o utils_math.o utils_text_adventure.o playtzx.o mdvtool.o ql_extract_img.o ql_extract_win.o joystick.o ula.o mmc.o neogs_sd.o ide.o pd765.o vg93.o dsk.o plus3dos_handler.o divmmc.o divide.o diviface.o zxpand.o lec.o superupgrade.o dandanator.o gs.o betadisk.o codetests.o kartusho.o samram.o ifrom.o enhanced_zx81_read.o hilow_datadrive.o hilow_barbanegra.o transtape.o mhpokeador.o specmate.o interface007.o dinamid3.o phoenix.o defcon.o ramjet.o datagear.o spritefinder.o zxmmcplus.o multiface.o spectra.o spritechip.o printers.o realjoystick.o ulaplus.o ds1307.o if1.o microdrive.o microdrive_raw.o ql.o ql_qdos_handler.o ql_i8049.o ql_zx8302.o m68kcpu.o m68kdasm.o m68kops.o  m68kopac.o m68kopdm.o m68kopnz.o chrome.o zxevo.o tsconf.o baseconf.o scorpion.o atmturbo.o didaktikgama.o remote.o esxdos_handler.o assemble.o expression_parser.o chardevice.o uartbridge.o network.o zeng.o zeng_online.o zeng_online_client.o zvfs.o atomic.o stats.o sensors.o hilow_datadrive_audio.o scl2trd.o zip.o diskio.o ff.o ffsystem.o ffunicode.o -o zesarux \$(LIBS)
+ 	@echo
+ 	@echo "Compilation finished"
+ 	@echo "You can run it without installing by typing ./zesarux (or just zesarux on Windows)"
+@@ -1383,7 +1383,7 @@ operaciones.o: operaciones.c cpu.h operaciones.h debug.h audio/audio.h storage/t
+ cpu.o: cpu.c cpu.h start.h video/scrnull.h video/scrstdout.h video/scrsimpletext.h operaciones.h debug.h compileoptions.h storage/tape.h storage/tape_tap.h storage/tape_tzx.h audio/audio.h video/screen.h soundchips/ay38912.h machines/chloe.h machines/prism.h machines/tbblue.h mem128.h machines/timex.h video/scrcurses.h video/scraa.h video/scrxwindows.h video/scrsdl.h video/scrfbdev.h audio/audiodsp.h audio/audioonebitspeaker.h audio/audiosdl.h audio/audionull.h audio/audioalsa.h audio/audiopulse.h machines/zx8081.h snap/snap.h zxvision/zxvision.h cores/core_spectrum.h cores/core_zx8081.h cores/core_z88.h storage/tape_smp.h contend.h utils.h utils_text_adventure.h ula.h printers.h joystick.h realjoystick.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h chardetect.h textspeech.h storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/cpc.h machines/sam.h storage/if1.h storage/atomlite.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h storage/superupgrade.h machines/ql.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h machines/chrome.h machines/zxevo.h machines/tsconf.h machines/baseconf.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h storage/betadisk.h storage/pd765.h settings.h datagear.h network.h stats.h storage/hilow_datadrive.h machines/msx.h machines/svi.h machines/coleco.h soundchips/sn76489an.h machines/sg1000.h machines/sms.h machines/ql_qdos_handler.h machines/ql_i8049.h snap/snap_ram.h menu/menu_items.h charset.h menu/menu_filesel.h menu/menu_debug_cpu.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h storage/lec.h audio/audio_ayplayer.h storage/zxmmcplus.h tv.h soundchips/qsound.h cores/core_ql.h machines/scorpion.h machines/atmturbo.h machines/didaktikgama.h
+ 	\$(CC) \$(CFLAGS) -c cpu.c
+ 
+-start.o: start.c start.h cpu.h video/scrnull.h video/scrstdout.h video/scrsimpletext.h operaciones.h debug.h compileoptions.h storage/tape.h storage/tape_tap.h storage/tape_tzx.h audio/audio.h video/screen.h video/screen_fx.h soundchips/ay38912.h machines/chloe.h machines/prism.h machines/tbblue.h mem128.h machines/timex.h video/scrcurses.h video/scraa.h video/scrxwindows.h video/scrsdl.h video/scrfbdev.h audio/audiodsp.h audio/audioonebitspeaker.h audio/audiosdl.h audio/audionull.h audio/audioalsa.h audio/audiopulse.h machines/zx8081.h snap/snap.h snap/snap_zsf.h zxvision/zxvision.h zxvision/zxvision_topbar.h cores/core_spectrum.h cores/core_zx8081.h cores/core_z88.h storage/tape_smp.h contend.h utils.h utils_text_adventure.h ula.h printers.h joystick.h realjoystick.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h chardetect.h textspeech.h storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/cpc.h machines/sam.h storage/if1.h storage/atomlite.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h storage/superupgrade.h machines/ql.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h machines/chrome.h machines/zxevo.h machines/tsconf.h machines/baseconf.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h storage/betadisk.h codetests.h storage/pd765.h settings.h datagear.h network.h stats.h storage/hilow_datadrive.h machines/msx.h machines/svi.h machines/coleco.h soundchips/sn76489an.h machines/sg1000.h machines/sms.h machines/ql_qdos_handler.h machines/ql_i8049.h snap/snap_ram.h menu/menu_items.h charset.h menu/menu_filesel.h menu/menu_debug_cpu.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h zrcp/zeng_online_client.h storage/microdrive.h storage/microdrive_raw.h debug_nested_functions.h audio/audio_ayplayer.h storage/zxmmcplus.h tv.h machines/ql_zx8302.h soundchips/qsound.h uartbridge.h chardevice.h
++start.o: start.c start.h cpu.h video/scrnull.h video/scrstdout.h video/scrsimpletext.h operaciones.h debug.h compileoptions.h storage/tape.h storage/tape_tap.h storage/tape_tzx.h audio/audio.h video/screen.h video/screen_fx.h soundchips/ay38912.h machines/chloe.h machines/prism.h machines/tbblue.h mem128.h machines/timex.h video/scrcurses.h video/scraa.h video/scrxwindows.h video/scrsdl.h video/scrfbdev.h audio/audiodsp.h audio/audioonebitspeaker.h audio/audiosdl.h audio/audionull.h audio/audioalsa.h audio/audiopulse.h machines/zx8081.h snap/snap.h snap/snap_zsf.h zxvision/zxvision.h zxvision/zxvision_topbar.h cores/core_spectrum.h cores/core_zx8081.h cores/core_z88.h storage/tape_smp.h contend.h utils.h utils_text_adventure.h ula.h printers.h joystick.h realjoystick.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h chardetect.h textspeech.h storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/cpc.h machines/sam.h storage/if1.h storage/atomlite.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h storage/superupgrade.h machines/ql.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h machines/chrome.h machines/zxevo.h machines/tsconf.h machines/baseconf.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h storage/betadisk.h codetests.h storage/pd765.h settings.h datagear.h network.h stats.h storage/hilow_datadrive.h machines/msx.h machines/svi.h machines/coleco.h soundchips/sn76489an.h machines/sg1000.h machines/sms.h machines/ql_qdos_handler.h machines/ql_i8049.h snap/snap_ram.h menu/menu_items.h charset.h menu/menu_filesel.h menu/menu_debug_cpu.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h zrcp/zeng_online_client.h storage/microdrive.h storage/microdrive_raw.h debug_nested_functions.h audio/audio_ayplayer.h storage/zxmmcplus.h tv.h machines/ql_zx8302.h soundchips/qsound.h uartbridge.h chardevice.h storage/neogs_sd.h
+ 	\$(CC) \$(CFLAGS) -c start.c
+ 
+ core_reduced_spectrum.o: cores/core_reduced_spectrum.c cores/core_reduced_spectrum.h cores/core_spectrum.h cpu.h debug.h storage/tape.h audio/audio.h video/screen.h soundchips/ay38912.h operaciones.h snap/snap.h timer.h zxvision/zxvision.h chardetect.h compileoptions.h contend.h ula.h utils.h realjoystick.h storage/divmmc.h storage/divide.h storage/diviface.h machines/timex.h machines/zxuno.h machines/prism.h snap/snap_rzx.h storage/superupgrade.h storage/pd765.h machines/zxevo.h machines/tsconf.h machines/baseconf.h settings.h snap/snap_zsf.h zrcp/zeng.h zrcp/zeng_online.h snap/snap_ram.h storage/pd765.h
+@@ -1703,7 +1703,7 @@ zxvision_topbar.o: zxvision/zxvision_topbar.c zxvision/zxvision.h cpu.h joystick
+ menu_filesel.o: menu/menu_filesel.c menu/menu_filesel.h zxvision/zxvision.h menu/menu_file_viewer_browser.h video/screen.h cpu.h debug.h timer.h utils.h compileoptions.h third_party/ff.h third_party/diskio.h zvfs.h snap/snap.h joystick.h textspeech.h network.h ula.h settings.h
+ 	\$(CC) \$(CFLAGS) -c menu/menu_filesel.c
+ 
+-menu_items_storage.o: menu/menu_items_storage.c menu/menu_items.h zxvision/zxvision.h menu/menu_items_settings.h menu/menu_debug_cpu.h menu/menu_zeng_online.h menu/menu_file_viewer_browser.h video/screen.h cpu.h start.h debug.h machines/zx8081.h soundchips/ay38912.h compileoptions.h storage/tape.h audio/audio.h timer.h snap/snap.h operaciones.h third_party/disassemble.h utils.h utils_math.h contend.h joystick.h ula.h printers.h realjoystick.h video/scrstdout.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h charset.h chardetect.h textspeech.h  storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/timex.h machines/chloe.h machines/cpc.h machines/prism.h machines/sam.h storage/if1.h storage/pd765.h storage/atomlite.h machines/tbblue.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h copy_interfaces/multiface.h storage/superupgrade.h cpus/m68k.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h cpus/scmp.h storage/esxdos_handler.h machines/zxevo.h machines/tsconf.h machines/baseconf.h snap/snap_spg.h storage/betadisk.h storage/tape_tzx.h snap/snap_zsf.h settings.h datagear.h assemble.h expression_parser.h uartbridge.h zrcp/zeng.h zrcp/zeng_online.h network.h stats.h video_chips/vdp_9918a.h machines/msx.h machines/coleco.h machines/sg1000.h machines/sms.h machines/svi.h soundchips/sn76489an.h machines/ql_qdos_handler.h machines/ql_i8049.h soundchips/gs.h zvfs.h video_chips/vdp_9918a_sms.h snap/snap_ram.h sensors.h storage/samram.h storage/hilow_datadrive.h menu/menu_filesel.h menu/menu_bitmaps.h utils_text_adventure.h about_logo.h storage/hilow_datadrive_audio.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h machines/mk14.h storage/microdrive.h storage/microdrive_raw.h storage/lec.h zesarux.h storage/zxmmcplus.h enhanced_zx81_read.h machines/scorpion.h machines/zxevo.h machines/atmturbo.h
++menu_items_storage.o: menu/menu_items_storage.c menu/menu_items.h zxvision/zxvision.h menu/menu_items_settings.h menu/menu_debug_cpu.h menu/menu_zeng_online.h menu/menu_file_viewer_browser.h video/screen.h cpu.h start.h debug.h machines/zx8081.h soundchips/ay38912.h compileoptions.h storage/tape.h audio/audio.h timer.h snap/snap.h operaciones.h third_party/disassemble.h utils.h utils_math.h contend.h joystick.h ula.h printers.h realjoystick.h video/scrstdout.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h charset.h chardetect.h textspeech.h  storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/timex.h machines/chloe.h machines/cpc.h machines/prism.h machines/sam.h storage/if1.h storage/pd765.h storage/atomlite.h machines/tbblue.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h copy_interfaces/multiface.h storage/superupgrade.h cpus/m68k.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h cpus/scmp.h storage/esxdos_handler.h machines/zxevo.h machines/tsconf.h machines/baseconf.h snap/snap_spg.h storage/betadisk.h storage/tape_tzx.h snap/snap_zsf.h settings.h datagear.h assemble.h expression_parser.h uartbridge.h zrcp/zeng.h zrcp/zeng_online.h network.h stats.h video_chips/vdp_9918a.h machines/msx.h machines/coleco.h machines/sg1000.h machines/sms.h machines/svi.h soundchips/sn76489an.h machines/ql_qdos_handler.h machines/ql_i8049.h soundchips/gs.h zvfs.h video_chips/vdp_9918a_sms.h snap/snap_ram.h sensors.h storage/samram.h storage/hilow_datadrive.h menu/menu_filesel.h menu/menu_bitmaps.h utils_text_adventure.h about_logo.h storage/hilow_datadrive_audio.h copy_interfaces/hilow_barbanegra.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h machines/mk14.h storage/microdrive.h storage/microdrive_raw.h storage/lec.h zesarux.h storage/zxmmcplus.h enhanced_zx81_read.h machines/scorpion.h machines/zxevo.h machines/atmturbo.h storage/neogs_sd.h
+ 	\$(CC) \$(CFLAGS) -c menu/menu_items_storage.c
+ 
+ menu_items.o: menu/menu_items.c menu/menu_items.h menu/menu_items_storage.h zxvision/zxvision.h menu/menu_items_settings.h menu/menu_debug_cpu.h menu/menu_zeng_online.h menu/menu_file_viewer_browser.h video/screen.h cpu.h start.h debug.h machines/zx8081.h soundchips/ay38912.h compileoptions.h storage/tape.h audio/audio.h timer.h snap/snap.h operaciones.h third_party/disassemble.h utils.h utils_math.h contend.h joystick.h ula.h printers.h realjoystick.h video/scrstdout.h machines/z88.h video_chips/ulaplus.h autoselectoptions.h machines/zxuno.h charset.h chardetect.h textspeech.h  storage/mmc.h storage/ide.h storage/divmmc.h storage/divide.h storage/diviface.h storage/zxpand.h video_chips/spectra.h video_chips/spritechip.h machines/jupiterace.h machines/timex.h machines/chloe.h machines/cpc.h machines/prism.h machines/sam.h storage/if1.h storage/pd765.h storage/atomlite.h machines/tbblue.h storage/dandanator.h spritefinder.h copy_interfaces/multiface.h cpus/m68k.h zrcp/remote.h snap/snap_rzx.h copy_interfaces/multiface.h cpus/scmp.h storage/esxdos_handler.h machines/zxevo.h machines/tsconf.h machines/baseconf.h snap/snap_spg.h storage/betadisk.h storage/tape_tzx.h snap/snap_zsf.h settings.h datagear.h assemble.h expression_parser.h uartbridge.h zrcp/zeng.h zrcp/zeng_online.h network.h stats.h video_chips/vdp_9918a.h machines/msx.h machines/coleco.h machines/sg1000.h machines/sms.h machines/svi.h soundchips/sn76489an.h machines/ql_qdos_handler.h machines/ql_i8049.h soundchips/gs.h zvfs.h video_chips/vdp_9918a_sms.h snap/snap_ram.h sensors.h storage/samram.h menu/menu_filesel.h menu/menu_bitmaps.h utils_text_adventure.h about_logo.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h zrcp/zeng_online.h machines/mk14.h storage/microdrive.h storage/microdrive_raw.h storage/lec.h audio/audio_ayplayer.h storage/zxmmcplus.h zrcp/zeng_online_client.h zxvision/zxvision_topbar.h video_chips/video_chips_common.h storage/kartusho.h storage/ifrom.h storage/lec.h soundchips/qsound.h machines/zxevo.h machines/scorpion.h machines/atmturbo.h video/screen_fx.h
+@@ -1733,7 +1733,7 @@ settings.o: settings.c settings.h menu/menu_items.h zxvision/zxvision.h video/sc
+ disassemble.o: third_party/disassemble.c third_party/disassemble.h cpu.h operaciones.h debug.h machines/ql.h utils.h cpus/scmp.h zxvision/zxvision.h machines/tbblue.h utils_text_adventure.h menu/menu_debug_cpu.h
+ 	\$(CC) \$(CFLAGS) -c third_party/disassemble.c
+ 
+-utils.o: utils.c utils.h utils_math.h cpu.h start.h debug.h joystick.h compileoptions.h storage/tape.h snap/snap.h video/screen.h video/screen_fx.h realjoystick.h zxvision/zxvision.h machines/z88.h third_party/playtzx.h storage/tape_tzx.h storage/tape_pzx.h operaciones.h machines/zx8081.h autoselectoptions.h video_chips/ulaplus.h soundchips/ay38912.h textspeech.h video_chips/spectra.h machines/zxuno.h video_chips/spritechip.h machines/timex.h machines/cpc.h machines/sam.h storage/divmmc.h storage/divide.h storage/superupgrade.h chardetect.h machines/zx8081.h machines/jupiterace.h storage/mmc.h storage/ide.h storage/zxpand.h storage/diviface.h storage/divmmc.h storage/divide.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h machines/ql.h cpus/m68k.h zrcp/remote.h ula.h snap/snap_rzx.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h machines/tbblue.h machines/zxevo.h machines/tsconf.h machines/baseconf.h third_party/mdvtool.h storage/betadisk.h storage/pd765.h settings.h datagear.h zrcp/zeng.h zrcp/zeng_online.h network.h stats.h third_party/scl2trd.h third_party/zip.h machines/msx.h machines/coleco.h machines/sg1000.h machines/sms.h machines/svi.h charset.h snap/snap_zsf.h machines/ql_qdos_handler.h machines/ql_i8049.h storage/samram.h third_party/ff.h third_party/diskio.h third_party/ffconf.h zvfs.h snap/snap_ram.h menu/menu_items.h menu/menu_items_storage.h storage/tape_smp.h menu/menu_file_viewer_browser.h menu/menu_filesel.h utils_text_adventure.h menu/menu_debug_cpu.h storage/hilow_datadrive.h storage/hilow_datadrive_audio.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h menu/menu_bitmaps.h zrcp/zeng_online_client.h zrcp/zeng_online.h storage/if1.h storage/microdrive.h storage/microdrive_raw.h storage/lec.h audio/audio_ayplayer.h storage/zxmmcplus.h enhanced_zx81_read.h zxvision/zxvision_topbar.h tv.h machines/ql_zx8302.h third_party/ql_extract_img.h soundchips/qsound.h third_party/ql_extract_win.h machines/scorpion.h machines/didaktikgama.h machines/atmturbo.h
++utils.o: utils.c utils.h utils_math.h cpu.h start.h debug.h joystick.h compileoptions.h storage/tape.h snap/snap.h video/screen.h video/screen_fx.h realjoystick.h zxvision/zxvision.h machines/z88.h third_party/playtzx.h storage/tape_tzx.h storage/tape_pzx.h operaciones.h machines/zx8081.h autoselectoptions.h video_chips/ulaplus.h soundchips/ay38912.h textspeech.h video_chips/spectra.h machines/zxuno.h video_chips/spritechip.h machines/timex.h machines/cpc.h machines/sam.h storage/divmmc.h storage/divide.h storage/superupgrade.h chardetect.h machines/zx8081.h machines/jupiterace.h storage/mmc.h storage/ide.h storage/zxpand.h storage/diviface.h storage/divmmc.h storage/divide.h storage/dandanator.h storage/kartusho.h storage/ifrom.h spritefinder.h machines/ql.h cpus/m68k.h zrcp/remote.h ula.h snap/snap_rzx.h cpus/scmp.h machines/mk14.h storage/esxdos_handler.h machines/tbblue.h machines/zxevo.h machines/tsconf.h machines/baseconf.h third_party/mdvtool.h storage/betadisk.h storage/pd765.h settings.h datagear.h zrcp/zeng.h zrcp/zeng_online.h network.h stats.h third_party/scl2trd.h third_party/zip.h machines/msx.h machines/coleco.h machines/sg1000.h machines/sms.h machines/svi.h charset.h snap/snap_zsf.h machines/ql_qdos_handler.h machines/ql_i8049.h storage/samram.h third_party/ff.h third_party/diskio.h third_party/ffconf.h zvfs.h snap/snap_ram.h menu/menu_items.h menu/menu_items_storage.h storage/tape_smp.h menu/menu_file_viewer_browser.h menu/menu_filesel.h utils_text_adventure.h menu/menu_debug_cpu.h storage/hilow_datadrive.h storage/hilow_datadrive_audio.h copy_interfaces/transtape.h copy_interfaces/mhpokeador.h copy_interfaces/specmate.h copy_interfaces/phoenix.h copy_interfaces/defcon.h copy_interfaces/ramjet.h copy_interfaces/interface007.h copy_interfaces/dinamid3.h dsk.h storage/plus3dos_handler.h machines/pcw.h menu/menu_bitmaps.h zrcp/zeng_online_client.h zrcp/zeng_online.h storage/if1.h storage/microdrive.h storage/microdrive_raw.h storage/lec.h audio/audio_ayplayer.h storage/zxmmcplus.h enhanced_zx81_read.h zxvision/zxvision_topbar.h tv.h machines/ql_zx8302.h third_party/ql_extract_img.h soundchips/qsound.h third_party/ql_extract_win.h machines/scorpion.h machines/didaktikgama.h machines/atmturbo.h storage/neogs_sd.h
+ 	\$(CC) \$(CFLAGS) -c utils.c
+ 
+ utils_math.o: utils_math.c utils_math.h cpu.h debug.h
+@@ -1791,7 +1791,10 @@ zxpand.o: storage/zxpand.c storage/zxpand.h storage/mmc.h cpu.h debug.h utils.h
+ dandanator.o: storage/dandanator.c storage/dandanator.h cpu.h debug.h utils.h operaciones.h ula.h audio/audio.h video/screen.h menu/menu_items.h
+ 	\$(CC) \$(CFLAGS) -c storage/dandanator.c
+ 
+-gs.o: soundchips/gs.c soundchips/gs.h cpu.h debug.h utils.h operaciones.h contend.h audio/audio.h
++neogs_sd.o: storage/neogs_sd.c storage/neogs_sd.h cpu.h debug.h
++	\$(CC) \$(CFLAGS) -c storage/neogs_sd.c
++
++gs.o: soundchips/gs.c soundchips/gs.h storage/neogs_sd.h video/screen.h cpus/z80_codsinpr.h cpu.h debug.h utils.h operaciones.h contend.h audio/audio.h
+ 	\$(CC) \$(CFLAGS) -c soundchips/gs.c
+ 
+ betadisk.o: storage/betadisk.c storage/betadisk.h cpu.h debug.h utils.h operaciones.h ula.h mem128.h video/screen.h machines/tsconf.h menu/menu_items.h menu/menu_items_storage.h settings.h timer.h menu/menu_filesel.h
+diff --git a/src/menu/menu_items_storage.c b/src/menu/menu_items_storage.c
+index 05339cc..0bc52d8 100644
+--- a/src/menu/menu_items_storage.c
++++ b/src/menu/menu_items_storage.c
+@@ -127,6 +127,7 @@
+ #include "ql_qdos_handler.h"
+ #include "ql_i8049.h"
+ #include "gs.h"
++#include "neogs_sd.h"
+ #include "zvfs.h"
+ #include "vdp_9918a_sms.h"
+ #include "snap_ram.h"
+@@ -12523,6 +12524,48 @@ void menu_storage_baseconf_sd_interface(MENU_ITEM_PARAMETERS)
+     baseconf_sd_interface_enabled.v ^=1;
+ }
+ 
++static int menu_select_neogs_file(char *title, char *filters[], char *previous, char *path)
++{
++    char current_dir[PATH_MAX];
++    if (!getcwd(current_dir, sizeof current_dir)) return 0;
++    if (previous[0]) {
++        char dir[PATH_MAX];
++        util_get_dir(previous, dir);
++        zvfs_chdir(dir);
++    }
++    int selected = menu_filesel(title, filters, path);
++    zvfs_chdir(current_dir);
++    return selected == 1;
++}
++
++static void menu_storage_neogs_rom(MENU_ITEM_PARAMETERS)
++{
++    char path[PATH_MAX] = "";
++    char *filters[] = {"rom", NULL};
++    if (!menu_select_neogs_file("Select NeoGS firmware", filters, neogs_rom_path, path)) return;
++    neogs_enable(path);
++}
++
++static void menu_storage_neogs_enable(MENU_ITEM_PARAMETERS)
++{
++    if (neogs_mode) gs_disable();
++    else if (neogs_rom_path[0]) neogs_enable(neogs_rom_path);
++    else menu_storage_neogs_rom(0);
++}
++
++static void menu_storage_neogs_sd_file(MENU_ITEM_PARAMETERS)
++{
++    char path[PATH_MAX] = "";
++    char *filters[] = {"img", "sd", "sdhc", "mmc", NULL};
++    if (menu_select_neogs_file("Insert NeoGS SD image", filters, neogs_sd_path, path))
++        neogs_sd_insert(path);
++}
++
++static void menu_storage_neogs_sd_eject(MENU_ITEM_PARAMETERS)
++{
++    neogs_sd_eject();
++}
++
+ //menu MMC/Divmmc
+ void menu_mmc_divmmc(MENU_ITEM_PARAMETERS)
+ {
+@@ -12742,6 +12785,31 @@ void menu_mmc_divmmc(MENU_ITEM_PARAMETERS)
+ 
+         menu_add_item_menu_separator(array_menu_mmc_divmmc);
+ 
++        if (MACHINE_IS_SPECTRUM) {
++            char shown[17];
++            menu_add_item_menu_format(array_menu_mmc_divmmc, MENU_OPCION_SEPARADOR,
++                NULL, NULL, "--- NeoGS ---");
++            menu_add_item_menu_format(array_menu_mmc_divmmc, MENU_OPCION_NORMAL,
++                menu_storage_neogs_enable, NULL, "[%c] NeoGS", neogs_mode ? 'X' : ' ');
++            menu_tape_settings_trunc_name(neogs_rom_path, shown, sizeof shown);
++            menu_add_item_menu_format(array_menu_mmc_divmmc, MENU_OPCION_NORMAL,
++                menu_storage_neogs_rom, NULL, "NeoGS firmware [%s]", shown);
++            menu_add_item_menu_prefijo(array_menu_mmc_divmmc, "    ");
++            menu_add_item_menu_add_flags(array_menu_mmc_divmmc, MENU_ITEM_FLAG_GENERA_VENTANA);
++            menu_tape_settings_trunc_name(neogs_sd_path, shown, sizeof shown);
++            menu_add_item_menu_format(array_menu_mmc_divmmc, MENU_OPCION_NORMAL,
++                menu_storage_neogs_sd_file, NULL, "NeoGS SD [%s]",
++                neogs_sd_inserted() ? shown : "Empty");
++            menu_add_item_menu_prefijo(array_menu_mmc_divmmc, "    ");
++            menu_add_item_menu_add_flags(array_menu_mmc_divmmc, MENU_ITEM_FLAG_GENERA_VENTANA);
++            if (neogs_sd_inserted()) {
++                menu_add_item_menu_format(array_menu_mmc_divmmc, MENU_OPCION_NORMAL,
++                    menu_storage_neogs_sd_eject, NULL, "Eject NeoGS SD");
++                menu_add_item_menu_prefijo(array_menu_mmc_divmmc, "    ");
++            }
++            menu_add_item_menu_separator(array_menu_mmc_divmmc);
++        }
++
+         /* No tiene sentido este viewer aqui, mucho mejor el browser
+         menu_add_item_menu_format(array_menu_mmc_divmmc,MENU_OPCION_NORMAL,menu_storage_mmc_viewer,menu_storage_mmc_emulation_cond,"MMC ~~Viewer");
+         menu_add_item_menu_shortcut(array_menu_mmc_divmmc,'v');
+diff --git a/src/operaciones.c b/src/operaciones.c
+index bfe9d4c..b35dc0c 100644
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -9797,6 +9797,7 @@ acts as expected unless this registe is explicitly changed by the user/software.
+                 if (gs_enabled.v) {
+                     if (puerto_l==0xBB) gs_write_port_bb_from_speccy(value);
+                     if (puerto_l==0xB3) gs_write_port_b3_from_speccy(value);
++                    if (puerto_l==0x33) gs_write_port_33_from_speccy(value);
+                 }
+ 
+ 
+diff --git a/src/soundchips/gs.c b/src/soundchips/gs.c
+index 0113142..dd08cfc 100644
+--- a/src/soundchips/gs.c
++++ b/src/soundchips/gs.c
+@@ -25,6 +25,8 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
++#include <stdint.h>
+ #include <dirent.h>
+ 
+ 
+@@ -35,12 +37,51 @@
+ #include "operaciones.h"
+ #include "contend.h"
+ #include "audio.h"
++#include "neogs_sd.h"
++#include "screen.h"
++#include "z80_codsinpr.h"
+ 
+ z80_bit gs_enabled={0};
+ z80_bit gs_enabled_on_start={0};
+ 
+ 
+ 
++enum {
++    NEOGS_FLASH_SIZE = 512 * 1024,
++    NEOGS_RAM_SIZE = 4 * 1024 * 1024,
++    NEOGS_TICKS_PER_LINE = 7680,
++    NEOGS_TIMER_PERIOD = 3200
++};
++
++int neogs_mode;
++int neogs_enabled_on_start;
++char neogs_rom_path[PATH_MAX];
++
++static z80_byte neogs_config;
++static z80_byte neogs_page[4];
++static z80_byte neogs_serial_control;
++static z80_byte neogs_spi_rx;
++static int neogs_nmi_pending;
++static unsigned int neogs_clock;
++static unsigned int neogs_timer_rate;
++static unsigned int neogs_next_interrupt;
++
++static void gs_run_cpu(unsigned int neogs_target);
++
++static unsigned int neogs_ticks_at(int spectrum_tstates)
++{
++    if (spectrum_tstates <= 0 || screen_testados_linea <= 0) return 0;
++    return (uint64_t)spectrum_tstates * NEOGS_TICKS_PER_LINE / screen_testados_linea;
++}
++
++/* The shared ZX/GS mailbox changes on both CPUs. Deliver the GS cycles
++   elapsed before each ZX bus access, using the same clock as the scanline. */
++static void neogs_sync_to_spectrum(void)
++{
++    unsigned int target = neogs_ticks_at(t_estados);
++    if (neogs_clock < target) gs_run_cpu(target);
++}
++
+ z80_byte *gs_memory_pointer;
+ 
+ 
+@@ -96,8 +137,26 @@ z80_byte gs_dac_valor_final_right;
+ //31=1024 kb
+ z80_byte gs_memory_mapping_mask_pages=15;
+ 
++static void neogs_set_memory_mapping(void)
++{
++    for (int window = 0; window < 4; window++) {
++        unsigned int page = neogs_page[window];
++        int rom = !(neogs_config & 1) && window != 1;
++        if (rom) page &= 0x1f;
++        gs_memory_mapped[window] = gs_memory_pointer +
++            (rom ? 0 : NEOGS_FLASH_SIZE) + 16384 * page;
++        gs_memory_mapped_types[window] = !rom &&
++            !((neogs_config & 3) == 3 && page < 2);
++    }
++}
++
+ void gs_set_memory_mapping(void)
+ {
++    if (neogs_mode) {
++        neogs_set_memory_mapping();
++        return;
++    }
++
+ /*
+ 
+ port 0 "extended memory"
+@@ -327,8 +386,25 @@ void gs_poke_byte(z80_int dir,z80_byte valor)
+ 
+ z80_byte gs_lee_puerto(z80_byte puerto_h GCC_UNUSED,z80_byte puerto_l)
+ {
+-    //Solo los 4 bits inferiores
+-    puerto_l &=0xf;
++    if (neogs_mode) {
++        t_estados += 4;
++        switch (puerto_l) {
++            case 0x03: return 0xff;
++            case 0x0f: return neogs_config;
++            case 0x11: return neogs_serial_control;
++            case 0x12:
++                return 0x08 | (neogs_sd_inserted() ? 0 : 0x02) |
++                    (neogs_sd_write_protected() ? 0 : 0x04);
++            case 0x13: return neogs_spi_rx;
++            case 0x14: {
++                z80_byte previous = neogs_spi_rx;
++                neogs_spi_rx = neogs_sd_transfer(0xff);
++                return previous;
++            }
++            default: break;
++        }
++    }
++    else puerto_l &= 0x0f;
+ 
+ 	switch (puerto_l) {
+ 
+@@ -355,12 +431,12 @@ z80_byte gs_lee_puerto(z80_byte puerto_h GCC_UNUSED,z80_byte puerto_l)
+ 
+ 
+ 		case 10:
+-		    if (gs_memory_mapping_value & 0x01) gs_state_register &=0x7f;
++		    if ((neogs_mode ? neogs_page[2] : gs_memory_mapping_value) & 0x01) gs_state_register &=0x7f;
+ 		    else gs_state_register |=0x80;
+ 		break;
+ 
+ 		case 11:
+-		    if (gs_volumes[0] & 0x20) gs_state_register |=1;
++		    if (gs_volumes[neogs_mode ? 3 : 0] & 0x20) gs_state_register |=1;
+ 		    else gs_state_register &=0xfe;
+ 		break;
+ 	}
+@@ -372,8 +448,51 @@ z80_byte gs_lee_puerto(z80_byte puerto_h GCC_UNUSED,z80_byte puerto_l)
+ 
+ void gs_out_port(z80_int puerto,z80_byte value)
+ {
+-    //Solo los 4 bits inferiores
+-    puerto &=0xf;
++    if (neogs_mode) {
++        t_estados += 4;
++        puerto &= 0xff;
++        switch (puerto) {
++            case 0x00:
++                gs_memory_mapping_value = value;
++                neogs_page[2] = (value << 1) | ((neogs_config & 8) ? value >> 7 : 0);
++                if (!(neogs_config & 8)) neogs_page[3] = neogs_page[2] | 1;
++                neogs_set_memory_mapping();
++                return;
++            case 0x02: return;
++            case 0x0e:
++                neogs_timer_rate = value & 7;
++                return;
++            case 0x0f:
++                neogs_config = value;
++                neogs_set_memory_mapping();
++                return;
++            case 0x10:
++                if (neogs_config & 8) {
++                    neogs_page[3] = (value << 1) | (value >> 7);
++                    neogs_set_memory_mapping();
++                }
++                return;
++            case 0x11: {
++                z80_byte mask = value & 0x3f;
++                neogs_serial_control &= ~mask;
++                if (value & 0x80) neogs_serial_control |= mask;
++                neogs_sd_select(!(neogs_serial_control & 1));
++                return;
++            }
++            case 0x13:
++                neogs_spi_rx = neogs_sd_transfer(value);
++                return;
++            case 0x20:
++            case 0x21:
++            case 0x22:
++            case 0x23:
++                neogs_page[puerto - 0x20] = value;
++                neogs_set_memory_mapping();
++                return;
++            default: break;
++        }
++    }
++    else puerto &= 0x0f;
+ 
+     switch(puerto) {
+         case 0:
+@@ -416,12 +535,12 @@ void gs_out_port(z80_int puerto,z80_byte value)
+ 
+ 
+ 		case 10:
+-		    if (gs_memory_mapping_value & 0x01) gs_state_register &=0x7f;
++		    if ((neogs_mode ? neogs_page[2] : gs_memory_mapping_value) & 0x01) gs_state_register &=0x7f;
+ 			else gs_state_register |=0x80;
+ 		break;
+ 
+ 		case 11:
+-		    if (gs_volumes[0] & 0x20) gs_state_register |=1;
++		    if (gs_volumes[neogs_mode ? 3 : 0] & 0x20) gs_state_register |=1;
+ 			else gs_state_register &=0xfe;
+ 		break;
+ 
+@@ -480,6 +599,36 @@ void gs_init_memory_tables(void)
+ 
+ 
+ 
++static void neogs_reset(void)
++{
++    general_sound_z80_cpu.r_pc = 0;
++    general_sound_z80_cpu.r_ir = 0;
++    general_sound_z80_cpu.iff1.v = general_sound_z80_cpu.iff2.v = 0;
++    general_sound_z80_cpu.im_mode = 0;
++    general_sound_z80_cpu.z80_halt_signal.v = 0;
++    gs_state_register = 0x7e;
++    gs_memory_mapping_value = 0;
++    neogs_config = 0x30;
++    neogs_page[0] = 0;
++    neogs_page[1] = 3;
++    neogs_page[2] = 0;
++    neogs_page[3] = 1;
++    neogs_serial_control = 0x0b;
++    neogs_spi_rx = 0xff;
++    neogs_timer_rate = 0;
++    neogs_nmi_pending = 0;
++    neogs_sd_select(0);
++    neogs_set_memory_mapping();
++}
++
++void gs_write_port_33_from_speccy(z80_byte value)
++{
++    if (!neogs_mode) return;
++    neogs_sync_to_spectrum();
++    if ((value & 0xe0) == 0x80) neogs_reset();
++    if ((value & 0xe0) == 0x40) neogs_nmi_pending = 1;
++}
++
+ void gs_reset(void)
+ {
+     gs_memory_mapping_value=0;
+@@ -575,6 +724,51 @@ void gs_enable(void)
+ 
+ }
+ 
++int neogs_enable(const char *path)
++{
++    if (!MACHINE_IS_SPECTRUM) return 0;
++
++    FILE *image = path[0] ? fopen(path, "rb") : NULL;
++    if (!image) {
++        debug_printf(VERBOSE_ERR, "Select a NeoGS firmware file (full_ngs.rom)");
++        return 0;
++    }
++
++    z80_byte *memory = calloc(1, NEOGS_FLASH_SIZE + NEOGS_RAM_SIZE);
++    if (!memory) {
++        fclose(image);
++        cpu_panic("Not enough memory for NeoGS");
++        return 0;
++    }
++
++    int valid = fread(memory, 1, NEOGS_FLASH_SIZE, image) == NEOGS_FLASH_SIZE &&
++        fgetc(image) == EOF && !ferror(image);
++    fclose(image);
++    if (!valid) {
++        free(memory);
++        debug_printf(VERBOSE_ERR, "NeoGS firmware must be a 512 KiB full_ngs.rom image");
++        return 0;
++    }
++
++    gs_disable();
++    gs_memory_pointer = memory;
++    gs_init_peek_poke_etc();
++    if (path != neogs_rom_path) snprintf(neogs_rom_path, sizeof neogs_rom_path, "%s", path);
++    neogs_mode = 1;
++    gs_enabled.v = 1;
++    neogs_clock = neogs_ticks_at(t_estados);
++    neogs_next_interrupt = neogs_clock + NEOGS_TIMER_PERIOD;
++    general_sound_z80_cpu.t_estados = 0;
++    neogs_reset();
++
++    for (int i = 0; i < 4; i++) {
++        gs_dac_channels[i] = 128;
++        gs_volumes[i] = 0;
++    }
++    gs_dac_valor_final_left = gs_dac_valor_final_right = 128;
++    return 1;
++}
++
+ void gs_disable(void)
+ {
+ 	if (gs_enabled.v==0) return;
+@@ -584,6 +778,8 @@ void gs_disable(void)
+ 
+ 
+ 	gs_enabled.v=0;
++    neogs_mode = 0;
++    neogs_sd_select(0);
+ }
+ 
+ 
+@@ -610,6 +806,14 @@ void gs_save_machine_state(struct gs_machine_state *m)
+     m->r_iy=reg_iy;
+ 
+     m->r_ir=IR;
++    m->r_memptr=memptr;
++    m->ed_opcode=pref237_opcode_leido;
++    m->scf_flags_before=scf_ccf_undoc_flags_before;
++    m->scf_flags_changed=scf_ccf_undoc_flags_after_changed;
++    m->block_ld_cp=z80_ejecutada_instruccion_bloque_ld_cp;
++    m->block_ot_in=z80_ejecutada_instruccion_bloque_ot_in;
++    m->block_last_data=z80_last_data_transferred_ot_in;
++    m->wait_signal=z80_wait_signal;
+ 
+     m->iff1.v=iff1.v;
+     m->iff2.v=iff2.v;
+@@ -670,6 +874,14 @@ void gs_restore_machine_state(struct gs_machine_state *m)
+     reg_i=value_16_to_8h(m->r_ir);
+     reg_r=value_16_to_8l(m->r_ir) & 127;
+     reg_r_bit7=value_16_to_8l(m->r_ir) & 128;
++    memptr=m->r_memptr;
++    pref237_opcode_leido=m->ed_opcode;
++    scf_ccf_undoc_flags_before=m->scf_flags_before;
++    scf_ccf_undoc_flags_after_changed=m->scf_flags_changed;
++    z80_ejecutada_instruccion_bloque_ld_cp=m->block_ld_cp;
++    z80_ejecutada_instruccion_bloque_ot_in=m->block_ot_in;
++    z80_last_data_transferred_ot_in=m->block_last_data;
++    z80_wait_signal=m->wait_signal;
+ 
+ 
+     iff1.v=m->iff1.v;
+@@ -753,15 +965,39 @@ void gs_new_video_frame(void)
+     gs_number_interrupts=0;
+     gs_scanline=0;
+     general_sound_z80_cpu.t_estados=0;
++    if (neogs_mode) {
++        unsigned int frame_ticks = neogs_ticks_at(screen_testados_total);
++        neogs_clock = neogs_clock > frame_ticks ? neogs_clock - frame_ticks : 0;
++        neogs_next_interrupt = neogs_next_interrupt > frame_ticks ?
++            neogs_next_interrupt - frame_ticks : NEOGS_TIMER_PERIOD;
++    }
+ 
+ }
+ 
+-void gs_run_scanline_cycles(void)
++static void gs_run_cycles(unsigned int neogs_target)
+ {
+ 
+ 
+ 
+-    while (t_estados/GS_MAX_STATES_LINE<=gs_scanline) {
++    /* Elapsed time in 120 MHz ticks. One NeoGS T-state is 5, 10, 6 or 12
++       ticks at 24, 12, 20 or 10 MHz; the default timer runs at 37.5 kHz. */
++    static const unsigned int ticks_per_state[] = {5, 10, 6, 12};
++    static const unsigned int timer_divisor[] = {1, 2, 4, 8, 16, 64, 256, 1024};
++
++    while (neogs_mode ? neogs_clock < neogs_target :
++            t_estados / GS_MAX_STATES_LINE <= gs_scanline) {
++        int previous_tstates = t_estados;
++        unsigned int ticks = ticks_per_state[(neogs_config >> 4) & 3];
++        if (neogs_mode && neogs_nmi_pending) {
++            neogs_nmi_pending = 0;
++            z80_halt_signal.v = 0;
++            iff2.v = iff1.v;
++            iff1.v = 0;
++            push_valor(reg_pc, PUSH_VALUE_TYPE_NON_MASKABLE_INTERRUPT);
++            reg_pc = 0x66;
++            t_estados += 11;
++        }
++
+ 
+         //printf("Fetch GS opcode at PC=%04XH\n",reg_pc);
+ 
+@@ -783,7 +1019,16 @@ void gs_run_scanline_cycles(void)
+         codsinpr[byte_leido]  () ;
+ 
+ 
+-        if (t_estados/GS_INTERRUPTS_STATES>gs_number_interrupts) {
++        if (neogs_mode) {
++            neogs_clock += (t_estados - previous_tstates) * ticks;
++            if (neogs_clock >= neogs_next_interrupt) {
++                neogs_next_interrupt += NEOGS_TIMER_PERIOD * timer_divisor[neogs_timer_rate];
++                previous_tstates = t_estados;
++                if (iff1.v) gs_generate_interrupt();
++                neogs_clock += (t_estados - previous_tstates) * ticks;
++            }
++        }
++        else if (t_estados/GS_INTERRUPTS_STATES>gs_number_interrupts) {
+             //printf("Generar interrupcion en t_estados %d numero interrupciones: %d\n",t_estados,gs_number_interrupts);
+             gs_number_interrupts++;
+             //Generar interrupcion
+@@ -798,7 +1043,7 @@ void gs_run_scanline_cycles(void)
+ 
+     //printf("FIN scanline GS en t_estados: %d\n",t_estados);
+ 
+-    gs_scanline++;
++    if (!neogs_mode) gs_scanline++;
+ 
+ 
+     //enviar dac
+@@ -820,7 +1065,7 @@ Lo que hago es ejecutar un scanline entero de Spectrum, y luego otro scanline de
+ Dado que el GS va a mayor velocidad, los t-estados por linea son mayores que el Spectrum
+ 
+ */
+-void gs_fetch_opcodes_scanlines(void)
++static void gs_run_cpu(unsigned int neogs_target)
+ {
+ 
+     //printf("reg pc antes de ciclo GS %04XH\n",reg_pc);
+@@ -832,7 +1077,7 @@ void gs_fetch_opcodes_scanlines(void)
+     gs_restore_machine_state(&general_sound_z80_cpu);
+ 
+     //Ejecutar todos los ciclos...
+-    gs_run_scanline_cycles();
++    gs_run_cycles(neogs_target);
+ 
+     //Guardar estado maquina general sound
+     gs_save_machine_state(&general_sound_z80_cpu);
+@@ -845,9 +1090,16 @@ void gs_fetch_opcodes_scanlines(void)
+ 
+ 
+ 
++void gs_fetch_opcodes_scanlines(void)
++{
++    if (neogs_mode) neogs_sync_to_spectrum();
++    else gs_run_cpu(0);
++}
++
+ //Funciones de lectura y escritura desde la parte de spectrum
+ void gs_write_port_bb_from_speccy(z80_byte value)
+ {
++    if (neogs_mode) neogs_sync_to_spectrum();
+     //printf("Write port BB from speccy side. value %02XH\n",value);
+ 
+     gs_command_register=value;
+@@ -857,6 +1109,7 @@ void gs_write_port_bb_from_speccy(z80_byte value)
+ 
+ void gs_write_port_b3_from_speccy(z80_byte value)
+ {
++    if (neogs_mode) neogs_sync_to_spectrum();
+     //printf("Write port B3 from speccy side. value %02XH\n",value);
+     gs_data_register=value;
+ 
+@@ -866,6 +1119,7 @@ void gs_write_port_b3_from_speccy(z80_byte value)
+ 
+ z80_byte gs_read_port_bb_from_speccy(void)
+ {
++    if (neogs_mode) neogs_sync_to_spectrum();
+     //printf("Read port BB from speccy side. value = %d.\n",gs_state_register);
+ 
+ 
+@@ -876,6 +1130,7 @@ z80_byte gs_read_port_bb_from_speccy(void)
+ 
+ z80_byte gs_read_port_b3_from_speccy(void)
+ {
++    if (neogs_mode) neogs_sync_to_spectrum();
+     //printf("Read port B3 from speccy side.\n");
+ 
+     gs_state_register &=0x7f;
+diff --git a/src/soundchips/gs.h b/src/soundchips/gs.h
+index 764d32d..e69feb0 100644
+--- a/src/soundchips/gs.h
++++ b/src/soundchips/gs.h
+@@ -23,6 +23,7 @@
+ #define GS_H
+ 
+ #include "cpu.h"
++#include <limits.h>
+ 
+ 
+ //Tamanyos en KB de la rom y ram
+@@ -40,6 +41,12 @@
+ #define GS_INTERRUPTS_STATES 334
+ 
+ 
++extern char neogs_rom_path[PATH_MAX];
++extern int neogs_mode;
++extern int neogs_enabled_on_start;
++extern int neogs_enable(const char *path);
++extern void gs_write_port_33_from_speccy(z80_byte value);
++
+ extern z80_bit gs_enabled;
+ extern z80_bit gs_enabled_on_start;
+ extern void gs_enable(void);
+@@ -61,7 +68,13 @@ struct gs_machine_state {
+ 
+ //header[20]=(reg_r&127) | (reg_r_bit7&128);
+ 
+-    z80_int r_ir;
++    z80_int r_ir,r_memptr;
++    z80_byte ed_opcode;
++    z80_byte scf_flags_before;
++    int scf_flags_changed;
++    int block_ld_cp,block_ot_in;
++    z80_byte block_last_data;
++    z80_bit wait_signal;
+ 
+     z80_bit iff1,iff2;
+     z80_byte im_mode;
+diff --git a/src/start.c b/src/start.c
+index 7428510..6560a64 100644
+--- a/src/start.c
++++ b/src/start.c
+@@ -64,6 +64,7 @@
+ #include "audio.h"
+ #include "audio_ayplayer.h"
+ #include "gs.h"
++#include "neogs_sd.h"
+ #include "screen.h"
+ #include "screen_fx.h"
+ #include "ay38912.h"
+@@ -864,6 +865,10 @@ void zesarux_cmdline_help_expert(void)
+ printf (
+         "\n"
+         "--enablegeneralsound             Enable General Sound emulation\n"
++        "--enable-neogs                  Enable NeoGS instead of General Sound\n"
++        "--disable-neogs                 Disable NeoGS emulation\n"
++        "--neogs-rom f                   Set external NeoGS full_ngs.rom (512 KiB)\n"
++        "--neogs-sd-file f               Insert a raw image into the NeoGS SD slot\n"
+         "--disablegeneralsound            Disable General Sound emulation\n"
+         "--audiovolume n                  Sets the audio output volume to percentage n\n"
+         "--nagraaudio                     Enable Nagravision audio filter\n"
+@@ -6840,8 +6845,39 @@ int parse_cmdline_options(int desde_commandline)
+                                                                 audiodac_enabled.v=1;
+             }
+ 
++            else if (!strcmp(argv[puntero_parametro],"--neogs-rom") ||
++                     !strcmp(argv[puntero_parametro],"--neogs-sd-file")) {
++                char *path = !strcmp(argv[puntero_parametro],"--neogs-rom") ?
++                    neogs_rom_path : neogs_sd_path;
++                siguiente_parametro_argumento();
++                char *argument = argv[puntero_parametro];
++                int written;
++                if (si_ruta_absoluta(argument)) {
++                    written = snprintf(path, PATH_MAX, "%s", argument);
++                }
++                else {
++                    char current_dir[PATH_MAX];
++                    written = getcwd(current_dir, sizeof current_dir) ?
++                        snprintf(path, PATH_MAX, "%s/%s", current_dir, argument) : -1;
++                }
++                if (written < 0 || written >= PATH_MAX) {
++                    path[0] = 0;
++                    debug_printf(VERBOSE_ERR, "Invalid NeoGS file path");
++                }
++            }
++
++            else if (!strcmp(argv[puntero_parametro],"--enable-neogs")) {
++                neogs_enabled_on_start = 1;
++                gs_enabled_on_start.v = 0;
++            }
++
++            else if (!strcmp(argv[puntero_parametro],"--disable-neogs")) {
++                neogs_enabled_on_start = 0;
++            }
++
+             else if (!strcmp(argv[puntero_parametro],"--enablegeneralsound")) {
+                 gs_enabled_on_start.v=1;
++                neogs_enabled_on_start = 0;
+             }
+ 
+             else if (!strcmp(argv[puntero_parametro],"--disablegeneralsound")) {
+@@ -9177,7 +9213,9 @@ Also, you should keep the following copyright message, beginning with "Begin Cop
+ 
+     reset_cpu();
+ 
+-    if (gs_enabled_on_start.v) gs_enable();
++    if (neogs_sd_path[0]) neogs_sd_insert(neogs_sd_path);
++    if (neogs_enabled_on_start) neogs_enable(neogs_rom_path);
++    else if (gs_enabled_on_start.v) gs_enable();
+ 
+     //Algun parametro que se resetea con reset_cpu y/o set_machine y se puede haber especificado por linea de comandos
+     if (command_line_zx8081_vsync_sound.v) zx8081_vsync_sound.v=1;
+diff --git a/src/storage/neogs_sd.c b/src/storage/neogs_sd.c
+new file mode 100644
+index 0000000..415dec5
+--- /dev/null
++++ b/src/storage/neogs_sd.c
+@@ -0,0 +1,359 @@
++/*
++ * NeoGS SD slot. The expansion card has its own SPI bus, independent
++ * of the Spectrum's MMC/SD controllers.
++ */
++
++#include <stdint.h>
++#include <stdio.h>
++#include <string.h>
++
++#include "neogs_sd.h"
++#include "debug.h"
++
++enum { SD_BLOCK_SIZE = 512 };
++enum sd_stream { SD_COMMAND, SD_READ_MULTI, SD_WRITE_SINGLE, SD_WRITE_MULTI };
++
++char neogs_sd_path[PATH_MAX];
++
++static struct {
++    FILE *image;
++    uint64_t size;
++    uint64_t offset;
++    int protected;
++    int selected;
++    int idle;
++    int app_command;
++    int crc_enabled;
++    int high_capacity;
++    int block_addressing;
++    enum sd_stream stream;
++    z80_byte command[6];
++    unsigned int command_size;
++    z80_byte response[SD_BLOCK_SIZE + 5];
++    unsigned int response_size;
++    unsigned int response_pos;
++    z80_byte write_block[SD_BLOCK_SIZE + 2];
++    unsigned int write_size;
++} sd;
++
++void neogs_sd_select(int selected)
++{
++    if (sd.selected == selected) return;
++
++    sd.selected = selected;
++    sd.command_size = 0;
++    sd.response_size = sd.response_pos = 0;
++    sd.write_size = 0;
++    sd.stream = SD_COMMAND;
++    /* CMD55's prefix and card initialization survive a CS transition. */
++}
++
++int neogs_sd_insert(const char *path)
++{
++    int protected = 0;
++    FILE *image = fopen(path, "r+b");
++    if (!image) {
++        image = fopen(path, "rb");
++        protected = 1;
++    }
++
++    if (!image) {
++        debug_printf(VERBOSE_ERR, "Unable to open NeoGS SD image %s", path);
++        return 0;
++    }
++
++    off_t size = fseeko(image, 0, SEEK_END) == 0 ? ftello(image) : -1;
++    if (size < 4 * SD_BLOCK_SIZE || size % SD_BLOCK_SIZE != 0 ||
++        (uint64_t)size > (UINT64_C(1) << 41)) {
++        debug_printf(VERBOSE_ERR, "NeoGS SD requires a raw sector-aligned image between 2 KiB and 2 TiB");
++        fclose(image);
++        return 0;
++    }
++
++    neogs_sd_eject();
++    sd.image = image;
++    sd.size = size;
++    sd.protected = protected;
++    sd.idle = 1;
++    sd.high_capacity = sd.size >= (UINT64_C(2) << 30);
++    if (path != neogs_sd_path) snprintf(neogs_sd_path, sizeof neogs_sd_path, "%s", path);
++    return 1;
++}
++
++void neogs_sd_eject(void)
++{
++    if (sd.image) fclose(sd.image);
++
++    int selected = sd.selected;
++    memset(&sd, 0, sizeof sd);
++    sd.selected = selected;
++}
++
++int neogs_sd_inserted(void)
++{
++    return sd.image != NULL;
++}
++
++int neogs_sd_write_protected(void)
++{
++    return sd.protected;
++}
++
++static unsigned int sd_crc7(const z80_byte *data, unsigned int size)
++{
++    unsigned int crc = 0;
++    for (unsigned int i = 0; i < size; i++) {
++        crc ^= data[i];
++        for (int bit = 0; bit < 8; bit++) {
++            crc = ((crc << 1) ^ ((crc & 0x80) ? 0x12 : 0)) & 0xff;
++        }
++    }
++    return crc | 1;
++}
++
++static unsigned int sd_crc16(const z80_byte *data, unsigned int size)
++{
++    unsigned int crc = 0;
++    for (unsigned int i = 0; i < size; i++) {
++        crc ^= (unsigned int)data[i] << 8;
++        for (int bit = 0; bit < 8; bit++) {
++            crc = ((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0)) & 0xffff;
++        }
++    }
++    return crc;
++}
++
++static void sd_reply(z80_byte value)
++{
++    sd.response[sd.response_size++] = value;
++}
++
++static void sd_reply_data(const z80_byte *data, unsigned int size)
++{
++    unsigned int crc = sd_crc16(data, size);
++    sd_reply(0xff);
++    sd_reply(0xfe);
++    memcpy(sd.response + sd.response_size, data, size);
++    sd.response_size += size;
++    sd_reply(crc >> 8);
++    sd_reply(crc);
++}
++
++static void sd_reply_csd(void)
++{
++    z80_byte csd[16] = {0};
++    csd[1] = 0x0e;
++    csd[3] = 0x32;
++    csd[4] = 0x5b;
++    csd[5] = 0x59;
++    csd[12] = 0x02;
++    csd[13] = 0x40;
++
++    if (sd.high_capacity) {
++        unsigned int c_size = sd.size / (512 * 1024) - 1;
++        csd[0] = 0x40;
++        csd[7] = (c_size >> 16) & 0x3f;
++        csd[8] = c_size >> 8;
++        csd[9] = c_size;
++    }
++    else {
++        uint64_t units = sd.size / (4 * SD_BLOCK_SIZE);
++        unsigned int multiplier = 0;
++        while (units > 4096 && multiplier < 7) {
++            units >>= 1;
++            multiplier++;
++        }
++        if (units > 4096) {
++            units >>= 1;
++            csd[5] = 0x5a;
++        }
++        unsigned int c_size = units - 1;
++        csd[6] = c_size >> 10;
++        csd[7] = c_size >> 2;
++        csd[8] = c_size << 6;
++        csd[9] = multiplier >> 1;
++        csd[10] = multiplier << 7;
++    }
++    csd[15] = sd_crc7(csd, sizeof csd - 1);
++    sd_reply_data(csd, sizeof csd);
++}
++
++static int sd_seek_block(void)
++{
++    return sd.offset <= sd.size - SD_BLOCK_SIZE &&
++        fseeko(sd.image, (off_t)sd.offset, SEEK_SET) == 0;
++}
++
++static void sd_reply_block(void)
++{
++    z80_byte block[SD_BLOCK_SIZE];
++    if (sd_seek_block() && fread(block, 1, sizeof block, sd.image) == sizeof block) {
++        sd_reply_data(block, sizeof block);
++        sd.offset += SD_BLOCK_SIZE;
++    }
++    else {
++        sd_reply(0x08); /* data error token: out of range or backing read failure */
++        sd.stream = SD_COMMAND;
++    }
++}
++
++static void sd_finish_write(void)
++{
++    unsigned int crc = sd.write_block[SD_BLOCK_SIZE] * 256u + sd.write_block[SD_BLOCK_SIZE + 1];
++    if (sd.crc_enabled && crc != sd_crc16(sd.write_block, SD_BLOCK_SIZE)) {
++        sd_reply(0x0b);
++    }
++    else if (!sd.protected && sd_seek_block() &&
++        fwrite(sd.write_block, 1, SD_BLOCK_SIZE, sd.image) == SD_BLOCK_SIZE &&
++        fflush(sd.image) == 0) {
++        sd_reply(0x05);
++        sd_reply(0x00); /* busy for one byte */
++        sd.offset += SD_BLOCK_SIZE;
++    }
++    else {
++        sd_reply(0x0d);
++    }
++    sd.write_size = 0;
++    if (sd.stream == SD_WRITE_SINGLE) sd.stream = SD_COMMAND;
++}
++
++static void sd_execute_command(void)
++{
++    unsigned int cmd = sd.command[0] & 0x3f;
++    uint32_t arg = ((uint32_t)sd.command[1] << 24) | ((uint32_t)sd.command[2] << 16) |
++        ((uint32_t)sd.command[3] << 8) | sd.command[4];
++    int app = sd.app_command;
++    sd.app_command = 0;
++
++    if ((sd.crc_enabled || cmd == 0 || cmd == 8) &&
++        sd_crc7(sd.command, sizeof sd.command - 1) != sd.command[5]) {
++        sd_reply(sd.idle | 0x08);
++        return;
++    }
++
++    switch (cmd) {
++        case 0: /* GO_IDLE_STATE */
++            sd.idle = 1;
++            sd.block_addressing = 0;
++            sd.crc_enabled = 0;
++            sd_reply(1);
++            return;
++        case 8: /* SEND_IF_COND */
++            sd_reply(sd.idle | ((arg & 0xf00) == 0x100 ? 0 : 0x40));
++            sd_reply(0);
++            sd_reply(0);
++            sd_reply((arg >> 8) & 0x0f);
++            sd_reply(arg);
++            return;
++        case 55: /* APP_CMD */
++            sd.app_command = 1;
++            sd_reply(sd.idle);
++            return;
++        case 41: /* ACMD41: SD_SEND_OP_COND */
++            if (!app) {
++                sd_reply(sd.idle | 4);
++                return;
++            }
++            if (sd.idle && (!sd.high_capacity || (arg & (1u << 30)))) {
++                sd.block_addressing = sd.high_capacity;
++                sd.idle = 0;
++            }
++            sd_reply(sd.idle);
++            return;
++        case 58: /* READ_OCR */
++            sd_reply(sd.idle);
++            sd_reply((sd.idle ? 0 : 0x80) | (sd.block_addressing ? 0x40 : 0));
++            sd_reply(0xff);
++            sd_reply(0x80);
++            sd_reply(0);
++            return;
++        case 59: /* CRC_ON_OFF */
++            sd.crc_enabled = arg & 1;
++            sd_reply(sd.idle);
++            return;
++    }
++
++    if (sd.idle) {
++        sd_reply(1);
++        return;
++    }
++
++    switch (cmd) {
++        case 9: /* SEND_CSD */
++            sd_reply(0);
++            sd_reply_csd();
++            break;
++        case 12: /* STOP_TRANSMISSION */
++            sd.stream = SD_COMMAND;
++            sd_reply(0xff); /* stuff byte before R1 */
++            sd_reply(0);
++            break;
++        case 13: /* SEND_STATUS */
++            sd_reply(0);
++            sd_reply(0);
++            break;
++        case 16: /* SET_BLOCKLEN */
++            sd_reply(arg == SD_BLOCK_SIZE ? 0 : 0x40);
++            break;
++        case 17: /* READ_SINGLE_BLOCK */
++        case 18: /* READ_MULTIPLE_BLOCK */
++        case 24: /* WRITE_BLOCK */
++        case 25: /* WRITE_MULTIPLE_BLOCK */
++            sd.offset = sd.block_addressing ? (uint64_t)arg * SD_BLOCK_SIZE : arg;
++            if (sd.offset % SD_BLOCK_SIZE || sd.offset > sd.size - SD_BLOCK_SIZE) {
++                sd_reply(0x20);
++                break;
++            }
++
++            sd_reply(0);
++            if (cmd == 17) sd_reply_block();
++            if (cmd == 18) sd.stream = SD_READ_MULTI;
++            if (cmd == 24) sd.stream = SD_WRITE_SINGLE;
++            if (cmd == 25) sd.stream = SD_WRITE_MULTI;
++            break;
++        default:
++            sd_reply(4);
++            break;
++    }
++}
++
++z80_byte neogs_sd_transfer(z80_byte value)
++{
++    if (!sd.selected || !sd.image) return 0xff;
++
++    if (sd.stream == SD_READ_MULTI && value == 0x4c && sd.command_size == 0) {
++        sd.stream = SD_COMMAND;
++        sd.response_size = sd.response_pos = 0;
++    }
++
++    if (sd.response_pos < sd.response_size) return sd.response[sd.response_pos++];
++    sd.response_size = sd.response_pos = 0;
++
++    if (sd.stream == SD_READ_MULTI) {
++        sd_reply_block();
++        return sd.response[sd.response_pos++];
++    }
++
++    if (sd.stream == SD_WRITE_SINGLE || sd.stream == SD_WRITE_MULTI) {
++        if (sd.write_size) {
++            sd.write_block[sd.write_size++ - 1] = value;
++            if (sd.write_size == sizeof sd.write_block + 1) sd_finish_write();
++        }
++        else if (value == (sd.stream == SD_WRITE_SINGLE ? 0xfe : 0xfc)) {
++            sd.write_size = 1;
++        }
++        else if (sd.stream == SD_WRITE_MULTI && value == 0xfd) {
++            sd.stream = SD_COMMAND;
++            sd_reply(0);
++        }
++    }
++    else if (sd.command_size || (value & 0xc0) == 0x40) {
++        sd.command[sd.command_size++] = value;
++        if (sd.command_size == sizeof sd.command) {
++            sd.command_size = 0;
++            sd_execute_command();
++        }
++    }
++
++    return 0xff;
++}
+diff --git a/src/storage/neogs_sd.h b/src/storage/neogs_sd.h
+new file mode 100644
+index 0000000..b90ba78
+--- /dev/null
++++ b/src/storage/neogs_sd.h
+@@ -0,0 +1,16 @@
++#ifndef NEOGS_SD_H
++#define NEOGS_SD_H
++
++#include "cpu.h"
++#include <limits.h>
++
++extern char neogs_sd_path[PATH_MAX];
++
++int neogs_sd_insert(const char *path);
++void neogs_sd_eject(void);
++int neogs_sd_inserted(void);
++int neogs_sd_write_protected(void);
++void neogs_sd_select(int selected);
++z80_byte neogs_sd_transfer(z80_byte value);
++
++#endif
+diff --git a/src/utils.c b/src/utils.c
+index f055900..2a4c043 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -74,6 +74,7 @@
+ #include "audio.h"
+ #include "audio_ayplayer.h"
+ #include "gs.h"
++#include "neogs_sd.h"
+ #include "playtzx.h"
+ #include "tape_tzx.h"
+ #include "tape_pzx.h"
+@@ -5556,7 +5557,10 @@ int util_write_configfile(void)
+     if (audiodac_enabled.v)                         ADD_STRING_CONFIG,"--enableaudiodac");
+                                                     ADD_STRING_CONFIG,"--audiodactype \"%s\"",audiodac_types[audiodac_selected_type].name);
+ 
+-    if (gs_enabled.v)                               ADD_STRING_CONFIG,"--enablegeneralsound");
++    if (neogs_rom_path[0])                          ADD_STRING_CONFIG,"--neogs-rom \"%s\"",neogs_rom_path);
++    if (neogs_sd_inserted())                        ADD_STRING_CONFIG,"--neogs-sd-file \"%s\"",neogs_sd_path);
++    if (neogs_mode)                                 ADD_STRING_CONFIG,"--enable-neogs");
++    else if (gs_enabled.v)                               ADD_STRING_CONFIG,"--enablegeneralsound");
+ 
+     if (tsconf_vdac_with_pwm.v)                     ADD_STRING_CONFIG,"--tsconf-vdac-with-pwm");
+ 
+diff --git a/src/zrcp/remote.c b/src/zrcp/remote.c
+--- a/src/zrcp/remote.c
++++ b/src/zrcp/remote.c
+@@ -73,6 +73,7 @@
+ #include "zeng_online.h"
+ #include "ql_qdos_handler.h"
+ #include "tape.h"
++#include "neogs_sd.h"
+ #include "snap_ram.h"
+ #include "mmc.h"
+ #include "atomic.h"
+@@ -776,6 +777,8 @@
+     {"mmc-enable",NULL,"0|1","Insert the configured MMC image in slot 0 or 1"},
+     {"mmc-disable",NULL,"0|1","Eject the MMC image from slot 0 or 1"},
+     {"mmc-reload",NULL,NULL,"Reload MMC file"},
++    {"neogs-sd-eject",NULL,NULL,"Eject the NeoGS SD image"},
++    {"neogs-sd-insert",NULL,NULL,"Reinsert the configured NeoGS SD image"},
+     {"noop",NULL,NULL,"This command does nothing"},
+     {"open-menu",NULL,NULL,"Triggers action to open menu (like F5)"},
+     {"pwd",NULL,NULL,"Print Working Directory"},
+@@ -5052,6 +5055,16 @@
+         }
+     }
+ 
++    else if (!strcmp(comando_sin_parametros,"neogs-sd-eject")) {
++        neogs_sd_eject();
++        escribir_socket(misocket,"OK. NeoGS SD ejected");
++    }
++
++    else if (!strcmp(comando_sin_parametros,"neogs-sd-insert")) {
++        escribir_socket(misocket,neogs_sd_path[0] && neogs_sd_insert(neogs_sd_path) ?
++                        "OK. NeoGS SD inserted" : "ERROR. Could not insert NeoGS SD");
++    }
++
+     //TODO: esto es solo para la primera tarjeta
+     else if (!strcmp(comando_sin_parametros,"mmc-reload")) {
+         if (mmc_enabled[0].v==0) {

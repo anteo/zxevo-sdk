@@ -1,0 +1,39 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 31 Oct 2026 20:53:49 +0700
+Subject: [PATCH] fix(gs): center DAC channels on enable
+
+Enabling General Sound with zeroed DAC channels creates a non-neutral
+output until the chip writes new values. Start all four channels at the
+unsigned midpoint with their volumes cleared.
+
+---
+ src/soundchips/gs.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/soundchips/gs.c b/src/soundchips/gs.c
+index 84cb7a2..0113142 100644
+--- a/src/soundchips/gs.c
++++ b/src/soundchips/gs.c
+@@ -550,6 +550,7 @@ int gs_load_rom(void)
+ 
+ void gs_enable(void)
+ {
++  int i;
+ 
+   if (!MACHINE_IS_SPECTRUM) {
+     debug_printf(VERBOSE_INFO,"Can not enable general sound on non Spectrum machine");
+@@ -563,6 +564,11 @@ void gs_enable(void)
+ 	gs_alloc_memory();
+ 	if (gs_load_rom()) return;
+ 
++	for (i=0;i<4;i++) {
++		gs_dac_channels[i]=128;
++		gs_volumes[i]=0;
++	}
++	gs_dac_valor_final_left=gs_dac_valor_final_right=128;
+ 
+ 	gs_enabled.v=1;
+ 
+-- 
+2.56.0
+

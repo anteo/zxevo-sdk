@@ -1,0 +1,88 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Thu, 5 Nov 2026 17:17:11 +0700
+Subject: [PATCH] fix(audio): stabilize AY timing across Spectrum frames
+
+Spectrum variants have different numbers of scanlines while 50 Hz audio
+blocks still require 312 samples per frame. Distribute those samples across
+the scanlines to keep AY phase and playback tempo stable.
+
+---
+ src/cores/core_spectrum.c | 38 +++++++++++++++++++++++++++++---------
+ 1 file changed, 29 insertions(+), 9 deletions(-)
+
+diff --git a/src/cores/core_spectrum.c b/src/cores/core_spectrum.c
+index 21daf0791ea9c6b45d4c23cc3d57800b01c80a51..192e72007395ea1667bb7b3a4b0a3df037b939b3 100644
+--- a/src/cores/core_spectrum.c
++++ b/src/cores/core_spectrum.c
+@@ -362,6 +362,14 @@ void core_spectrum_store_rainbow_current_atributes(void)
+     }
+ }
+ 
++// Mantener 15600 muestras/s a 50 Hz, independientemente de las líneas del vídeo.
++// Prism y los modos de 60 Hz conservan su remuestreo específico.
++static int core_spectrum_audio_samples_per_frame(void)
++{
++    return MACHINE_IS_SPECTRUM && !MACHINE_IS_PRISM && !machine_60hz.v ?
++        FRECUENCIA_CONSTANTE_NORMAL_SONIDO/50 : 0;
++}
++
+ void core_spectrum_fin_frame_pantalla(void)
+ {
+ 	//Siguiente frame de pantalla
+@@ -406,7 +414,7 @@ void core_spectrum_fin_frame_pantalla(void)
+ 
+     if (machine_60hz.v) total_lineas=262;
+ 
+-    while (linea_estados<total_lineas) {
++    while (!core_spectrum_audio_samples_per_frame() && linea_estados<total_lineas) {
+         audio_send_stereo_sample(audio_valor_enviar_sonido_izquierdo,audio_valor_enviar_sonido_derecho);
+         //audio_send_mono_sample(audio_valor_enviar_sonido_izquierdo);
+                             linea_estados++;
+@@ -528,10 +536,8 @@ void core_spectrum_fin_frame_pantalla(void)
+ 
+ }
+ 
+-void core_spectrum_fin_scanline(void)
++static void core_spectrum_generate_audio_sample(void)
+ {
+-    //printf ("fin scanline en %d\n",t_estados);
+-    //if (t_estados>69000) printf ("t_scanline casi final: %d\n",t_scanline);
+ 
+     if (si_siguiente_sonido() ) {
+ 
+@@ -670,13 +676,27 @@ void core_spectrum_fin_scanline(void)
+ 
+         ay_chip_siguiente_ciclo();
+ 
+-        if (MACHINE_IS_TSCONF) {
+-            tsconf_handle_line_interrupts();
++    }
++}
+ 
+-            //y reseteo de esto, que es para interrupciones frame
+-            tsconf_handle_frame_interrupts_prev_horiz=9999;
+-        }
++void core_spectrum_fin_scanline(void)
++{
++    int samples=1;
++    int frame_samples=core_spectrum_audio_samples_per_frame();
++    if (frame_samples) {
++        // Distribuir el reloj de audio entre las líneas, sin congelar la fase AY
++        // al rellenar cuadros cortos ni perder muestras al terminar cuadros largos.
++        samples=((t_scanline+1)*frame_samples)/screen_scanlines-
++            (t_scanline*frame_samples)/screen_scanlines;
++    }
++    for (int i=0;i<samples;i++) core_spectrum_generate_audio_sample();
++
++    // No conservar escrituras del beeper de una línea sin muestra de salida.
++    if (!samples && beeper_enabled.v && beeper_real_enabled) beeper_new_line();
+ 
++    if (MACHINE_IS_TSCONF) {
++        tsconf_handle_line_interrupts();
++        tsconf_handle_frame_interrupts_prev_horiz=9999;
+     }
+ 
+     //final de linea
+-- 
+2.56.0
+

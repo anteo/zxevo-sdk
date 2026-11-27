@@ -1,0 +1,181 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sun, 22 Nov 2026 19:00:00 +0700
+Subject: [PATCH] fix(zxvision): repeat vertical navigation with multitask off or on
+
+Ordinary menus wait for key release around every cursor move. The file
+selector uses frame-based repeat counters which stop when multitask is
+disabled. Dispatch the first vertical move immediately in both lists and
+pace subsequent moves with the host clock while polling normal input.
+
+---
+diff --git a/src/zxvision/zxvision.c b/src/zxvision/zxvision.c
+--- a/src/zxvision/zxvision.c
++++ b/src/zxvision/zxvision.c
+@@ -19844,13 +19844,46 @@
+ 
+ }
+ 
++// El menú y el selector usan tiempo del host incluso con la emulación en pausa.
++static int vertical_repeat_key;
++static struct timeval vertical_repeat_start;
++static long vertical_repeat_delay_us;
++
++static int zxvision_is_vertical_key(int key)
++{
++    return key==10 || key==11;
++}
++
++static int zxvision_skip_vertical_repeat(int key)
++{
++    if (!zxvision_is_vertical_key(key) || mouse_left || mouse_right) {
++        vertical_repeat_key=0;
++        return 0;
++    }
++
++    if (key!=vertical_repeat_key) {
++        vertical_repeat_key=key;
++        timer_stats_current_time(&vertical_repeat_start);
++        vertical_repeat_delay_us=500000;
++        return 0;
++    }
++
++    struct timeval now;
++    long elapsed=timer_stats_diference_time(&vertical_repeat_start,&now);
++    if (elapsed>=0 && elapsed<vertical_repeat_delay_us) return 1;
++
++    vertical_repeat_start=now;
++    vertical_repeat_delay_us=20000;
++    return 0;
++}
++
+ /*
+ Funcion comun usados en algunas ventanas que:
+ -refrescan pantalla
+ -ejecutan core loop si multitask activo
+ -leen tecla y esperan a liberar dicha tecla
+ */
+-z80_byte zxvision_common_getkey_refresh(void)
++z80_byte zxvision_list_getkey_refresh(int *vertical_navigation)
+ {
+     z80_byte tecla;
+ 
+@@ -19859,11 +19892,11 @@
+         menu_refresca_pantalla();
+     }
+ 
+-    //Por qué ejecutamos esto aqui??? Solo ejecutará una instrucción
+-    menu_cpu_core_loop();
+-
+-    menu_espera_tecla();
+-    tecla=zxvision_read_keyboard();
++    do {
++        menu_cpu_core_loop();
++        menu_espera_tecla();
++        tecla=zxvision_read_keyboard();
++    } while (vertical_navigation && zxvision_skip_vertical_repeat(tecla));
+ 
+     //con enter no salimos. TODO: esto se hace porque el mouse esta enviando enter al pulsar boton izquierdo, y lo hace tambien al hacer dragging
+     //lo ideal seria que mouse no enviase enter al pulsar boton izquierdo y entonces podemos hacer que se salga tambien con enter
+@@ -19871,14 +19904,17 @@
+         tecla=0;
+     }
+ 
+-    if (tecla) {
+-        //printf ("Esperamos no tecla\n");
++    if (vertical_navigation) *vertical_navigation=zxvision_is_vertical_key(tecla) && !mouse_left && !mouse_right;
++    if (tecla && (!vertical_navigation || !*vertical_navigation)) {
+         menu_espera_no_tecla_con_repeticion();
+     }
+ 
+-    //printf("zxvision_common_getkey_refresh. tecla=%d\n",tecla);
+-
+     return tecla;
++}
++
++z80_byte zxvision_common_getkey_refresh(void)
++{
++    return zxvision_list_getkey_refresh(NULL);
+ }
+ 
+ /*
+@@ -21471,6 +21507,7 @@
+ 
+ void menu_reset_counters_tecla_repeticion(void)
+ {
++    vertical_repeat_key=0;
+     //printf ("menu_reset_counters_tecla_repeticion\n");
+                         menu_contador_teclas_repeticion=CONTADOR_HASTA_REPETICION;
+                         menu_segundo_contador_teclas_repeticion=CONTADOR_ENTRE_REPETICION;
+@@ -22931,6 +22968,7 @@
+ 
+     int redibuja_ventana;
+     int tecla;
++    int vertical_navigation=0;
+ 
+     //Apuntamos a ventana usada. Si no es menu tabulado, creamos una nosotros
+     //Si es tabulado, usamos current_window (pues ya alguien la ha creado antes)
+@@ -23165,7 +23203,7 @@
+ 
+             //Si se estaba escuchando speech y se pulsa una tecla, esa tecla debe entrar aqui tal cual y por tanto, no hacemos espera_no_tecla
+             //temp menu_espera_no_tecla();
+-            if (menu_speech_tecla_pulsada==0) {
++            if (!vertical_navigation && menu_speech_tecla_pulsada==0) {
+                 //menu_espera_no_tecla();
+                 menu_dibuja_menu_espera_no_tecla();
+             }
+@@ -23216,6 +23254,7 @@
+                 tecla_leida=zxvision_read_keyboard();
+ 
+                 mouse_movido=antes_mouse_movido;
++                if (zxvision_skip_vertical_repeat(tecla_leida)) continue;
+ 
+                 }
+ 
+@@ -23428,8 +23467,10 @@
+                 //printf ("menu tecla: %d %c\n",tecla,tecla);
+             }
+ 
++            vertical_navigation=!mouse_left && !mouse_right &&
++                ((tecla_leida==10 && tecla=='6') || (tecla_leida==11 && tecla=='7'));
+             //Si no se ha pulsado tecla de atajo:
+-            if (!((tecla_leida>='a' && tecla_leida<='z') || (tecla_leida>='A' && tecla_leida<='Z')) ) {
++            if (!vertical_navigation && !((tecla_leida>='a' && tecla_leida<='z') || (tecla_leida>='A' && tecla_leida<='Z')) ) {
+                 menu_espera_no_tecla();
+             }
+ 
+diff --git a/src/zxvision/zxvision.h b/src/zxvision/zxvision.h
+--- a/src/zxvision/zxvision.h
++++ b/src/zxvision/zxvision.h
+@@ -680,6 +680,7 @@
+ extern int zxvision_handle_cursors_pgupdn_opqa_wskl(zxvision_window *ventana,z80_byte tecla);
+ extern int zxvision_handle_opqa_wskl(zxvision_window *ventana,z80_byte tecla);
+ extern z80_byte zxvision_common_getkey_refresh(void);
++extern z80_byte zxvision_list_getkey_refresh(int *vertical_navigation);
+ extern z80_byte zxvision_common_getkey_refresh_noesperatecla(void);
+ extern z80_byte zxvision_common_getkey_refresh_noesperanotec(void);
+ extern z80_byte zxvision_common_getkey_wheel_refresh_noesperanotec(void);
+diff --git a/src/menu/menu_filesel.c b/src/menu/menu_filesel.c
+--- a/src/menu/menu_filesel.c
++++ b/src/menu/menu_filesel.c
+@@ -6520,7 +6520,8 @@
+                 menu_speech_set_tecla_pulsada();
+ 
+ 
+-                tecla=zxvision_common_getkey_refresh();
++                int vertical_navigation;
++                tecla=zxvision_list_getkey_refresh(&vertical_navigation);
+                 //printf ("Despues lee tecla\n");
+ 
+                 //Teclas para teclados simples
+@@ -7059,10 +7060,6 @@
+ 
+                 }
+ 
+-                //menu_espera_no_tecla();
+-                menu_espera_no_tecla_con_repeticion();
+-
+-
+-
++                if (!vertical_navigation) menu_espera_no_tecla_con_repeticion();
+ 
+             break;

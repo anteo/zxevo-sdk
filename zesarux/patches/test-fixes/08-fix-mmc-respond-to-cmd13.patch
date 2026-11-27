@@ -1,0 +1,20 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 18:00:00 +0700
+Subject: [PATCH] fix(mmc): respond to CMD13
+
+Handle SEND_STATUS through the SD SPI command parser so firmware can
+query a present card after initialization.
+
+---
+diff --git a/src/storage/mmc.c b/src/storage/mmc.c
+--- a/src/storage/mmc.c
++++ b/src/storage/mmc.c
+@@ -177,7 +177,7 @@
+ 
+ static int tsconf_mmc_init_command(z80_byte command)
+ {
+-    return command==0x77 || command==0x69 || command==0x50;
++    return command==0x77 || command==0x69 || command==0x50 || command==0x4d;
+ }
+ 
+ 

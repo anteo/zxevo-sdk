@@ -1,0 +1,50 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 14:01:23 +0700
+Subject: [PATCH] feat(zxevo): expose SD1 contacts in the RTC
+
+Report the attached MMC image and its write permission through GlukClock
+register C so BaseConf and TSConf firmware can detect an emulated SD1 card.
+Serve TSConf reads from the shared RTC when GlukClock is enabled.
+
+---
+diff --git a/src/machines/baseconf.c b/src/machines/baseconf.c
+--- a/src/machines/baseconf.c
++++ b/src/machines/baseconf.c
+@@ -777,14 +777,21 @@
+            Parece que Reset Service necesita esto o si no, no aparece el reloj
+         */
+         case 0x0c: {
++            z80_byte status=zxevo_nvram[0x0c]&0x83;
+             time_t segundo_actual=time(NULL);
++
++            /* SD1 card detect and write-enable follow the first MMC slot. */
++            if (mmc_enabled[0].v) {
++                status|=0x08;
++                if (!mmc_write_protection[0].v) status|=0x04;
++            }
+ 
+             if (segundo_actual!=baseconf_rtc_ultimo_segundo_actualizado) {
+                 baseconf_rtc_ultimo_segundo_actualizado=segundo_actual;
+-                return 0x10;
++                status|=0x10;
+             }
+ 
+-            return 0x00;
++            return status;
+         }
+ 
+         /* Registro D: estado de validez del RTC. El bit 7 a uno indica que
+diff --git a/src/operaciones.c b/src/operaciones.c
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -7774,7 +7774,9 @@
+ 		if (puerto==0xeff7) return puerto_eff7;
+ 		if (puerto==0xdff7) return zxevo_last_port_dff7;
+ 		if (puerto==0xbff7) {
+-            if ((puerto_eff7&128) && zxevo_last_port_dff7>=0xf0 && !(zxevo_nvram[0x0c]&0x80))
++            if ((puerto_eff7&128) &&
++                (zxevo_last_port_dff7==0x0c ||
++                 (zxevo_last_port_dff7>=0xf0 && !(zxevo_nvram[0x0c]&0x80))))
+                 return baseconf_read_cmos();
+             return zxevo_nvram[zxevo_last_port_dff7];
+         }

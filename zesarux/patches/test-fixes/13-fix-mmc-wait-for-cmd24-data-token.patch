@@ -1,0 +1,115 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Fri, 20 Nov 2026 18:14:14 +0700
+Subject: [PATCH] fix(mmc): wait for the CMD24 data token
+
+The number of SPI clocks between R1 and the data token depends on
+the controller and host. Wait for FEh so hosts that read R1 through
+the TSConf pipelined port can send the token without a separate OUT
+for the idle byte. Hold the data response until the full sector and
+both CRC bytes have arrived.
+
+---
+diff --git a/src/storage/mmc.c b/src/storage/mmc.c
+--- a/src/storage/mmc.c
++++ b/src/storage/mmc.c
+@@ -153,6 +153,14 @@
+ //A 0 cuando se ha recibido todos los valores correctos de write block
+ int mmc_write_index=-1;
+ 
++enum {
++    MMC_WRITE_COMMAND_CRC = 5,
++    MMC_WRITE_WAIT_TOKEN,
++    MMC_WRITE_DATA_START,
++    MMC_WRITE_DATA_END = MMC_WRITE_DATA_START + 512,
++    MMC_WRITE_COMPLETE = MMC_WRITE_DATA_END + 2
++};
++
+ //Direcciones de inicio de lectura y escritura de datos
+ unsigned int mmc_write_address;
+ unsigned int mmc_read_address;
+@@ -1192,6 +1200,9 @@
+ 
+ 
+ 				//valores siguientes
++				// Después de R1, esperar el bloque completo y su CRC.
++				if (mmc_write_index>=2 && mmc_index_command<MMC_WRITE_COMPLETE) return 0xff;
++
+ 				if (mmc_write_index==2) value=0xff;
+ 				if (mmc_write_index==3) value=0xff;
+ 
+@@ -1513,50 +1524,31 @@
+                         break;
+ 
+ 
+-			//WRITE_BLOCK
+-                        case 0x58:
+-				#define INICIO_WRITE_BLOCK_OFFSET 5
+-				debug_printf (VERBOSE_PARANOID,"MMC Write command WRITE_BLOCK");
+-				if (mmc_index_command<5) {
+-	                                mmc_parameters_sent[mmc_index_command-1]=value;
+-				}
+-
+-
+-                                if (mmc_index_command==INICIO_WRITE_BLOCK_OFFSET) {
+-                                        //Reseteamos indice
+-                                        //mmc_index_command=0;
+-
+-                                        //Devolvemos datos
+-                                        //printf ("Writing sector at address 0x%02X 0x%02X 0x%02X 0x%02X\n",mmc_parameters_sent[0],mmc_parameters_sent[1],
+-                                          //      mmc_parameters_sent[2],mmc_parameters_sent[3]);
+-
+-					unsigned int direccion=mmc_retorna_dir_32bit(mmc_parameters_sent[0],mmc_parameters_sent[1],
+-                                                mmc_parameters_sent[2],mmc_parameters_sent[3]);
+-					mmc_write_address=direccion;
+-
+-					//printf ("Direccion: 0x%X\n",direccion);
+-
+-
+-                                        mmc_write_index=0;
+-                                }
+-
+-				//if (mmc_index_command==INICIO_WRITE_BLOCK_OFFSET) printf ("recibido byte gap\n");
+-				//if (mmc_index_command==INICIO_WRITE_BLOCK_OFFSET+2) printf ("recibido data token\n");
+-
+-				if (mmc_index_command>=INICIO_WRITE_BLOCK_OFFSET+3 && mmc_index_command<=INICIO_WRITE_BLOCK_OFFSET+3+512-1) {
+-					//printf ("Escribiendo byte numero %d valor: %d %c\n",mmc_index_command-(INICIO_WRITE_BLOCK_OFFSET+3),value,
+-					//	(value>=31 && value<=127 ? value : '.'));
+-
+-					mmc_write_byte_memory(mmc_write_address+mmc_index_command-(INICIO_WRITE_BLOCK_OFFSET+3) , value);
+-				}
+-
+-
+-				mmc_index_command++;
+-				if (mmc_index_command==INICIO_WRITE_BLOCK_OFFSET+3+512) {
+-					//printf ("byte final de escritura\n");
+-					//mmc_index_command=0;
+-				}
+-                        break;
++        // CMD24: WRITE_BLOCK
++        case 0x58:
++            if (mmc_index_command<MMC_WRITE_COMMAND_CRC) {
++                mmc_parameters_sent[mmc_index_command-1]=value;
++                mmc_index_command++;
++            }
++            else if (mmc_index_command==MMC_WRITE_COMMAND_CRC) {
++                mmc_write_address=mmc_retorna_dir_32bit(mmc_parameters_sent[0],mmc_parameters_sent[1],
++                                                       mmc_parameters_sent[2],mmc_parameters_sent[3]);
++                mmc_write_index=0;
++                mmc_index_command++;
++            }
++            else if (mmc_index_command==MMC_WRITE_WAIT_TOKEN) {
++                // Puede haber un número variable de bytes de relleno antes del token.
++                if (value==0xfe) mmc_index_command++;
++            }
++            else if (mmc_index_command<MMC_WRITE_DATA_END) {
++                mmc_write_byte_memory(mmc_write_address+mmc_index_command-MMC_WRITE_DATA_START,value);
++                mmc_index_command++;
++            }
++            else if (mmc_index_command<MMC_WRITE_COMPLETE) {
++                // Consumir los dos bytes de CRC antes de responder al bloque.
++                mmc_index_command++;
++            }
++            break;
+ 
+ 
+ 			//CMD58. READ_OCR

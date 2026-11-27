@@ -1,0 +1,32 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Fri, 20 Nov 2026 18:15:25 +0700
+Subject: [PATCH] fix(tsconf): decode ULA writes only at port FE
+
+Limit TSConf border and beeper writes to ports with low byte FE, as on
+the FPGA. Otherwise, probing SMUC through even ports such as FFBA and
+FEB6 can leave the emulated speaker at a nonzero DC level.
+
+---
+diff --git a/src/operaciones.c b/src/operaciones.c
+index 4edb10b..7b88324 100644
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -9195,15 +9195,15 @@ void out_port_spectrum_no_time(z80_int puerto,z80_byte value)
+                 else out_port_spectrum_border_raster_event(baseconf_get_border_colour());
+         }
+ 
+-	if ( (puerto & 1 )==0 && !(MACHINE_IS_CHLOE) && !(MACHINE_IS_TIMEX_TS_TC_2068) && !(MACHINE_IS_PRISM) && !(MACHINE_IS_BASECONF) ) {
++	if ( (puerto & 1 )==0 && !(MACHINE_IS_CHLOE) && !(MACHINE_IS_TIMEX_TS_TC_2068) && !(MACHINE_IS_PRISM) && !(MACHINE_IS_BASECONF) && !(MACHINE_IS_TSCONF) ) {
+ 
+ 		out_port_spectrum_border(puerto,value);
+ 
+         }
+ 
+ 
+-	//Puerto 254 solamente, para chloe y timex
+-	if ( puerto_l==254 && (MACHINE_IS_CHLOE || MACHINE_IS_TIMEX_TS_TC_2068 || MACHINE_IS_PRISM) ) {
++	// TSConf solo escribe el borde y el beeper en el puerto xxFE, como la FPGA.
++	if ( puerto_l==254 && (MACHINE_IS_CHLOE || MACHINE_IS_TIMEX_TS_TC_2068 || MACHINE_IS_PRISM || MACHINE_IS_TSCONF) ) {
+ 		out_port_spectrum_border(puerto,value);
+ 
+         }

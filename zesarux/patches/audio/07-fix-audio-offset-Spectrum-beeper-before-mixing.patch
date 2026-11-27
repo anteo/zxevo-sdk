@@ -1,0 +1,53 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 31 Oct 2026 22:45:33 +0700
+Subject: [PATCH] fix(audio): offset Spectrum beeper before mixing
+
+The Spectrum beeper uses an offset selected by the active MIC and
+speaker amplitude mode. Apply that matching offset before mixing so the
+beeper does not add a constant bias to other sound sources.
+
+---
+ src/operaciones.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/operaciones.c b/src/operaciones.c
+index 57da80e..49ff17f 100644
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -8813,6 +8813,7 @@ static int beeper_ampl_only_mic[] = { 0, AMPLITUD_BEEPER, 0,
+ void set_value_beeper(int v)
+ {
+ 
++    int beeper_offset=beeper_ampl[3];
+ 
+     switch (beeper_mic_mixer_current_mode) {
+         case BEEPER_MIC_MIXER_NORMAL:
+@@ -8822,14 +8823,17 @@ void set_value_beeper(int v)
+         break;
+ 
+         case BEEPER_MIC_MIXER_MIC_AMPLIFIED:
++            beeper_offset=beeper_ampl_amplify_mic[3];
+             value_beeper = -beeper_ampl_amplify_mic[3] + beeper_ampl_amplify_mic[v]*2;
+         break;
+ 
+         case BEEPER_MIC_MIXER_ONLY_BEEPER:
++            beeper_offset=beeper_ampl_only_beeper[3];
+             value_beeper = -beeper_ampl_only_beeper[3] + beeper_ampl_only_beeper[v]*2;
+         break;
+ 
+         case BEEPER_MIC_MIXER_ONLY_MIC:
++            beeper_offset=beeper_ampl_only_mic[3];
+             value_beeper = -beeper_ampl_only_mic[3] + beeper_ampl_only_mic[v]*2;
+         break;
+     }
+@@ -8843,6 +8847,7 @@ void set_value_beeper(int v)
+         return;
+     }
+ 
++    if (MACHINE_IS_SPECTRUM && !MACHINE_IS_INVES) value_beeper+=beeper_offset;
+ 
+ 
+ }
+-- 
+2.56.0
+

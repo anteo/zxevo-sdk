@@ -1,0 +1,129 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 14 Nov 2026 20:45:39 +0700
+Subject: [PATCH] fix(cocoa): generate frame ticks outside the window event loop
+
+Window drawing can block Cocoa NSTimer and delay emulated frames. Use an
+independent dispatch timer and transfer its pending-tick flag atomically
+between the timer and emulation threads.
+
+---
+diff --git a/src/timer.c b/src/timer.c
+--- a/src/timer.c
++++ b/src/timer.c
+@@ -381,7 +381,7 @@
+ 
+ void timer_trigger_interrupt(void)
+ {
+-    timer_pthread_generada=1;
++    __atomic_store_n(&timer_pthread_generada, 1, __ATOMIC_RELEASE);
+ }
+ 
+ 
+@@ -910,9 +910,8 @@
+ //Devuelve 1 si hay interrupcion
+ int timer_check_interrupt_thread(void)
+ {
+-	if (timer_pthread_generada) {
++	if (__atomic_exchange_n(&timer_pthread_generada, 0, __ATOMIC_ACQ_REL)) {
+ 		top_speed_real_frames++;
+-		timer_pthread_generada=0;
+ 
+ 		if (MACHINE_IS_Z88) {
+ 			conta_envio_audio++;
+diff --git a/src/video/scrcocoa.m b/src/video/scrcocoa.m
+--- a/src/video/scrcocoa.m
++++ b/src/video/scrcocoa.m
+@@ -52,6 +52,7 @@
+  */
+ #include <string.h>
+ #include <stdio.h>
++#include <dispatch/dispatch.h>
+ 
+ 
+ #include "compileoptions.h"
+@@ -2361,7 +2362,7 @@
+ }
+ 
+ 
+-NSTimer *timer=nil;
++dispatch_source_t timer=nil;
+ 
+ int cocoatimeractivo=0;
+ 
+@@ -2388,26 +2389,25 @@
+ 
+     previous_timer_sleep_machine=timer_sleep_machine;
+ 
+-    if (timer == nil)
+-    {
+-
+-        //timer_sleep_machine en microsegundos. pasamos a segundos
+-
+-        timer = [NSTimer scheduledTimerWithTimeInterval:timer_sleep_machine/1000000.0
+-                                                 target:self
+-                                               selector:@selector(timerTickHandler)
+-                                               userInfo:nil
+-                                                repeats:YES];
+-
+-        //Error al inicializar
+-        //Nota: suponemos que scheduledTimerWithTimeInterval puede fallar y dar nil en retorno, pero no estoy seguro
+-        if (timer==nil) {
++    if (timer == nil) {
++        // Run frame ticks independently of the Cocoa event loop. Window drawing
++        // and event handling can delay an NSTimer and make it skip whole frames.
++        timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
++                                       dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0));
++        if (timer == nil) {
+             retorno_start_timer=0;
+             return;
+         }
+-    }
+-
+-    cocoatimeractivo=1;
++        uint64_t interval = (uint64_t)timer_sleep_machine * NSEC_PER_USEC;
++        dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, interval),
++                                  interval, NSEC_PER_MSEC);
++        dispatch_source_set_event_handler(timer, ^{
++            if (__atomic_load_n(&cocoatimeractivo, __ATOMIC_RELAXED)) timer_trigger_interrupt();
++        });
++        dispatch_resume(timer);
++    }
++
++    __atomic_store_n(&cocoatimeractivo, 1, __ATOMIC_RELAXED);
+ 
+     retorno_start_timer=1;
+ 
+@@ -2419,14 +2419,8 @@
+ 
+     //printf("--scrcocoa stopTimer\n");
+ 
+-    //Invalidar el timer hace que no se pueda volver a llamar nunca mas, incluso al llamar a scheduledTimerWithTimeInterval
+-    //Por tanto lo mejor es gestionarlo con un simple flag de activo o no activo
+-    //Esto permite ir al menu de ZEsarUX, quitar este timer, poner otro, y volver a activar este
+-
+-    //[timer invalidate];
+-    //timer = nil;
+-
+-    cocoatimeractivo=0;
++    // Keep the dispatch source for later timer restarts.
++    __atomic_store_n(&cocoatimeractivo, 0, __ATOMIC_RELAXED);
+ 
+     debug_printf(VERBOSE_DEBUG,"Stopped Mac timer");
+ }
+@@ -2437,16 +2431,6 @@
+     NSString *nsTitle = [NSString stringWithUTF8String:get_window_title()];
+     [normalWindow setTitle:nsTitle];
+ }
+-
+-- (void)timerTickHandler
+-{
+-    if (!cocoatimeractivo) return;
+-
+-    timer_trigger_interrupt();
+-}
+-
+-
+-
+ 
+ - (void) setAbsoluteEnabled:(BOOL)tIsAbsoluteEnabled {isAbsoluteEnabled = tIsAbsoluteEnabled;}
+ - (BOOL) isMouseGrabed {return isMouseGrabed;}

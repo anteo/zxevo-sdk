@@ -1,0 +1,36 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 14 Nov 2026 20:24:45 +0700
+Subject: [PATCH] fix(reset): preserve emulated keys held across reset
+
+Reset and Hard Reset shortcuts previously released emulated keys before
+the boot ROM could read configuration chords. Keep those keys held for
+reset actions, including joystick-triggered reset, on every machine.
+
+---
+diff --git a/src/zxvision/zxvision.c b/src/zxvision/zxvision.c
+--- a/src/zxvision/zxvision.c
++++ b/src/zxvision/zxvision.c
+@@ -29920,6 +29920,23 @@ void menu_inicio(void)
+     /*/
+ 
+     int liberar_teclas_y_esperar=1; //Si se liberan teclas y se espera a liberar teclado
++
++    // Reset shortcuts must keep the emulated keys held until the boot ROM reads
++    // them. This applies to every machine, not just TSConf's Caps Shift boot.
++    int reset_action=0;
++    if (menu_button_f_function.v) {
++        reset_action=menu_button_f_function_action;
++        if (!reset_action && menu_button_f_function_index>=0) {
++            int index=defined_f_functions_keys_array[menu_button_f_function_index];
++            reset_action=menu_da_accion_direct_functions_indice(index);
++        }
++    }
++    else if (menu_event_joystick_action.v) {
++        int index=realjoystick_actions_array[menu_event_joystick_action_indice].index_accion;
++        reset_action=menu_da_accion_direct_functions_indice(index);
++    }
++    if (reset_action==F_FUNCION_RESET || reset_action==F_FUNCION_HARDRESET)
++        liberar_teclas_y_esperar=0;
+ 
+ 
+     //printf("antes breakpoint exception. menu_breakpoint_exception.v=%d\n",menu_breakpoint_exception.v);

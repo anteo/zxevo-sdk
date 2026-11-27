@@ -1,0 +1,91 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 15:20:00 +0700
+Subject: [PATCH] fix(baseconf): honor SD SPI initialization and idle clocks
+
+Apply the existing SD initialization state machine to BaseConf. Clock bytes
+between commands must leave the parser idle, and CMD55/ACMD41/CMD16 must
+produce their protocol responses after all six command bytes arrive. With
+shadow I/O active, decode A15 on writes to 57h as the FPGA does.
+
+---
+diff --git a/src/storage/mmc.c b/src/storage/mmc.c
+--- a/src/storage/mmc.c
++++ b/src/storage/mmc.c
+@@ -883,7 +883,7 @@
+ 
+ 	z80_byte value;
+ 
+-    if (MACHINE_IS_TSCONF && tsconf_mmc_init_command(mmc_last_command)) {
++    if ((MACHINE_IS_TSCONF || MACHINE_IS_BASECONF) && tsconf_mmc_init_command(mmc_last_command)) {
+         /* R1 solo está disponible después de recibir los seis bytes. */
+         if (mmc_index_command!=0) return 0xff;
+         value=tsconf_mmc_reply;
+@@ -902,7 +902,7 @@
+ 
+ 		case 0x00:
+ 			//Viene de un cs
+-			if (MACHINE_IS_TBBLUE || MACHINE_IS_TSCONF || MACHINE_IS_SCORPION_GMX) return 0xFF;
++			if (MACHINE_IS_TBBLUE || MACHINE_IS_TSCONF || MACHINE_IS_BASECONF || MACHINE_IS_SCORPION_GMX) return 0xFF;
+ 			return 0;
+ 		break;
+ 
+@@ -1322,8 +1322,8 @@
+         return;
+     }
+ 
+-    // En TSConf y GMX, FFH genera relojes SPI entre comandos; no inicia uno nuevo.
+-    if ((MACHINE_IS_TSCONF || MACHINE_IS_SCORPION_GMX) && mmc_index_command==0 && value==0xFF) return;
++    // En ZX Evolution y GMX, FFH genera relojes SPI entre comandos; no inicia uno nuevo.
++    if ((MACHINE_IS_TSCONF || MACHINE_IS_BASECONF || MACHINE_IS_SCORPION_GMX) && mmc_index_command==0 && value==0xFF) return;
+ 
+     //printf("MMC write. mmc_last_command=%02XH\n",mmc_last_command);
+ 
+@@ -1335,7 +1335,7 @@
+ 		mmc_last_command=value;
+ 		mmc_index_command++;
+ 
+-        if (MACHINE_IS_TSCONF) {
++        if (MACHINE_IS_TSCONF || MACHINE_IS_BASECONF) {
+             /* El prefijo CMD55 sobrevive a CS alto hasta el próximo comando. */
+             tsconf_mmc_app_current=tsconf_mmc_app_pending;
+             tsconf_mmc_app_pending=0;
+@@ -1354,7 +1354,7 @@
+ 	}
+ 
+ 	else {
+-        if (MACHINE_IS_TSCONF && tsconf_mmc_init_command(mmc_last_command)) {
++        if ((MACHINE_IS_TSCONF || MACHINE_IS_BASECONF) && tsconf_mmc_init_command(mmc_last_command)) {
+             tsconf_mmc_write_init_byte(value);
+             return;
+         }
+@@ -1369,7 +1369,7 @@
+ 				if (mmc_index_command==5) {
+ 					//Estado idle
+ 					mmc_r1=1;
+-					if (MACHINE_IS_TSCONF) tsconf_mmc_idle=1;
++					if (MACHINE_IS_TSCONF || MACHINE_IS_BASECONF) tsconf_mmc_idle=1;
+ 					//Reseteamos indice
+ 					mmc_index_command=0;
+ 				}
+diff --git a/src/machines/baseconf.c b/src/machines/baseconf.c
+--- a/src/machines/baseconf.c
++++ b/src/machines/baseconf.c
+@@ -2073,7 +2073,8 @@
+                         //En modo shadow el puerto #BEF7 está disponible independientemente del bit 7 de #EFF7.
+ 		 baseconf_write_cmos(valor);
+ 					}
+-        else if ( (puerto&0x00FF)==0x77 ) {
++        else if (puerto_l==0x77 ||
++                 (puerto_l==0x57 && baseconf_shadow_ports_available() && (puerto & 0x8000))) {
+                 if (!baseconf_sd_interface_enabled.v) return;
+                 baseconf_last_port_sd_77=valor;
+                 baseconf_sd_enabled=valor&1;
+@@ -2081,7 +2082,7 @@
+                 mmc_cs(baseconf_sd_cs ? 0xff : 0xfe);
+         }
+ 
+-        else if ( (puerto&0x00FF)==0x57 ) {
++        else if (puerto_l==0x57) {
+                 if (!baseconf_sd_interface_enabled.v) return;
+                 baseconf_last_port_57=valor;
+                 if (baseconf_sd_enabled && !baseconf_sd_cs) mmc_write(valor);

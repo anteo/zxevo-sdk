@@ -1,0 +1,258 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Wed, 18 Nov 2026 17:00:00 +0700
+Subject: [PATCH] feat(zxevo): select the IDE controller and unit
+
+Attach the single IDE image to Nemo or SMUC in BaseConf and TSConf, with
+master and slave selection. Report the unpopulated ATA unit as absent.
+
+---
+diff --git a/src/cpu.c b/src/cpu.c
+index 75d90bf..097cdc7 100644
+--- a/src/cpu.c
++++ b/src/cpu.c
+@@ -2988,8 +2988,7 @@ void set_machine_params(void)
+             // La SD de ZX Evolution usa la interfaz Z-Controller en TSConf.
+             if (last_machine_type!=current_machine_type) {
+                 zcontroller_enabled.v=1;
+-                zxevo_nemo_ide_enabled.v=1;
+-                ide_smuc_enabled.v=1;
++                ide_zxevo_apply_ports();
+             }
+ 
+             //TSConf hacemos que active siempre realvideo (siempre que setting de autoactivar este yes)
+@@ -3011,7 +3010,7 @@ void set_machine_params(void)
+              * recalcular la velocidad no debe deshacer su ajuste en el menú. */
+             if (last_machine_type!=current_machine_type) {
+                 baseconf_sd_interface_enabled.v=1;
+-                zxevo_nemo_ide_enabled.v=1;
++                ide_zxevo_apply_ports();
+             }
+ 
+         break;
+diff --git a/src/machines/baseconf.c b/src/machines/baseconf.c
+index 279029e..434b928 100644
+--- a/src/machines/baseconf.c
++++ b/src/machines/baseconf.c
+@@ -33,6 +33,7 @@
+ #include "ula.h"
+ #include "operaciones.h"
+ #include "zxevo.h"
++#include "ide.h"
+ #include "mmc.h"
+ #include "betadisk.h"
+ #include "timer.h"
+@@ -1770,6 +1771,7 @@ void baseconf_hard_reset(void)
+     baseconf_nmi_from_bf_pending=0;
+     baseconf_nmi_from_bf_delivery=0;
+     zxevo_nemo_ide_reset();
++    ide_smuc_reset();
+     baseconf_ps2_reset();
+     baseconf_rtc_ultimo_segundo_actualizado=(time_t)-1;
+ 
+diff --git a/src/menu/menu_items_storage.c b/src/menu/menu_items_storage.c
+index 346af1e..1243e88 100644
+--- a/src/menu/menu_items_storage.c
++++ b/src/menu/menu_items_storage.c
+@@ -12851,12 +12851,17 @@ void menu_storage_ide_emulation(MENU_ITEM_PARAMETERS)
+ 
+ void menu_storage_smuc_emulation(MENU_ITEM_PARAMETERS)
+ {
+-        ide_smuc_enabled.v ^=1;
++        if (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) {
++                ide_zxevo_controller=ide_smuc_enabled.v ? IDE_ZXEVO_NONE : IDE_ZXEVO_SMUC;
++                ide_zxevo_apply_ports();
++        }
++        else ide_smuc_enabled.v ^=1;
+ }
+ 
+ void menu_storage_zxevo_nemo_ide(MENU_ITEM_PARAMETERS)
+ {
+-        zxevo_nemo_ide_enabled.v ^=1;
++        ide_zxevo_controller=zxevo_nemo_ide_enabled.v ? IDE_ZXEVO_NONE : IDE_ZXEVO_NEMO;
++        ide_zxevo_apply_ports();
+ }
+ 
+ void menu_storage_ide_atm(MENU_ITEM_PARAMETERS)
+@@ -13203,14 +13208,14 @@ void menu_ide_divide(MENU_ITEM_PARAMETERS)
+             menu_add_item_menu_tooltip(array_menu_ide_divide,"Enables DIVIDE access ports");
+             menu_add_item_menu_ayuda(array_menu_ide_divide,"Enables DIVIDE access ports. Requires enabling IDE Emulation");
+ 
+-            if (MACHINE_IS_SCORPION_GMX || MACHINE_IS_TSCONF) {
++            if (MACHINE_IS_SCORPION_GMX || MACHINE_IS_TSCONF || MACHINE_IS_BASECONF) {
+                 menu_add_item_menu_separator(array_menu_ide_divide);
+ 
+                 menu_add_item_menu_en_es_ca(array_menu_ide_divide,MENU_OPCION_NORMAL,menu_storage_smuc_emulation,NULL,
+                     "SMUC Enabled","SMUC Activado","SMUC Activat");
+                 menu_add_item_menu_prefijo_format(array_menu_ide_divide,"[%c] ",(ide_smuc_enabled.v ? 'X' : ' '));
+-                menu_add_item_menu_tooltip(array_menu_ide_divide,"Emulate the SMUC expansion card in Scorpion GMX or TSConf");
+-                menu_add_item_menu_ayuda(array_menu_ide_divide,"Emulate the SMUC expansion card in Scorpion GMX or TSConf. IDE Emulation above controls whether a hard disk is connected to it");
++                menu_add_item_menu_tooltip(array_menu_ide_divide,"Emulate the SMUC expansion card in Scorpion GMX or ZX Evolution");
++                menu_add_item_menu_ayuda(array_menu_ide_divide,"Emulate the SMUC expansion card in Scorpion GMX or ZX Evolution. IDE Emulation above controls whether a hard disk is connected to it");
+             }
+             if (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) {
+                 menu_add_item_menu_separator(array_menu_ide_divide);
+diff --git a/src/start.c b/src/start.c
+index 6560a64..c9afa4b 100644
+--- a/src/start.c
++++ b/src/start.c
+@@ -1608,6 +1608,8 @@ screen_effect_print_names();
+ 
+         "--ide-file f                    Set ide image file\n"
+         "--enable-ide                    Enable IDE emulation. Usually requires --ide-file\n"
++        "--zxevo-ide nemo|smuc|none      Connect the IDE image to a ZX Evolution controller\n"
++        "--zxevo-ide-unit master|slave   Select the IDE image's unit on ZX Evolution\n"
+         "--ide-write-protection          Enable IDE write protection\n"
+         "--ide-no-persistent-writes      Disable IDE persistent writes\n"
+         "--enable-divide-ports           Enable DIVIDE emulation ports only, but not paging. Usually requires --enable-ide\n"
+@@ -6207,6 +6209,25 @@ int parse_cmdline_options(int desde_commandline)
+ 
+                         }
+ 
++                        else if (!strcmp(argv[puntero_parametro],"--zxevo-ide")) {
++                                siguiente_parametro_argumento();
++                                const char *controller=argv[puntero_parametro];
++
++                                if (!strcmp(controller,"nemo")) ide_zxevo_controller=IDE_ZXEVO_NEMO;
++                                else if (!strcmp(controller,"smuc")) ide_zxevo_controller=IDE_ZXEVO_SMUC;
++                                else if (!strcmp(controller,"none")) ide_zxevo_controller=IDE_ZXEVO_NONE;
++                                else cpu_panic("--zxevo-ide expects nemo, smuc or none");
++                        }
++
++                        else if (!strcmp(argv[puntero_parametro],"--zxevo-ide-unit")) {
++                                siguiente_parametro_argumento();
++                                const char *unit=argv[puntero_parametro];
++
++                                if (!strcmp(unit,"master")) ide_zxevo_unit=0;
++                                else if (!strcmp(unit,"slave")) ide_zxevo_unit=1;
++                                else cpu_panic("--zxevo-ide-unit expects master or slave");
++                        }
++
+                         else if (!strcmp(argv[puntero_parametro],"--enable-ide")) {
+                                 command_line_ide.v=1;
+                         }
+diff --git a/src/storage/ide.c b/src/storage/ide.c
+index 1f41a30..79a01cc 100644
+--- a/src/storage/ide.c
++++ b/src/storage/ide.c
+@@ -34,6 +34,7 @@
+ #include "menu_items.h"
+ #include "screen.h"
+ #include "divide.h"
++#include "zxevo.h"
+ 
+ 
+ z80_bit ide_enabled={0};
+@@ -60,6 +61,21 @@ z80_byte ide_register_sector_number;
+ z80_byte ide_register_cylinder_low;
+ z80_byte ide_register_cylinder_high;
+ z80_byte ide_register_drive_head;
++
++enum ide_zxevo_controller ide_zxevo_controller=IDE_ZXEVO_NEMO;
++int ide_zxevo_unit=0;
++
++void ide_zxevo_apply_ports(void)
++{
++    zxevo_nemo_ide_enabled.v=(ide_zxevo_controller==IDE_ZXEVO_NEMO);
++    ide_smuc_enabled.v=(ide_zxevo_controller==IDE_ZXEVO_SMUC);
++}
++
++static int ide_zxevo_empty_unit(void)
++{
++    return (MACHINE_IS_BASECONF || MACHINE_IS_TSCONF) &&
++           ((ide_register_drive_head>>4)&1)!=ide_zxevo_unit;
++}
+ z80_byte ide_register_command;
+ 
+ /* Número de sectores que quedan por transferir en una lectura múltiple ATM. */
+@@ -633,7 +649,7 @@ void ide_write_command_register(z80_byte value)
+             debug_printf (VERBOSE_PARANOID,"Ata command identify drive %d",drive);
+ 
+ 			//No hay disco numero 1. Solo el disco numero 0
+-                        if (drive==1) {
++                        if (drive==1 && !MACHINE_IS_BASECONF && !MACHINE_IS_TSCONF) {
+ 				for (i=0;i<IDE_MAX_RETURN_BUFFER;i++) ide_return_buffer[i]=0;
+ 			}
+ 
+@@ -897,6 +913,7 @@ void ide_write_command_block_register(z80_byte ide_register,z80_byte value)
+ {
+ 
+ 	if (ide_enabled.v==0) return;
++	if (ide_zxevo_empty_unit() && (ide_register==0 || ide_register==7)) return;
+ 
+ 	ide_footer_ide_operating();
+ 
+@@ -1016,6 +1033,7 @@ z80_byte ide_read_command_block_register(z80_byte ide_register)
+ 	z80_byte return_value;
+ 
+ 	if (ide_enabled.v==0) return 255;
++	if (ide_zxevo_empty_unit()) return 0;
+ 
+ 
+ 	ide_footer_ide_operating();
+@@ -1386,7 +1404,7 @@ int ide_smuc_read(z80_int port,z80_byte *value)
+     if (MACHINE_IS_SCORPION_GMX) {
+         if (scorpion_gmx_is_pentagon_scheme()) return 0;
+     }
+-    else if (!MACHINE_IS_TSCONF) return 0;
++    else if (!(MACHINE_IS_BASECONF || MACHINE_IS_TSCONF)) return 0;
+ 
+     if ((port & 0x18a3)!=(0xfffe & 0x18a3)) return 0;
+     if ((port & 0xa044)==(0x5fba & 0xa044)) {
+@@ -1441,11 +1459,11 @@ int ide_smuc_write(z80_int port,z80_byte value)
+     if (MACHINE_IS_SCORPION_GMX) {
+         if (scorpion_gmx_is_pentagon_scheme()) return 0;
+     }
+-    else if (!MACHINE_IS_TSCONF) return 0;
++    else if (!(MACHINE_IS_BASECONF || MACHINE_IS_TSCONF)) return 0;
+ 
+     if ((port & 0x18a3)!=(0xfffe & 0x18a3)) return 0;
+     if ((port & 0xa044)==(0xffba & 0xa044)) {
+-        if (value & 1) ide_reset();
++        if (!(value & 1)) ide_reset(); /* RESET is active low. */
+         ide_smuc_eeprom_write(value);
+         ide_smuc_control=value;
+         return 1;
+@@ -1473,7 +1491,7 @@ int ide_smuc_write(z80_int port,z80_byte value)
+         }
+         else {
+             if (reg==7) {
+-                ide_smuc_identify_first_word=(value==0xec && ide_enabled.v);
++                ide_smuc_identify_first_word=(value==0xec && ide_enabled.v && !ide_zxevo_empty_unit());
+                 if (MACHINE_IS_TSCONF) ide_smuc_dma_selected=1;
+             }
+             ide_write_command_block_register(reg,value);
+diff --git a/src/storage/ide.h b/src/storage/ide.h
+index 73a7bb9..ef83aac 100644
+--- a/src/storage/ide.h
++++ b/src/storage/ide.h
+@@ -74,6 +74,16 @@ extern z80_byte ide_register_cylinder_high;
+ extern z80_byte ide_register_drive_head;
+ extern z80_byte ide_status_register;
+ 
++enum ide_zxevo_controller {
++    IDE_ZXEVO_NONE,
++    IDE_ZXEVO_NEMO,
++    IDE_ZXEVO_SMUC,
++};
++
++extern enum ide_zxevo_controller ide_zxevo_controller;
++extern int ide_zxevo_unit;
++extern void ide_zxevo_apply_ports(void);
++
+ extern z80_bit ide_smuc_enabled;
+ extern int ide_smuc_dma_selected;
+ extern int ide_smuc_read(z80_int port,z80_byte *value);
+diff --git a/src/utils.c b/src/utils.c
+index 2a4c043..d9c47e8 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -5246,6 +5246,9 @@ int util_write_configfile(void)
+ 
+     if (ide_file_name[0]!=0)                        ADD_STRING_CONFIG,"--ide-file \"%s\"",ide_file_name);
+     if (ide_enabled.v)                              ADD_STRING_CONFIG,"--enable-ide");
++    if (ide_zxevo_controller==IDE_ZXEVO_SMUC)       ADD_STRING_CONFIG,"--zxevo-ide smuc");
++    if (ide_zxevo_controller==IDE_ZXEVO_NONE)       ADD_STRING_CONFIG,"--zxevo-ide none");
++    if (ide_zxevo_unit==1)                          ADD_STRING_CONFIG,"--zxevo-ide-unit slave");
+     if (ide_write_protection.v)		                ADD_STRING_CONFIG,"--ide-write-protection");
+     if (ide_persistent_writes.v==0)	                ADD_STRING_CONFIG,"--ide-no-persistent-writes");
+     if (divide_ide_ports_enabled.v)                 ADD_STRING_CONFIG,"--enable-divide-ports");

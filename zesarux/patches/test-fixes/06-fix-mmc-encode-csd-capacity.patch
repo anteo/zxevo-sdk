@@ -1,0 +1,22 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 15:10:00 +0700
+Subject: [PATCH] fix(mmc): encode CSD capacity without an extra unit
+
+CSD version 1 capacity is (C_SIZE + 1) times the block and multiplier unit.
+Subtract one when encoding the image size so firmware discovers the actual
+medium capacity and does not address a nonexistent trailing unit.
+
+---
+diff --git a/src/storage/mmc.c b/src/storage/mmc.c
+--- a/src/storage/mmc.c
++++ b/src/storage/mmc.c
+@@ -627,7 +627,8 @@
+ 	mmc_csd[9]=(cmult_8_bits>>1)&3;
+ 	mmc_csd[0xa]=(cmult_8_bits<<7)&128;
+ 
+-	int device_size=mmc_size[tarjeta]/multiple;
++	/* CSD v1 encodes one less than the number of capacity units. */
++	int device_size=mmc_size[tarjeta]/multiple-1;
+ 
+ 	debug_printf (VERBOSE_DEBUG,"device size: %d",device_size);
+ 

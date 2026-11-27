@@ -1,0 +1,36 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Mon, 16 Nov 2026 19:00:00 +0700
+Subject: [PATCH] fix(tsconf): prioritize SD reads over Kempston mouse
+
+TSConf decodes SD data port 57h by its low byte. INIR changes the high byte,
+which can match the generic partial Kempston mouse decoder and corrupt SD
+reads when mouse emulation is enabled. Read TSConf SD data before the mouse.
+
+---
+diff --git a/src/operaciones.c b/src/operaciones.c
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -7326,6 +7326,9 @@
+     }
+ 
+ 
++	/* TSConf SD uses an 8-bit port decode. INIR changes B and must not
++	   route SD data reads through the partially decoded Kempston mouse. */
++	if (MACHINE_IS_TSCONF && puerto_l==0x57) return tsconf_sd_read_byte();
+ 
+ 	/* BaseConf decodifica #xxDF y usa A10/A8 para distinguir botones, X e Y.
+ 	   Las demás máquinas conservan la decodificación parcial genérica. */
+@@ -7905,13 +7908,8 @@
+ 
+         if (puerto_l==0x77) {
+             return zcontroller_enabled.v ? 0 : 1;
+-        }
+-
+-        if (puerto_l==0x57) {
+-            return tsconf_sd_read_byte();
+         }
+ 
+-
+ 	}
+ 
+ 

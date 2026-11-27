@@ -1,0 +1,163 @@
+From: Anton Argirov <anton.argirov@gmail.com>
+Date: Sat, 31 Oct 2026 21:30:58 +0700
+Subject: [PATCH] fix(audio): ignore inactive ULA beeper writes
+
+ULA port writes that do not change the speaker bit must not revive a
+silent beeper or contribute a stale level to the audio mix. Track speaker
+transitions and reset that state when the machine resets.
+
+---
+ src/audio/audio.c         | 25 +++++++++++++++++++++++++
+ src/audio/audio.h         |  2 ++
+ src/cores/core_spectrum.c |  9 +++++++--
+ src/cpu.c                 |  3 +++
+ src/operaciones.c         | 17 ++++++++++++++---
+ 5 files changed, 51 insertions(+), 5 deletions(-)
+
+diff --git a/src/audio/audio.c b/src/audio/audio.c
+index a15eb18..78684dd 100644
+--- a/src/audio/audio.c
++++ b/src/audio/audio.c
+@@ -876,7 +876,32 @@ z80_bit audio_nagra_effect={0};
+ 
+ //Similar a silence_detection_counter pero solo para operaciones del beeper
+ int beeper_silence_detection_counter=0;
++static int beeper_spectrum_speaker_initialized=0;
++static int beeper_spectrum_speaker_state=0;
+ 
++int beeper_spectrum_speaker_changed(z80_byte value)
++{
++	int speaker_state=(value & 0x10)!=0;
++	if (beeper_spectrum_speaker_initialized==0) {
++		beeper_spectrum_speaker_initialized=1;
++		beeper_spectrum_speaker_state=speaker_state;
++		return 0;
++	}
++
++	if (speaker_state==beeper_spectrum_speaker_state) return 0;
++
++	beeper_spectrum_speaker_state=speaker_state;
++	return 1;
++}
++
++void beeper_spectrum_reset_state(void)
++{
++	beeper_spectrum_speaker_initialized=0;
++	beeper_spectrum_speaker_state=0;
++	value_beeper=0;
++	beeper_silence_detection_counter=SILENCE_DETECTION_MAX;
++	reset_silence_detection_counter();
++}
+ 
+ //decir que el thread de sonido debe enviar audio o no
+ z80_bit audio_playing;
+diff --git a/src/audio/audio.h b/src/audio/audio.h
+index 7fdb7be..8a8a327 100644
+--- a/src/audio/audio.h
++++ b/src/audio/audio.h
+@@ -184,6 +184,8 @@ extern int beeper_real_enabled;
+ extern void beeper_new_line(void);
+ extern char get_value_beeper_sum_array(void);
+ extern void set_value_beeper_on_array(char value);
++extern int beeper_spectrum_speaker_changed(z80_byte value);
++extern void beeper_spectrum_reset_state(void);
+ 
+ extern int audiovolume;
+ 
+diff --git a/src/cores/core_spectrum.c b/src/cores/core_spectrum.c
+index 9e3bc13..450dec4 100644
+--- a/src/cores/core_spectrum.c
++++ b/src/cores/core_spectrum.c
+@@ -533,6 +533,7 @@ void core_spectrum_fin_scanline(void)
+         //audio_valor_enviar_sonido=0;
+ 
+         audio_valor_enviar_sonido_izquierdo=audio_valor_enviar_sonido_derecho=0;
++	    char beeper_sample=0;
+ 
+         audio_valor_enviar_sonido_izquierdo +=da_output_ay_izquierdo();
+         audio_valor_enviar_sonido_derecho +=da_output_ay_derecho();
+@@ -544,12 +545,16 @@ void core_spectrum_fin_scanline(void)
+ 
+         if (beeper_enabled.v) {
+             if (beeper_real_enabled==0) {
+-                audio_valor_enviar_sonido_izquierdo += value_beeper;
+-                audio_valor_enviar_sonido_derecho += value_beeper;
++                if (!(MACHINE_IS_SPECTRUM && !MACHINE_IS_INVES && beeper_silence_detection_counter==SILENCE_DETECTION_MAX)) {
++                    beeper_sample=value_beeper;
++                }
++                audio_valor_enviar_sonido_izquierdo += beeper_sample;
++                audio_valor_enviar_sonido_derecho += beeper_sample;
+             }
+ 
+             else {
+                 char suma_beeper=get_value_beeper_sum_array();
++                beeper_sample=suma_beeper;
+                 audio_valor_enviar_sonido_izquierdo += suma_beeper;
+                 audio_valor_enviar_sonido_derecho += suma_beeper;
+                 beeper_new_line();
+diff --git a/src/cpu.c b/src/cpu.c
+index 5c80e81..1c61353 100644
+--- a/src/cpu.c
++++ b/src/cpu.c
+@@ -894,6 +894,8 @@ void cold_start_cpu_registers(void)
+         out_254_original_value=out_254=0;
+     }
+ 
++	if (MACHINE_IS_SPECTRUM && !MACHINE_IS_INVES) beeper_spectrum_reset_state();
++
+     modificado_border.v=1;
+ 
+     //Modo BOOTM y cambio de otros settings del menu emulador
+@@ -1014,6 +1016,7 @@ void reset_cpu(void)
+ 
+ 
+     debug_printf (VERBOSE_INFO,"Reset cpu");
++	if (MACHINE_IS_SPECTRUM && !MACHINE_IS_INVES) beeper_spectrum_reset_state();
+     audiodac_last_value_data=128;
+ 
+     if (esxdos_umount_on_reset.v) {
+diff --git a/src/operaciones.c b/src/operaciones.c
+index 53b2653..57da80e 100644
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -8946,7 +8946,16 @@ void out_port_spectrum_border(z80_int puerto,z80_byte value)
+ 	z80_byte anterior_out_254=out_254;
+ 
+     modificado_border.v=1;
+-    reset_beeper_silence_detection_counter();
++	int update_beeper=1;
++	if (MACHINE_IS_SPECTRUM && !MACHINE_IS_INVES &&
++		(beeper_mic_mixer_current_mode==BEEPER_MIC_MIXER_NORMAL ||
++		 beeper_mic_mixer_current_mode==BEEPER_MIC_MIXER_ONLY_BEEPER)) {
++		update_beeper=beeper_spectrum_speaker_changed(value);
++		if (update_beeper) reset_beeper_silence_detection_counter();
++	}
++	else {
++		reset_beeper_silence_detection_counter();
++	}
+ 
+     //ay_player_silence_detection_counter=0;
+ 
+@@ -9000,7 +9009,9 @@ void out_port_spectrum_border(z80_int puerto,z80_byte value)
+         */
+ 
+         //Extracted from Fuse emulator
+-        set_value_beeper( (!!(value & 0x10) << 1) + ( (!(value & 0x8))  ) );
++        if (update_beeper) {
++            set_value_beeper( (!!(value & 0x10) << 1) + ( (!(value & 0x8))  ) );
++        }
+     }
+ 
+ 
+@@ -9077,7 +9088,7 @@ void out_port_spectrum_border(z80_int puerto,z80_byte value)
+         }
+     }
+ 
+-    set_value_beeper_on_array(value_beeper);
++    if (update_beeper) set_value_beeper_on_array(value_beeper);
+ 
+ }
+ 
+-- 
+2.56.0
+

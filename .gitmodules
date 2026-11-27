@@ -1,0 +1,3 @@
+[submodule "zesarux"]
+	path = upstream/zesarux
+	url = https://github.com/chernandezba/zesarux.git
