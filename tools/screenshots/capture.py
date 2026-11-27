@@ -11,6 +11,8 @@ sys.path.insert(0, str(ROOT))
 from tools.zesarux.runner import ZesaruxRunner, default_emulator, registers
 from tools.zesarux.tap_runner import run_to_tap_entry, send_key_script
 
+BASECONF_STARTUP_KEYS = "i;w40"
+
 
 def run_instructions(remote, count):
     """Keep each ZRCP run bounded while advancing the requested opcode count."""
@@ -32,7 +34,8 @@ def start_basic(remote, args):
     run_instructions(remote, args.boot_instructions)
     startup = args.startup_keys
     if startup is None:
-        startup = "i;w8" if args.machine == "BaseConf" else ""
+        # BASIC still initializes RAM after ERS hands off control.
+        startup = BASECONF_STARTUP_KEYS if args.machine == "BaseConf" else ""
     send_key_script(remote, startup, args.key_instructions, args.key_settle_instructions)
 
 
@@ -91,7 +94,8 @@ def main():
     parser.add_argument("--boot-instructions", type=int, default=2_000_000)
     parser.add_argument("--load-instructions", type=int, default=2_000_000,
                         help="instruction budget to reach the TAP entry after Enter")
-    parser.add_argument("--startup-keys", help="override ROM startup keys; BaseConf defaults to 'i;w8'")
+    parser.add_argument("--startup-keys",
+                        help=f"override ROM startup keys (BaseConf: {BASECONF_STARTUP_KEYS})")
     parser.add_argument("--load-keys", default="load;quote;quote",
                         help="BASIC loader keys BEFORE the final Enter, which is sent automatically")
     parser.add_argument("--key-instructions", type=int, default=50_000)

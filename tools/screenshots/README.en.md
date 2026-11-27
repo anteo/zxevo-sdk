@@ -66,7 +66,7 @@ chosen instruction count; `w4` waits four key-settle intervals. Keys are sent af
 | `--load-instructions`         | `2000000`; budget to reach the entry after submitting the BASIC command      |
 | `--key-instructions`          | `50000`; key press duration                                                  |
 | `--key-settle-instructions`   | `50000`; execution after key release and unit for `wN`                       |
-| `--startup-keys`              | BaseConf: `i;w8`; other machines: empty; override for a different ROM menu   |
+| `--startup-keys`              | BaseConf: `i;w40`; other machines: empty; override for a different ROM menu  |
 | `--load-keys`                 | `load;quote;quote`; keys before the final Enter, which is sent automatically |
 | `--rom`                       | Optional ROM file for the selected machine                                   |
 | `--log`                       | `build/screenshots/<input-name>.log`, relative to the current directory      |
