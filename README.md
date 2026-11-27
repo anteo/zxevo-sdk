@@ -42,19 +42,19 @@ Run `make examples` to build the BASIC 48 TAPs or `make test` to run the emulato
 
 ### Build ZEsarUX
 
-`make emulator` initializes the pinned [upstream ZEsarUX](upstream/zesarux), applies
-the active [patch series](zesarux/patches), and builds `zesarux/build/source/src/zesarux`
-with a native C compiler and Python 3. The SDK runners prefer this build when
-available. Use `ZESARUX=/path/to/zesarux` to select another executable.
+`make emulator` initializes the pinned [upstream ZEsarUX](upstream/zesarux), applies the active
+[patch series](zesarux/patches), and builds `zesarux/build/source/src/zesarux` with a native C
+compiler and Python 3. The SDK runners prefer this build when available. Use
+`ZESARUX=/path/to/zesarux` to select another executable.
 
-The build uses the upstream ROMs by default. Set `ROM=/path/to/ZXEVO.ROM` to use
-one ROM for both BaseConf and TSConf, `ZESARUX_BUILD_DIR` to select the build
-directory, and `ZESARUX_CONFIGURE_FLAGS` to pass options to `configure`.
-The experimental patches are kept in `zesarux/patches/experimental`.
+The build uses the upstream ROMs by default. Set `ROM=/path/to/ZXEVO.ROM` to use one ROM for both
+BaseConf and TSConf, `ZESARUX_BUILD_DIR` to select the build directory, and
+`ZESARUX_CONFIGURE_FLAGS` to pass options to `configure`. The experimental patches are kept in
+`zesarux/patches/experimental`.
 
-`ZESARUX_EXTRA_PATCH_DIR` appends a patch series after the SDK patches.
-`ZESARUX_OVERLAY_DIR` supplies files to copy over the prepared source tree
-before configuring the build. [Upstream preparation tool](tools/upstream/prepare.py)
+`ZESARUX_EXTRA_PATCH_DIR` appends a patch series after the SDK patches. `ZESARUX_OVERLAY_DIR`
+supplies files to copy over the prepared source tree before configuring the build.
+[Upstream preparation tool](tools/upstream/prepare.py)
 
 ## Use the SDK in an application
 

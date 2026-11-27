@@ -21,10 +21,11 @@ adapters and keeps build and result directories separate by machine.
 ## Running the suites
 
 From the SDK root, run `make test` to discover suites and run them with one combined report. The
-runner needs Python 3.11 or newer and ZEsarUX with ZRCP. Run [`make emulator`](../../README.md#build-zesarux)
-to build the patched emulator. The runner looks for the SDK build first, then searches `PATH` and
-standard installation directories. Set `ZESARUX` to select the executable and `ZXEVO_TEST_ROM` to
-override the ROM used by the `ers-rom` and `ts-bios` profiles.
+runner needs Python 3.11 or newer and ZEsarUX with ZRCP. Run
+[`make emulator`](../../README.md#build-zesarux) to build the patched emulator. The runner looks for
+the SDK build first, then searches `PATH` and standard installation directories. Set `ZESARUX` to
+select the executable and `ZXEVO_TEST_ROM` to override the ROM used by the `ers-rom` and `ts-bios`
+profiles.
 
 ```sh
 make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM

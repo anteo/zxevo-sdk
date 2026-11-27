@@ -21,8 +21,8 @@
 Команда `make test` из корня SDK находит наборы и запускает их с одним общим отчётом. Раннеру нужны
 Python 3.11 или новее и ZEsarUX с ZRCP. Команда [`make emulator`](../../README.ru.md#сборка-zesarux)
 собирает эмулятор с патчами SDK. Раннер ищет сборку SDK, затем проверяет `PATH` и стандартные
-каталоги установки. Переменная `ZESARUX` задаёт путь к эмулятору, а `ZXEVO_TEST_ROM` задаёт ROM
-для профилей `ers-rom` и `ts-bios`.
+каталоги установки. Переменная `ZESARUX` задаёт путь к эмулятору, а `ZXEVO_TEST_ROM` задаёт ROM для
+профилей `ers-rom` и `ts-bios`.
 
 ```sh
 make test ZESARUX=/path/to/zesarux ZXEVO_TEST_ROM=/path/to/ZXEVO.ROM

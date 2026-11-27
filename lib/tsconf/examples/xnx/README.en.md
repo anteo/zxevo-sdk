@@ -40,20 +40,20 @@ after Game Over returns to the title. Reset the machine to exit.
 audio APIs. The Makefile selects the TSConf standalone CRT, `+tsconf --format=spg`, a stack at
 `BDB0h` and an SPG loader resident at `BC80h`.
 
-The SPG stores all ten level pictures as packed 4bpp tiles. At level start, DMA expands the
-current picture into a shared buffer with a 256-byte scanline stride. Revealing a horizontal
-run of tiles then takes one DMA transfer from that buffer.
-Opaque tiles use `ts_video_draw_16c_tile` and DMA. For a transparent tile, `ts_window_acquire`
-maps its bank into W3, the tile is copied to a resident buffer, and `zx_blit4_key` draws it with
-palette index 1 as the transparency key. After a buffer swap, one DMA transfer per changed tile
-row synchronizes the two buffers. A clear uses a full-screen copy. Moving objects and transition masks use TSConf hardware sprites
-through `ts_video_upload_sprites` and `ts_video_set_sprite_page`.
+The SPG stores all ten level pictures as packed 4bpp tiles. At level start, DMA expands the current
+picture into a shared buffer with a 256-byte scanline stride. Revealing a horizontal run of tiles
+then takes one DMA transfer from that buffer. Opaque tiles use `ts_video_draw_16c_tile` and DMA. For
+a transparent tile, `ts_window_acquire` maps its bank into W3, the tile is copied to a resident
+buffer, and `zx_blit4_key` draws it with palette index 1 as the transparency key. After a buffer
+swap, one DMA transfer per changed tile row synchronizes the two buffers. A clear uses a full-screen
+copy. Moving objects and transition masks use TSConf hardware sprites through
+`ts_video_upload_sprites` and `ts_video_set_sprite_page`.
 
 The `assets.py` recipe uses [tools/assets](../../../../tools/assets/README.en.md) to convert BMP
-images into 4bpp graphics, assemble the sprite atlas and convert WAV into unsigned PCM8. Generated ASM
-sections place resources directly in physical RAM pages. SDK appmake compresses occupied SPG pages
-with MegaLZ or Hrust; the SPG loader restores them before entry. Joystick and keyboard input use
-z88dk `games.h` and `input.h`.
+images into 4bpp graphics, assemble the sprite atlas and convert WAV into unsigned PCM8. Generated
+ASM sections place resources directly in physical RAM pages. SDK appmake compresses occupied SPG
+pages with MegaLZ or Hrust; the SPG loader restores them before entry. Joystick and keyboard input
+use z88dk `games.h` and `input.h`.
 
 ### Audio
 

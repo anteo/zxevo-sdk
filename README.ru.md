@@ -41,21 +41,17 @@ make
 
 ### Сборка ZEsarUX
 
-`make emulator` инициализирует закреплённый [upstream ZEsarUX](upstream/zesarux),
-применяет штатные [серии патчей](zesarux/patches) и собирает
-`zesarux/build/source/src/zesarux`. Для сборки нужны компилятор C для хоста и
-Python 3. Раннеры SDK используют эту сборку, если она есть. Переменная
+`make emulator` инициализирует закреплённый [upstream ZEsarUX](upstream/zesarux), применяет штатные
+[серии патчей](zesarux/patches) и собирает `zesarux/build/source/src/zesarux`. Для сборки нужны
+компилятор C для хоста и Python 3. Раннеры SDK используют эту сборку, если она есть. Переменная
 `ZESARUX=/path/to/zesarux` задаёт путь к другому исполняемому файлу.
 
-По умолчанию сборка использует ROM из upstream. Переменная
-`ROM=/path/to/ZXEVO.ROM` задаёт общий ROM для BaseConf и TSConf.
-`ZESARUX_BUILD_DIR` задаёт каталог сборки, а `ZESARUX_CONFIGURE_FLAGS`
-передаёт параметры в `configure`.
-Экспериментальные патчи лежат в `zesarux/patches/experimental`.
+По умолчанию сборка использует ROM из upstream. Переменная `ROM=/path/to/ZXEVO.ROM` задаёт общий ROM
+для BaseConf и TSConf. `ZESARUX_BUILD_DIR` задаёт каталог сборки, а `ZESARUX_CONFIGURE_FLAGS`
+передаёт параметры в `configure`. Экспериментальные патчи лежат в `zesarux/patches/experimental`.
 
-`ZESARUX_EXTRA_PATCH_DIR` добавляет серию после патчей SDK.
-`ZESARUX_OVERLAY_DIR` задаёт каталог с файлами, которые копируются поверх
-подготовленных исходников перед запуском `configure`.
+`ZESARUX_EXTRA_PATCH_DIR` добавляет серию после патчей SDK. `ZESARUX_OVERLAY_DIR` задаёт каталог с
+файлами, которые копируются поверх подготовленных исходников перед запуском `configure`.
 [Утилита подготовки исходников](tools/upstream/prepare.py)
 
 ## Подключение SDK к приложению

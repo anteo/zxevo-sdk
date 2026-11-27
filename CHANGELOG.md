@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.0
+
+### Features
+
+- (formatter) configure assembly indentation
+- (tools) add upstream source preparation
+- (zesarux) build patched emulator from upstream
+
+### Fixes
+
+- (release) check required versioning tools
+- (screenshots) wait for BaseConf BASIC startup
+
+### Performance
+
+- (xnx) fill captured areas in spans and batch DMA transfers
+
+### Refactoring
+
+- (text) remove duplicate mode from cell arguments
+
 ## v0.2.1
 
 ### Features

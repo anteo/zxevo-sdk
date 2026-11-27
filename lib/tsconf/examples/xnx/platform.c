@@ -83,8 +83,8 @@ static void mark_run(uint8_t x, uint8_t y, uint8_t tiles) {
 
 /* Both rasters use 256-byte scanlines. Eight scanlines at a tile-aligned Y
  * fit in one 16 KiB page, even when the next tile row starts a new page. */
-static void copy_tile_run(uint8_t source, uint8_t sx, uint8_t sy,
-                          uint8_t destination, uint8_t x, uint8_t y, uint8_t tiles) {
+static void copy_tile_run(uint8_t source, uint8_t sx, uint8_t sy, uint8_t destination, uint8_t x,
+                          uint8_t y, uint8_t tiles) {
     ts_dma_transfer_t transfer;
     transfer.source.page = source + (sy >> 3);
     transfer.source.offset = ((uint16_t)(sy & 7) << 11) + ((uint16_t)sx << 2);

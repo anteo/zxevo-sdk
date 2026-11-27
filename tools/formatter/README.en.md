@@ -42,13 +42,12 @@ extension. Files are rewritten only when the formatted content differs, and cont
 after the formatter succeeded, so a failing run never leaves a truncated file.
 
 `format_asm --dialect NAME` selects `NAME.awk` (`sjasm` or `z80asm`); the default comes from
-`$FORMAT_ASM_DIALECT`. `--indent N` sets the number of spaces per level for both ASM dialects.
-The default is 8. Use `--indent=N` with the dispatcher or in `FORMATTER_ARGS`.
-`format_c --clang-format PATH` selects the executable (default
-`$CLANG_FORMAT`, then `clang-format`), and `--style PATH` replaces the bundled
-`z88dk-c.clang-format`. Each helper lists the options it accepts with `--options`, which is how the
-dispatcher routes forwarded arguments; the environment variables are only the defaults for running a
-helper directly.
+`$FORMAT_ASM_DIALECT`. `--indent N` sets the number of spaces per level for both ASM dialects. The
+default is 8. Use `--indent=N` with the dispatcher or in `FORMATTER_ARGS`.
+`format_c --clang-format PATH` selects the executable (default `$CLANG_FORMAT`, then
+`clang-format`), and `--style PATH` replaces the bundled `z88dk-c.clang-format`. Each helper lists
+the options it accepts with `--options`, which is how the dispatcher routes forwarded arguments; the
+environment variables are only the defaults for running a helper directly.
 
 `format_md --prettier PATH` selects Prettier (default `$PRETTIER`, then `prettier`), and
 `--config PATH` replaces the bundled `tools/formatter/.prettierrc.json`. The bundled config wraps
@@ -58,9 +57,8 @@ a table exceeds that width.
 Rules:
 
 - **sjasm** aligns statements and constants and normalizes hex literals for SjASMPlus: instructions
-  and directives start at one indentation level, with an extra level for each nested block.
-  Labels and `EQU`/`EVAL` constants go to the left margin with aligned values. `#hex` becomes
-  `0xhex`.
+  and directives start at one indentation level, with an extra level for each nested block. Labels
+  and `EQU`/`EVAL` constants go to the left margin with aligned values. `#hex` becomes `0xhex`.
 - **z80asm** only normalizes leading indentation and blank lines. Operands, `00BFh` literals, local
   `@labels`, `AF'`, quoted semicolons, expressions and the spacing before comments survive byte for
   byte.
